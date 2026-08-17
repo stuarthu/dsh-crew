@@ -1,0 +1,45 @@
+{
+  "name": "dsh-crew",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "DeepSeek Harness (dsh) plugin: run work as a small crew of role agents (product manager, engineer, code reviewer) that talk through files on disk, with the PM as the only voice to the user.",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "deepseek-harness-plugin",
+    "subagent",
+    "multi-agent",
+    "product-manager",
+    "code-review"
+  ],
+  "license": "MIT",
+  "author": "Stuart Hu",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node tools/verify-guard.mjs && node tools/verify-mount.mjs"
+  },
+  "exports": {
+    "./host/crew.js": "./host/crew.js",
+    "./host/git-guard.js": "./host/git-guard.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "host",
+    "roles",
+    "cordis.patch.yml",
+    "README.md",
+    "README.zh.md",
+    "LICENSE"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/dsh-tool-subagent": "*"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-tool-subagent": {
+      "optional": false
+    }
+  }
+}

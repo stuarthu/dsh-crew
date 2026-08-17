@@ -1,0 +1,47 @@
+# dsh-crew bundle patch — mounts the two host-side plugins.
+# Applied when this package is listed in a dsh profile's `dsh.profile.bundles`
+# (i.e. after `dsh plugin --profile tui add dsh-crew`).
+#
+# Rows are addressed by id, so your own cordis.patch.yml can override or
+# disable either of them.
+#
+#   dsh-crew-core       the always-on PM prompt section + one delegation tool
+#                       per crew role (crew_engineer, crew_code_reviewer),
+#                       each with a locked persona and tool filter
+#   dsh-crew-git-guard  blocks pushes, tag pushes, force pushes and package
+#                       publishing, whoever asks for them
+- insert:
+    - id: dsh-crew-core
+      name: 'dsh-crew/host/crew.js'
+      # config:
+      #   # Folder holding your own role markdown files. A file found here
+      #   # replaces the one shipped in the package (same file name).
+      #   rolesDir: '~/.dsh/crew/roles'
+      #
+      #   # Limits the PM must respect. It asks you before going over any of them.
+      #   limits:
+      #     liveAgents: 4       # crew agents awake at the same time
+      #     agentsPerJob: 20    # crew agents one job may use in total
+      #     reviewRounds: 3     # review rounds before the PM asks you to decide
+      #
+      #   # Per-role model override. Left out = every role uses the session model.
+      #   roleModels:
+      #     engineer: { provider: '', model: '' }
+      #     code_reviewer: { provider: '', model: '' }
+      #
+      #   # Tools a role may NOT call. Setting a role here REPLACES the shipped
+      #   # list. dsh rejects a name it does not know when the child starts, so
+      #   # edit this if your profile does not load one of the default tools.
+      #   roleDeny:
+      #     engineer: ['crew_engineer', 'crew_code_reviewer', 'subagent', 'subagent_fork', 'workflow', 'ralph']
+      #     code_reviewer: ['crew_engineer', 'crew_code_reviewer', 'subagent', 'subagent_fork', 'workflow', 'ralph', 'write', 'edit', 'str_replace_editor']
+
+    - id: dsh-crew-git-guard
+      name: 'dsh-crew/host/git-guard.js'
+      # config:
+      #   # Set false to turn the guard off completely (not recommended).
+      #   enabled: true
+      #
+      #   # One-shot push approval file. YOU create it; the guard deletes it as
+      #   # soon as one push uses it. Default: ~/.dsh/crew/push-ok
+      #   approvalFile: '~/.dsh/crew/push-ok'
