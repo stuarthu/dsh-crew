@@ -117,9 +117,16 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    the decision records and the task breakdown — then `crew_doc_reviewer` must
    pass those before a single line of code is written.
 6. It creates a `crew/<job>` branch and runs one `crew_engineer` per task. Two
-   engineers run together only when their file lists do not overlap.
-7. Each finished task is checked in order: **code review** (correctness, then
-   reuse, then simpler code) → **security review**, only when the change touches
+   engineers run together only when their file lists do not overlap. Every
+   engineer works **test first**: it writes one unit test, runs it, checks that it
+   fails for the right reason, then writes the smallest code that makes it pass.
+   Its report has to show you the failing run and then the passing run. An
+   engineer that believes a test cannot come first must ask the PM before it
+   writes any code.
+7. Each finished task is checked in order: **code review** (correctness, then the
+   tests that drove the change, then reuse, simpler code, readability and this
+   repository's own style — the reviewer may hold up a task on those, but only if
+   it shows the exact replacement it wants; otherwise the finding is optional) → **security review**, only when the change touches
    the network, login, secrets, files outside the project, the shell, user input,
    customer data or a new dependency → **QA**, which writes its test plan from
    the document *before* reading the code, then runs it. Round two of any review
@@ -132,7 +139,13 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    file beside it — `README.zh.md`, `README.ja.md` — saying the same thing. If
    nothing a reader would notice changed, it leaves the README alone and tells
    you so.
-10. A last `crew_doc_reviewer` pass over every document the job produced.
+10. A last `crew_doc_reviewer` pass over every document the job produced, the
+    README included. It checks that the documents can be worked from, that they
+    stay consistent (one name per idea, one shape, and the language files saying
+    the same thing), and that they read easily for someone about 14 years old
+    whose first language is not English — by counting things like sentence
+    length, idioms and unexplained terms, not by taste. It may hold up the job on
+    wording, but only if it writes the replacement sentence itself.
 11. **Push and CI, if you allow it.** The PM checks there is a remote, a
     workflow and a working `gh` first. Then it asks you — before **every** push,
     including a re-push after a fix. It pushes only the `crew/*` branch, watches

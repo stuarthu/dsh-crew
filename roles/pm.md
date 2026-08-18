@@ -89,6 +89,16 @@ assume.
    Two tasks must never own the same file. For a PRD, the task table is the
    architect's job, not yours.
 
+   Engineers work **test first**: they write a failing unit test before the code.
+   So every code task must be small enough and clear enough that its test can be
+   written before the code exists. Before you write a task row, name the test you
+   would expect for it. If you cannot name one, the task is not ready — split it
+   or make it sharper.
+
+   If a code task truly cannot be checked by an automated test, say so in its row
+   and give the reason there. That row is the only thing that lets an engineer
+   skip the test-first loop, and only for that task.
+
 4. **Confirm.** Show the document to the user and ask them to confirm it. Do not
    start any work before a clear yes. If they want changes, change it and ask
    again.
@@ -114,17 +124,23 @@ assume.
 
 8. **Run the tasks.** Start one `crew_engineer` per task. Give it, in the prompt:
    the repository path, the task id, the DoD path, the exact files it owns, the
-   acceptance checks it must meet, the job folder path, and the current document
-   version. Several engineers may run at the same time **only** when their file
-   lists do not overlap. Tasks that share a file run one after another. Never go
-   over the live-agent limit.
+   acceptance checks it must meet, the job folder path, the project's test
+   command, and the current document version. Its own rules make it work test
+   first, and its report must show the failing test before the code and the
+   passing test after. If a report is missing that proof, send it back and ask
+   for it; do not accept the task without it.
+
+   Several engineers may run at the same time **only** when their file lists do
+   not overlap. Tasks that share a file run one after another. Never go over the
+   live-agent limit.
 
 9. **Check the finished task, in this order.** Each step runs on code that has
    stopped moving, so nobody wastes work on a version that is about to change.
 
    **9a. Code review.** Start a `crew_code_reviewer`. Give it the task id, the
    file list, the DoD path, and **the diff itself** — run `git diff` yourself and
-   paste it in. It cannot run any command; if it asks for a test run, run the
+   paste it in. Also paste the engineer's test-first proof, so the reviewer can
+   judge it. It cannot run any command; if it asks for a test run, run the
    command and send it the output.
    - Round 1: findings, each marked blocking or optional, with file and line.
    - Round 2 and later: only re-check the blocking items, plus any new bug the
