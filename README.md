@@ -40,6 +40,26 @@ A role is not a prompt the PM pastes in. It is a real delegation tool built from
 So a code reviewer **cannot** edit files, even if it decides it wants to. The
 persona is locked in as that child's own system prompt.
 
+### What the crew needs from your agent preset
+
+In dsh, model-facing tools live in the **agent preset**
+(`~/.dsh/.agent-presets/<preset>/agent.cordis.yml`), not in the profile — the
+stock profiles ship every tool row disabled at the profile level. Two things
+follow:
+
+- Your preset must provide the delegation group (`send_message`,
+  `interrupt_agent`, `list_agents`). Without it the PM can start a role but
+  cannot notify it, and the crew flow does not work.
+- Every name in a role's deny list is checked **when a child starts**, against
+  what that preset provides. A name the preset does not have makes the spawn
+  fail with `tools.restrict() names unknown global tool "x"`. That is why the
+  shipped deny lists are short, and why `maxDepth: 1` — which depends on no
+  name at all — is the real guarantee that only the PM starts agents.
+
+If your preset provides another way to start agents (`workflow`, `ralph`,
+`subagent_codex`, …), add those names through `roleDeny`. If a spawn fails with
+that error, remove the name it complains about from `roleDeny`.
+
 ## How a job runs
 
 1. The PM sorts your ask into a lane: `ask` (answer only), `quick` (do it), or

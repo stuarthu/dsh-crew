@@ -37,6 +37,22 @@ dsh 对 agent 有三条硬规则，本设计完全按它来：
 所以代码评审**无法**修改文件，即使它自己想改也不行。人设会作为那个子 agent 自己的
 系统提示词固定下来。
 
+### 团队对 agent 预设（preset）的要求
+
+在 dsh 里，面向模型的工具是放在**agent 预设**里的
+（`~/.dsh/.agent-presets/<预设>/agent.cordis.yml`），不在 profile 层——自带 profile
+把工具行全部关掉了。由此有两点：
+
+- 你的预设必须提供委派工具组（`send_message`、`interrupt_agent`、`list_agents`）。
+  否则 PM 能启动角色，却无法通知它，整个流程跑不起来。
+- 角色禁用列表里的每个名字，都会在**子 agent 启动时**按该预设实际提供的工具校验。
+  预设里没有的名字会让启动失败，报 `tools.restrict() names unknown global tool "x"`。
+  所以自带的禁用列表很短；真正的保证是 `maxDepth: 1`——它不依赖任何工具名。
+
+如果你的预设还提供了别的启动 agent 的方式（`workflow`、`ralph`、`subagent_codex`
+等），用 `roleDeny` 把它们加进去。如果启动失败并报上面那个错，就把它抱怨的那个名字
+从 `roleDeny` 里去掉。
+
 ## 一次任务怎么跑
 
 1. PM 先给你的需求分档：`ask`（只回答）、`quick`（直接做）、`team`（完整流程）。

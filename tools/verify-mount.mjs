@@ -68,11 +68,17 @@ for (const role of ROLES) {
   for (const required of ["subagent", "subagent_fork", ...toolNames]) {
     if (!role.deny.includes(required)) fail(`${role.toolName}: deny list is missing "${required}"`);
   }
+  // A denied name that the agent's preset does not provide makes dsh reject the
+  // child at start, so the shipped list must stay small and predictable. Tools
+  // that ship DISABLED in the stock profiles must not be in it.
+  for (const risky of ["str_replace_editor", "pwsh", "workflow", "ralph"]) {
+    if (role.deny.includes(risky)) fail(`${role.toolName}: deny list names "${risky}", which many presets do not provide — every spawn would fail. Leave it to roleDeny.`);
+  }
 }
 if (failures === 0) ok("every role is denied all delegation tools (the crew stays flat)");
 
 const reviewer = ROLES.find(role => role.key === "code_reviewer");
-for (const writer of ["write", "edit", "str_replace_editor"]) {
+for (const writer of ["write", "edit"]) {
   if (!reviewer.deny.includes(writer)) fail(`code reviewer must be denied "${writer}"`);
 }
 

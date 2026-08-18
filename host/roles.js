@@ -24,11 +24,24 @@ export const SHIPPED_ROLES_DIR = join(PACKAGE_ROOT, "roles");
 // FLAT: only the PM (your session) starts agents. It matters because dsh can
 // send a message to direct children only — a grandchild would be unreachable
 // from the PM, and two children can never message each other at all.
-const NO_DELEGATION = ["crew_engineer", "crew_code_reviewer", "subagent", "subagent_fork", "workflow", "ralph"];
+//
+// Kept SHORT on purpose. dsh checks these names when the child starts, against
+// what the agent's preset provides, and one name the preset does not have makes
+// every crew spawn fail. Model-facing tools live in the agent preset
+// (~/.dsh/.agent-presets/<preset>/agent.cordis.yml), and presets differ — so
+// only names that come with delegation itself are listed here. `maxDepth: 1` is
+// the guarantee that does not depend on any name at all.
+//
+// If your preset also provides `workflow`, `ralph`, `subagent_codex` or another
+// way to start agents, add them through the `roleDeny` config.
+const NO_DELEGATION = ["crew_engineer", "crew_code_reviewer", "subagent", "subagent_fork"];
 
 // Read-only roles. `read`, `glob`, `grep` and `bash` stay available on purpose:
 // a reviewer must be able to run the tests and read the diff it is judging.
-const NO_WRITING = ["write", "edit", "str_replace_editor"];
+// `str_replace_editor` is deliberately absent: it ships disabled in the stock
+// profiles, so naming it here would break spawning for everyone who has it off.
+// Add it through `roleDeny` if your preset turns it on.
+const NO_WRITING = ["write", "edit"];
 
 /**
  * The crew roles that exist as delegation tools.
