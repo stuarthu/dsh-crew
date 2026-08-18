@@ -9,8 +9,8 @@ starts an **architect** to design the work, **engineers** to write the code, and
 **reviewers** to judge both. The roles never talk to each other — they share work
 through files on disk, and the PM passes messages.
 
-> **Version 0.2.** PM, architect, engineer, code reviewer, doc reviewer. No
-> researcher, QA or security reviewer yet. No push, no CI watching.
+> **Version 0.3.** PM, researcher, architect, engineer, QA, code reviewer,
+> security reviewer, doc reviewer. No push and no CI watching yet.
 
 ## Two planes
 
@@ -54,9 +54,12 @@ A role is not a prompt the PM pastes in. It is a real delegation tool built from
 
 | Role | Tool | Persona | Tools |
 | --- | --- | --- | --- |
+| Researcher | `crew_researcher` | `roles/researcher.md` | **only** `read`, `glob`, `grep`, `write`, `web_search` — no shell |
 | Architect | `crew_architect` | `roles/architect.md` | everything **except** the crew tools |
 | Engineer | `crew_engineer` | `roles/engineer.md` | everything **except** the crew tools |
+| QA | `crew_qa` | `roles/qa.md` | everything **except** the crew tools — it must run the software |
 | Code reviewer | `crew_code_reviewer` | `roles/code-reviewer.md` | **only** `read`, `glob`, `grep` |
+| Security reviewer | `crew_security_reviewer` | `roles/security-reviewer.md` | **only** `read`, `glob`, `grep` |
 | Doc reviewer | `crew_doc_reviewer` | `roles/doc-reviewer.md` | **only** `read`, `glob`, `grep` |
 
 So a code reviewer **cannot** change a file, even if it decides it wants to. The
@@ -97,7 +100,9 @@ Role tool filters and per-role models are configured where the roles live: the
    `team` (the full flow). If the size is unclear, it asks you.
 2. It asks which language to use. It never guesses.
 3. It grills you — one question at a time, each with a recommended answer, after
-   looking up every fact it can in the repository.
+   looking up every fact it can in the repository. For anything bigger than a
+   quick look it starts a `crew_researcher`, which writes findings with a source
+   for every answer, so you are only asked what the files cannot answer.
 4. It picks the document and writes it: a **DoD** (`docs/crew/dod.md`) for small
    work, a **PRD** (`docs/crew/prd.md`) for a real product. It says which it
    picked, and one word switches it. **You confirm before any work starts.**
@@ -106,9 +111,13 @@ Role tool filters and per-role models are configured where the roles live: the
    pass those before a single line of code is written.
 6. It creates a `crew/<job>` branch and runs one `crew_engineer` per task. Two
    engineers run together only when their file lists do not overlap.
-7. Each finished task goes to `crew_code_reviewer`: correctness first, then
-   reuse, then simpler code. Round two only re-checks the blocking findings.
-   After the round limit the PM brings the disagreement to you.
+7. Each finished task is checked in order: **code review** (correctness, then
+   reuse, then simpler code) → **security review**, only when the change touches
+   the network, login, secrets, files outside the project, the shell, user input,
+   customer data or a new dependency → **QA**, which writes its test plan from
+   the document *before* reading the code, then runs it. Round two of any review
+   only re-checks the blocking findings; after the round limit the PM brings the
+   disagreement to you.
 8. The PM commits — engineers never touch git. It stages only the files that task
    owns, never `git add -A`.
 9. The PM updates the repository README to match what was built. `README.md` is

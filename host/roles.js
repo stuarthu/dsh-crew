@@ -21,7 +21,18 @@ const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const SHIPPED_ROLES_DIR = join(PACKAGE_ROOT, "roles");
 
 /** Every crew role tool name; the deny lists are built from this. */
-export const ROLE_TOOL_NAMES = ["crew_architect", "crew_engineer", "crew_code_reviewer", "crew_doc_reviewer"];
+export const ROLE_TOOL_NAMES = [
+  "crew_researcher",
+  "crew_architect",
+  "crew_engineer",
+  "crew_qa",
+  "crew_code_reviewer",
+  "crew_security_reviewer",
+  "crew_doc_reviewer",
+];
+
+/** Tools a read-only role may call: enough to read a repository, nothing more. */
+const READ_ONLY = ["read", "glob", "grep"];
 
 // Every crew child is denied the crew tools. That is what keeps the crew FLAT:
 // only the PM (your session) starts agents. It matters because dsh can send a
@@ -51,6 +62,16 @@ const NO_DELEGATION = [...ROLE_TOOL_NAMES];
  */
 export const ROLES = [
   {
+    key: "researcher",
+    toolName: "crew_researcher",
+    personaFile: "researcher.md",
+    summary: "Find the facts a decision needs",
+    // Reads anything, writes its findings, searches the web — and has no shell,
+    // so it cannot run or change the project while it is looking around. The PM
+    // runs any command it asks for.
+    allow: [...READ_ONLY, "write", "web_search"],
+  },
+  {
     key: "architect",
     toolName: "crew_architect",
     personaFile: "architect.md",
@@ -70,6 +91,16 @@ export const ROLES = [
     deny: [...NO_DELEGATION],
   },
   {
+    key: "qa",
+    toolName: "crew_qa",
+    personaFile: "qa.md",
+    summary: "Test the result against the document",
+    // QA must actually run the software, so it keeps the shell. It writes only
+    // its own test plan and defect notes; the PM's commit step catches any file
+    // it touched that no task owns.
+    deny: [...NO_DELEGATION],
+  },
+  {
     key: "code_reviewer",
     toolName: "crew_code_reviewer",
     personaFile: "code-reviewer.md",
@@ -83,7 +114,16 @@ export const ROLES = [
     // `report` is not listed because it does not need to be: dsh installs it
     // per child and it survives the filter, so the reviewer can still answer
     // the PM.
-    allow: ["read", "glob", "grep"],
+    allow: [...READ_ONLY],
+  },
+  {
+    key: "security_reviewer",
+    toolName: "crew_security_reviewer",
+    personaFile: "security-reviewer.md",
+    summary: "Check one change for security holes",
+    // Read-only for the same reason as any reviewer — and pointedly so here: a
+    // role that hunts for dangerous code should not be able to run it.
+    allow: [...READ_ONLY],
   },
   {
     key: "doc_reviewer",
@@ -92,7 +132,7 @@ export const ROLES = [
     summary: "Review the crew's documents",
     // Same read-only shape as the code reviewer, and for the same reason: a
     // reviewer that can edit the thing it judges is not a reviewer.
-    allow: ["read", "glob", "grep"],
+    allow: [...READ_ONLY],
   },
 ];
 

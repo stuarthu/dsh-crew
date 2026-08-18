@@ -59,8 +59,27 @@ else {
     }
   }
   if (!/dsh-tool-subagent-control/.test(preset)) fail("the crew preset lacks the subagent-control tools, so the PM could not message its crew");
+
+  // Every tool an allow list names must be provided by this preset, or dsh
+  // rejects the child at start. The package that registers each name:
+  const PROVIDERS = {
+    read: "dsh-tool-fs",
+    write: "dsh-tool-fs",
+    edit: "dsh-tool-fs",
+    glob: "dsh-tool-fs-search",
+    grep: "dsh-tool-fs-search",
+    bash: "dsh-tool-bash",
+    web_search: "dsh-tool-web",
+  };
   for (const needed of ["dsh-tool-fs", "dsh-tool-fs-search", "dsh-tool-bash"]) {
     if (!preset.includes(needed)) fail(`the crew preset lacks ${needed}, which the roles' allow/deny names rely on`);
+  }
+  for (const role of ROLES) {
+    for (const allowed of role.allow ?? []) {
+      const provider = PROVIDERS[allowed];
+      if (provider === undefined) fail(`${role.toolName}: allow list names "${allowed}", and this check does not know which package provides it — add it to PROVIDERS`);
+      else if (!preset.includes(provider)) fail(`${role.toolName}: allow list names "${allowed}", but the crew preset does not load ${provider}, so every spawn would fail`);
+    }
   }
   if (failures === 0) ok("crew preset loads the roles, keeps subagent-control, and re-opens no other way to start an agent");
 }
@@ -93,10 +112,19 @@ for (const role of ROLES) {
   if ((role.allow === undefined) === (role.deny === undefined)) fail(`${role.toolName}: a role needs exactly one of allow / deny`);
 
   if (role.allow !== undefined) {
-    // An allow list closes everything it does not name, so delegation and file
-    // writing are gone without naming them. It must not name either.
-    for (const forbidden of ["write", "edit", "bash", "subagent", "workflow", "ralph", ...toolNames]) {
+    // An allow list closes everything it does not name. No allow-list role may
+    // name a shell or a way to start an agent — a shell alone can write files,
+    // run the code and reach the network.
+    for (const forbidden of ["bash", "pwsh", "subagent", "workflow", "ralph", ...toolNames]) {
       if (role.allow.includes(forbidden)) fail(`${role.toolName}: allow list names "${forbidden}", which defeats the point of the allow list`);
+    }
+    // A reviewer judges something; it must not be able to change it. Other
+    // allow-list roles (the researcher writes findings) may keep `write`.
+    if (role.key.includes("review")) {
+      for (const writer of ["write", "edit", "str_replace_editor"]) {
+        if (role.allow.includes(writer)) fail(`${role.toolName}: a reviewer may not have "${writer}"`);
+      }
+      if (!role.allow.includes("read")) fail(`${role.toolName}: a reviewer must be able to read`);
     }
     continue;
   }

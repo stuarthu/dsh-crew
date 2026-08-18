@@ -83,7 +83,7 @@ function installPreset(version) {
  * pm.md so a user-edited role file cannot drift from what is really registered.
  */
 function runtimeFactsSection(limits) {
-  const roleLines = ROLES.map(role => `- \`${role.toolName}\` — start ${role.key === "engineer" || role.key === "architect" ? "an" : "a"} ${role.key.replace(/_/g, " ")} (${role.summary}).`
+  const roleLines = ROLES.map(role => `- \`${role.toolName}\` — ${role.summary}.`
     + (role.allow ? ` It can ONLY call ${role.allow.map(toolName => `\`${toolName}\``).join(", ")}, so run any command it needs yourself and give it the output.` : ""));
 
   return [
@@ -91,8 +91,8 @@ function runtimeFactsSection(limits) {
     "",
     "The crew role tools live in the `crew` agent preset. **Check your own tool list before you promise a crew.**",
     "",
-    `- If you have \`${ROLES[0].toolName}\`, this session runs the crew preset and the whole flow below is available.`,
-    "- If you do NOT have it, this session runs another preset. Say so plainly in the `team` lane and offer the user two choices: start a new session on the `crew` preset, or let you do the work yourself as a single agent. Then do what they choose. The `ask` and `quick` lanes work either way.",
+    "- If your tools include names starting with `crew_`, this session runs the crew preset and the whole flow below is available.",
+    "- If they do not, this session runs another preset. Say so plainly in the `team` lane and offer the user two choices: start a new session on the `crew` preset, or let you do the work yourself as a single agent. Then do what they choose. The `ask` and `quick` lanes work either way.",
     "",
     ...roleLines,
     "- `send_message` — give more work to one crew child you started. It becomes that child's next turn; it cannot cut into a turn already running.",
@@ -106,7 +106,9 @@ function runtimeFactsSection(limits) {
     "",
     "If the user says \"stop\", kill every crew agent you started (`interrupt_agent`, then `job_kill` for anything still running) and say what was left unfinished.",
     "",
-    "This version ships the PM, architect, engineer, code reviewer and doc reviewer. There is no researcher, QA or security reviewer yet, and no push or CI step. Do not pretend those roles ran.",
+    // Derived from the role table so this line cannot drift from what is really
+    // registered — a promise of a role that does not exist is the worst kind.
+    `The crew is: a PM (you) plus ${ROLES.map(role => role.key.replace(/_/g, " ")).join(", ")}. Nothing else exists. There is no push step and no CI step yet. Do not report work by a role that never ran.`,
   ].join("\n");
 }
 
