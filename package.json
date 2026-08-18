@@ -1,6 +1,6 @@
 {
   "name": "dsh-crew",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "dsh": {
     "bundle": {
@@ -55,13 +55,14 @@
     "node": ">=18"
   },
   "scripts": {
-    "test": "node tools/verify-guard.mjs && node tools/verify-mount.mjs"
+    "test": "node tools/verify-guard.mjs && node tools/verify-jobs.mjs && node tools/verify-mount.mjs"
   },
   "exports": {
     "./host/crew.js": "./host/crew.js",
     "./host/roles-preset.js": "./host/roles-preset.js",
     "./host/git-guard.js": "./host/git-guard.js",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./host/jobs.js": "./host/jobs.js"
   },
   "files": [
     "host",

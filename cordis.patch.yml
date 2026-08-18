@@ -33,6 +33,12 @@
       #   # $DSH_HOME/.agent-presets. A preset folder this plugin did not write
       #   # is never touched, whatever this says.
       #   installPreset: true
+      #
+      #   # Where the PM keeps one folder per job. An unfinished job here is put
+      #   # in front of the PM at the start of every session, so a crash can be
+      #   # picked up; set resumeNotice false to stop that.
+      #   jobsDir: '~/.dsh/crew/jobs'
+      #   resumeNotice: true
 
     - id: dsh-crew-git-guard
       name: 'dsh-crew/host/git-guard.js'

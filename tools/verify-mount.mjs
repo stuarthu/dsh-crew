@@ -182,12 +182,17 @@ if (roles) {
 /** Fake Cordis context: records what the plugin registers. */
 function fakeContext() {
   const sections = [];
+  const contexts = [];
   const mounts = [];
   return {
     sections,
+    contexts,
     mounts,
     effect: (fn) => fn(),
-    systemPrompt: { section: (section) => sections.push(section) },
+    systemPrompt: {
+      section: (section) => sections.push(section),
+      context: (context) => contexts.push(context),
+    },
     plugin: (plugin, config) => mounts.push({ plugin, config }),
   };
 }
@@ -206,6 +211,25 @@ function fakeContext() {
     else if (section.text.includes("{{")) fail("PM section contains {{ }}, which dsh would try to interpolate");
     else ok(`PM prompt section registered (order ${section.order}, ${section.text.length} chars)`);
   }
+
+  // The unfinished-job notice: registered as a dynamic context, and quiet when
+  // there is no job to report. A prompt must never fail because of a job file,
+  // so the provider is also pointed at a folder that does not exist.
+  const [jobs] = ctx.contexts;
+  if (ctx.contexts.length !== 1) fail(`expected 1 dynamic context, got ${ctx.contexts.length}`);
+  else if (jobs.name !== "crew:jobs") fail(`dynamic context name is "${jobs.name}"`);
+  else if (typeof jobs.text !== "function") fail("the job notice must be a provider, so it is re-read every turn");
+  else {
+    const quiet = fakeContext();
+    crew.apply(quiet, { installPreset: false, jobsDir: "/nonexistent/crew/jobs" });
+    if (quiet.contexts[0].text({}) !== "") fail("with no job folder the notice must contribute nothing");
+    else ok(`unfinished-job notice registered (order ${jobs.order}, silent when there is no job)`);
+  }
+
+  const off = fakeContext();
+  crew.apply(off, { installPreset: false, resumeNotice: false });
+  if (off.contexts.length !== 0) fail("resumeNotice: false should register no context");
+  else ok("resumeNotice: false turns the notice off");
 
   try {
     crew.apply(fakeContext(), { installPreset: false, limits: { liveAgents: 0 } });

@@ -7,8 +7,8 @@
 "什么算做完"，请你确认，然后启动**架构师**做设计、**工程师**写代码、**评审**来把关。
 各角色之间不能互相说话——他们通过磁盘上的文件协作，消息由 PM 转达。
 
-> **0.3 版本。** 包含 PM、调研、架构师、工程师、QA、代码评审、安全评审、文档评审。
-> 还不推送，也不监控 CI。
+> **0.4 版本。** 包含 PM、调研、架构师、工程师、QA、代码评审、安全评审、文档评审；
+> 并且能在你许可下推送、监控 CI，中断后还能接着干。
 
 ## 两个平面
 
@@ -107,10 +107,29 @@ dsh 对 agent 有三条硬规则，本设计完全按它来：
    别的语言，它会在旁边再维护一个内容相同的文件，例如 `README.zh.md`、
    `README.ja.md`。如果这次改动读者根本看不到，它就不动 README，并在总结里说明。
 10. 最后再由 `crew_doc_reviewer` 通读这次产出的所有文档。
-11. 永远不推送。
+11. **推送与 CI，前提是你许可。** PM 先确认远端、workflow 和可用的 `gh` 都在，然后
+    **每一次推送前都问你**——包括修完之后的再次推送。它只推 `crew/*` 分支，盯住这次
+    运行，CI 挂了就把真实报错发回给拥有这些文件的工程师。`main`、标签和强制推送始终
+    被拦住，谁说都不行。
 
 文档放在仓库里（`docs/crew/`）。任务状态放在仓库外的
-`~/.dsh/crew/jobs/<任务名>/state.json`，这样 `git status` 保持干净，中断后也能续上。
+`~/.dsh/crew/jobs/<任务名>/state.json`，这样 `git status` 保持干净。
+
+## 中断之后
+
+光有状态文件还不够——下一次会话得**知道**它的存在。所以 dsh-crew 每一轮都会读任务
+目录，只要还有没做完的任务，就把一段简短提示摆到 PM 面前：
+
+```
+Unfinished crew work: 1 job left in /home/you/.dsh/crew/jobs.
+
+- "add-sso-login" in /home/you/project (branch crew/add-sso-login):
+  5 of 9 tasks done, 2 blocked. Last change 2026-08-18 09:12.
+```
+
+PM 必须先告诉你，再问一个问题：继续，还是重来。没有你的回答，两件事它都不会做。
+属于别的目录的任务会被忽略；读不出来的状态文件会如实报告，而不是当作已完成。
+把 `resumeNotice` 设为 `false` 可以整体关掉。
 
 ## git 保护
 
@@ -162,6 +181,8 @@ npm test        # 重放 git 保护规则与插件挂载检查，不需要 dsh
 | `limits.agentsPerJob` | `20` | 单个任务最多用多少个 agent |
 | `limits.reviewRounds` | `3` | 评审轮次上限，超过就交给你决定 |
 | `installPreset` | `true` | 是否把 `crew` 预设写入 `$DSH_HOME/.agent-presets` |
+| `jobsDir` | `~/.dsh/crew/jobs` | 任务状态存放位置，也是中断提示读取的位置 |
+| `resumeNotice` | `true` | 会话开始时把未完成任务摆到 PM 面前 |
 | `enabled`（保护） | `true` | 关闭 git 保护——不建议 |
 | `approvalFile` | `~/.dsh/crew/push-ok` | 一次性推送审批文件 |
 

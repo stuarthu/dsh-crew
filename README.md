@@ -9,8 +9,9 @@ starts an **architect** to design the work, **engineers** to write the code, and
 **reviewers** to judge both. The roles never talk to each other — they share work
 through files on disk, and the PM passes messages.
 
-> **Version 0.3.** PM, researcher, architect, engineer, QA, code reviewer,
-> security reviewer, doc reviewer. No push and no CI watching yet.
+> **Version 0.4.** PM, researcher, architect, engineer, QA, code reviewer,
+> security reviewer, doc reviewer — plus pushing with your permission, CI
+> watching, and picking a job up after a crash.
 
 ## Two planes
 
@@ -126,11 +127,32 @@ Role tool filters and per-role models are configured where the roles live: the
    nothing a reader would notice changed, it leaves the README alone and tells
    you so.
 10. A last `crew_doc_reviewer` pass over every document the job produced.
-11. Nothing is ever pushed.
+11. **Push and CI, if you allow it.** The PM checks there is a remote, a
+    workflow and a working `gh` first. Then it asks you — before **every** push,
+    including a re-push after a fix. It pushes only the `crew/*` branch, watches
+    the run, and sends a red CI's real error text back to the engineer that owns
+    those files. `main`, tags and force pushes stay blocked whatever anyone says.
 
 Documents live in the repository (`docs/crew/`). The job state lives outside it,
-in `~/.dsh/crew/jobs/<job>/state.json`, so your `git status` stays clean and a
-crash can be picked up later.
+in `~/.dsh/crew/jobs/<job>/state.json`, so your `git status` stays clean.
+
+## After a crash
+
+The state file alone is not enough — the next session has to *know* about it. So
+dsh-crew reads the job folder on every turn and, when something is unfinished,
+puts a short note in front of the PM:
+
+```
+Unfinished crew work: 1 job left in /home/you/.dsh/crew/jobs.
+
+- "add-sso-login" in /home/you/project (branch crew/add-sso-login):
+  5 of 9 tasks done, 2 blocked. Last change 2026-08-18 09:12.
+```
+
+The PM must tell you before it does anything else, and ask one question: carry on
+or start clean. It never does either without your answer. A job belonging to a
+different folder is ignored, and a state file it cannot read is reported rather
+than counted as finished. Turn the whole thing off with `resumeNotice: false`.
 
 ## The git guard
 
@@ -186,6 +208,8 @@ profile's `cordis.patch.yml`:
 | `limits.agentsPerJob` | `20` | Crew agents one job may use |
 | `limits.reviewRounds` | `3` | Review rounds before the PM asks you to decide |
 | `installPreset` | `true` | Write the `crew` preset into `$DSH_HOME/.agent-presets` |
+| `jobsDir` | `~/.dsh/crew/jobs` | Where job state lives, and what the crash notice reads |
+| `resumeNotice` | `true` | Put unfinished jobs in front of the PM at session start |
 | `enabled` (guard) | `true` | Turn the git guard off — not recommended |
 | `approvalFile` | `~/.dsh/crew/push-ok` | One-shot push approval file |
 

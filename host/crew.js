@@ -19,6 +19,7 @@ import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } fr
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { DEFAULT_JOBS_DIR, jobsNotice } from "./jobs.js";
 import { PM_PERSONA_FILE, ROLES, expandHome, readRoleText } from "./roles.js";
 
 export const name = "dsh-crew-core";
@@ -32,6 +33,11 @@ const PM_SECTION_NAME = "crew:pm";
 
 /** Preset id, and the folder name it takes under `.agent-presets`. */
 const PRESET_ID = "crew";
+
+/** Dynamic-context name and order for the unfinished-job notice. */
+const JOBS_CONTEXT_NAME = "crew:jobs";
+/** After the sandbox (110), approval (115) and delegation (120) sentences. */
+const JOBS_CONTEXT_ORDER = 130;
 
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -137,4 +143,23 @@ export function apply(ctx, config) {
     order: PM_SECTION_ORDER,
     text: `${pmText}\n\n${runtimeFactsSection(limits)}`,
   }), "dsh-crew: PM prompt section");
+
+  // Unfinished work is pushed at the PM, not left for it to remember. Evaluated
+  // per assembly, so a job that finishes stops being mentioned, and a machine
+  // with no unfinished job contributes no text at all.
+  if (config?.resumeNotice !== false) {
+    const jobsDir = config?.jobsDir ?? DEFAULT_JOBS_DIR;
+    ctx.effect(() => ctx.systemPrompt.context({
+      name: JOBS_CONTEXT_NAME,
+      order: JOBS_CONTEXT_ORDER,
+      text: () => {
+        try {
+          return jobsNotice(jobsDir);
+        } catch {
+          // A prompt must never fail to assemble because a job file is odd.
+          return "";
+        }
+      },
+    }), "dsh-crew: unfinished-job notice");
+  }
 }
