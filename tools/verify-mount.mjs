@@ -77,9 +77,14 @@ for (const role of ROLES) {
 }
 if (failures === 0) ok("every role is denied all delegation tools (the crew stays flat)");
 
+// A live test wrote a file from a "read-only" reviewer with `echo hello > file`,
+// so the shell counts as a file-writing tool and belongs in this list.
 const reviewer = ROLES.find(role => role.key === "code_reviewer");
-for (const writer of ["write", "edit"]) {
+for (const writer of ["write", "edit", "bash"]) {
   if (!reviewer.deny.includes(writer)) fail(`code reviewer must be denied "${writer}"`);
+}
+if (ROLES.find(role => role.key === "engineer").deny.includes("bash")) {
+  fail("the engineer must keep bash: it has to run the tests it writes");
 }
 
 // --------------------------------------------------------------- real mount

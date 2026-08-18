@@ -36,12 +36,17 @@ export const SHIPPED_ROLES_DIR = join(PACKAGE_ROOT, "roles");
 // way to start agents, add them through the `roleDeny` config.
 const NO_DELEGATION = ["crew_engineer", "crew_code_reviewer", "subagent", "subagent_fork"];
 
-// Read-only roles. `read`, `glob`, `grep` and `bash` stay available on purpose:
-// a reviewer must be able to run the tests and read the diff it is judging.
-// `str_replace_editor` is deliberately absent: it ships disabled in the stock
-// profiles, so naming it here would break spawning for everyone who has it off.
-// Add it through `roleDeny` if your preset turns it on.
-const NO_WRITING = ["write", "edit"];
+// Read-only roles. `bash` is in this list because a live test proved the point:
+// with only `write` and `edit` denied, a code reviewer wrote a file anyway with
+// `echo hello > file`. A shell IS a file-writing tool. `read`, `glob` and `grep`
+// stay, which is everything a reviewer needs to judge a change; running the
+// tests is the engineer's job, and the reviewer asks the PM if it needs a
+// command run.
+//
+// `str_replace_editor` and `pwsh` are deliberately absent: they ship disabled
+// (or do not exist) in the stock profiles, so naming them here would break
+// spawning. Add them through `roleDeny` if your preset turns them on.
+const NO_WRITING = ["write", "edit", "bash"];
 
 /**
  * The crew roles that exist as delegation tools.

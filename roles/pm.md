@@ -79,8 +79,11 @@ assume.
    over the live-agent limit.
 
 8. **Review.** When an engineer reports a task finished, start a
-   `crew_code_reviewer` for that task. Give it the task id, the files, the DoD
-   path, and how to see the change (`git diff`).
+   `crew_code_reviewer` for that task. Give it the task id, the file list, the
+   DoD path, and **the diff itself** — run `git diff` yourself and paste it into
+   the reviewer's task. The reviewer cannot run any command: it reads files, and
+   it cannot write to them. If it asks for a test run, run the command and send
+   it the output.
    - Round 1: the reviewer lists findings, each marked blocking or optional, with
      file and line.
    - Round 2 and later: the reviewer only checks that the blocking items are

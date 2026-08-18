@@ -34,11 +34,17 @@ A role is not a prompt the PM pastes in. It is a real delegation tool built from
 
 | Role | Tool | Persona | Cannot call |
 | --- | --- | --- | --- |
-| Engineer | `crew_engineer` | `roles/engineer.md` | any delegation tool |
-| Code reviewer | `crew_code_reviewer` | `roles/code-reviewer.md` | any delegation tool, `write`, `edit`, `str_replace_editor` |
+| Engineer | `crew_engineer` | `roles/engineer.md` | delegation tools |
+| Code reviewer | `crew_code_reviewer` | `roles/code-reviewer.md` | delegation tools, `write`, `edit`, `bash` |
 
-So a code reviewer **cannot** edit files, even if it decides it wants to. The
+So a code reviewer **cannot** change a file, even if it decides it wants to. The
 persona is locked in as that child's own system prompt.
+
+`bash` is on the reviewer's list because a live test proved it had to be: with
+only `write` and `edit` blocked, a reviewer created a file with
+`echo hello > file`. A shell is a file-writing tool. The reviewer reads with
+`read`, `glob` and `grep`; the PM pastes the diff into its task and runs any
+command it asks for.
 
 ### What the crew needs from your agent preset
 
