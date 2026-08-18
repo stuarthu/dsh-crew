@@ -32,19 +32,24 @@ crew child cannot start another crew child.
 A role is not a prompt the PM pastes in. It is a real delegation tool built from
 `@deepseek-ai/dsh-tool-subagent`:
 
-| Role | Tool | Persona | Cannot call |
+| Role | Tool | Persona | Tools |
 | --- | --- | --- | --- |
-| Engineer | `crew_engineer` | `roles/engineer.md` | delegation tools |
-| Code reviewer | `crew_code_reviewer` | `roles/code-reviewer.md` | delegation tools, `write`, `edit`, `bash` |
+| Engineer | `crew_engineer` | `roles/engineer.md` | everything **except** the delegation tools |
+| Code reviewer | `crew_code_reviewer` | `roles/code-reviewer.md` | **only** `read`, `glob`, `grep` |
 
 So a code reviewer **cannot** change a file, even if it decides it wants to. The
 persona is locked in as that child's own system prompt.
 
-`bash` is on the reviewer's list because a live test proved it had to be: with
-only `write` and `edit` blocked, a reviewer created a file with
-`echo hello > file`. A shell is a file-writing tool. The reviewer reads with
-`read`, `glob` and `grep`; the PM pastes the diff into its task and runs any
-command it asks for.
+The reviewer uses an allow list, and two live tests are the reason:
+
+1. With `write` and `edit` denied, it created a file anyway with
+   `echo hello > file`. A shell is a file-writing tool.
+2. With the shell denied too, its own tool report still listed `workflow`,
+   `ralph` and a set of desktop-control MCP tools — every one of them a way out.
+
+A deny list cannot name what a deployment has not installed yet. An allow list
+does not have to. The PM pastes the diff into the review task and runs any
+command the reviewer asks for.
 
 ### What the crew needs from your agent preset
 

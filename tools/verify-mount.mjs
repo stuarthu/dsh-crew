@@ -63,27 +63,40 @@ else ok(`role tool names are unique: ${toolNames.join(", ")}`);
 
 for (const role of ROLES) {
   if (["subagent", "subagent_fork"].includes(role.toolName)) fail(`role tool "${role.toolName}" collides with a stock dsh tool`);
-  // Every role must be unable to start further agents: that is what keeps the
-  // crew flat and every member reachable from the PM.
+  if ((role.allow === undefined) === (role.deny === undefined)) fail(`${role.toolName}: a role needs exactly one of allow / deny`);
+
+  if (role.allow !== undefined) {
+    // An allow list closes everything it does not name, so delegation and file
+    // writing are gone without naming them. It must not name either.
+    for (const forbidden of ["write", "edit", "bash", "subagent", "workflow", "ralph", ...toolNames]) {
+      if (role.allow.includes(forbidden)) fail(`${role.toolName}: allow list names "${forbidden}", which defeats the point of the allow list`);
+    }
+    continue;
+  }
+
+  // Every deny-list role must be unable to start further agents: that is what
+  // keeps the crew flat and every member reachable from the PM.
   for (const required of ["subagent", "subagent_fork", ...toolNames]) {
     if (!role.deny.includes(required)) fail(`${role.toolName}: deny list is missing "${required}"`);
   }
   // A denied name that the agent's preset does not provide makes dsh reject the
   // child at start, so the shipped list must stay small and predictable. Tools
   // that ship DISABLED in the stock profiles must not be in it.
-  for (const risky of ["str_replace_editor", "pwsh", "workflow", "ralph"]) {
+  for (const risky of ["str_replace_editor", "pwsh"]) {
     if (role.deny.includes(risky)) fail(`${role.toolName}: deny list names "${risky}", which many presets do not provide — every spawn would fail. Leave it to roleDeny.`);
   }
 }
 if (failures === 0) ok("every role is denied all delegation tools (the crew stays flat)");
 
-// A live test wrote a file from a "read-only" reviewer with `echo hello > file`,
-// so the shell counts as a file-writing tool and belongs in this list.
+// The reviewer must stay read-only, and reading is all it may do. Two live
+// tests forced this shape: a deny list let it write with `echo > file`, and
+// even with the shell gone it still held workflow, ralph and desktop MCP tools.
 const reviewer = ROLES.find(role => role.key === "code_reviewer");
-for (const writer of ["write", "edit", "bash"]) {
-  if (!reviewer.deny.includes(writer)) fail(`code reviewer must be denied "${writer}"`);
-}
-if (ROLES.find(role => role.key === "engineer").deny.includes("bash")) {
+if (reviewer.allow === undefined) fail("the code reviewer must use an allow list, not a deny list");
+else if (!reviewer.allow.includes("read")) fail("the code reviewer must be allowed to read");
+else ok(`code reviewer is read-only by allow list: ${reviewer.allow.join(", ")}`);
+
+if (ROLES.find(role => role.key === "engineer").deny?.includes("bash")) {
   fail("the engineer must keep bash: it has to run the tests it writes");
 }
 

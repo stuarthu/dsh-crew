@@ -29,12 +29,20 @@
       #     engineer: { provider: '', model: '' }
       #     code_reviewer: { provider: '', model: '' }
       #
-      #   # Tools a role may NOT call. Setting a role here REPLACES the shipped
-      #   # list. dsh rejects a name it does not know when the child starts, so
-      #   # edit this if your profile does not load one of the default tools.
+      #   # Which tools a role may use. Setting a role in either map REPLACES
+      #   # the shipped list for that role. dsh checks these names against the
+      #   # agent preset when a child STARTS, and one name your preset does not
+      #   # have fails every spawn — so fix a failure here, not in the package.
+      #
+      #   # roleAllow: only these; everything else is closed, including tools
+      #   # installed later. This is how the reviewer stays read-only.
+      #   roleAllow:
+      #     code_reviewer: ['read', 'glob', 'grep']
+      #
+      #   # roleDeny: everything except these. Add any other way your preset
+      #   # offers to start agents, e.g. 'workflow', 'ralph', 'subagent_codex'.
       #   roleDeny:
-      #     engineer: ['crew_engineer', 'crew_code_reviewer', 'subagent', 'subagent_fork', 'workflow', 'ralph']
-      #     code_reviewer: ['crew_engineer', 'crew_code_reviewer', 'subagent', 'subagent_fork', 'workflow', 'ralph', 'write', 'edit', 'str_replace_editor']
+      #     engineer: ['crew_engineer', 'crew_code_reviewer', 'subagent', 'subagent_fork']
 
     - id: dsh-crew-git-guard
       name: 'dsh-crew/host/git-guard.js'

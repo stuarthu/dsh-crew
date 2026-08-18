@@ -29,17 +29,23 @@ dsh 对 agent 有三条硬规则，本设计完全按它来：
 角色不是 PM 临时粘贴的一段提示词，而是基于 `@deepseek-ai/dsh-tool-subagent` 生成
 的真实委派工具：
 
-| 角色 | 工具 | 人设文件 | 不能调用 |
+| 角色 | 工具 | 人设文件 | 可用工具 |
 | --- | --- | --- | --- |
-| 工程师 | `crew_engineer` | `roles/engineer.md` | 委派类工具 |
-| 代码评审 | `crew_code_reviewer` | `roles/code-reviewer.md` | 委派类工具、`write`、`edit`、`bash` |
+| 工程师 | `crew_engineer` | `roles/engineer.md` | 除委派类工具外**都能用** |
+| 代码评审 | `crew_code_reviewer` | `roles/code-reviewer.md` | **只有** `read`、`glob`、`grep` |
 
 所以代码评审**无法**修改文件，即使它自己想改也不行。人设会作为那个子 agent 自己的
 系统提示词固定下来。
 
-`bash` 之所以也在评审的禁用列表里，是实测逼出来的：只禁 `write` 和 `edit` 时，评审
-用 `echo hello > file` 照样建出了文件——shell 本身就是写文件的工具。评审用 `read`、
-`glob`、`grep` 阅读；diff 由 PM 贴进它的任务里，需要跑的命令也由 PM 代跑。
+评审改用"白名单"，是两次实测逼出来的：
+
+1. 只禁 `write` 和 `edit` 时，它用 `echo hello > file` 照样建出了文件——shell 本身
+   就是写文件的工具。
+2. 连 `bash` 也禁掉之后，它自己报出来的工具里仍有 `workflow`、`ralph` 和一整套控制
+   桌面的 MCP 工具——每一个都是缺口。
+
+黑名单永远列不全"以后才装上的工具"，白名单不需要列。diff 由 PM 贴进评审任务里，
+需要跑的命令也由 PM 代跑。
 
 ### 团队对 agent 预设（preset）的要求
 

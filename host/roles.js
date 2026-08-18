@@ -36,17 +36,11 @@ export const SHIPPED_ROLES_DIR = join(PACKAGE_ROOT, "roles");
 // way to start agents, add them through the `roleDeny` config.
 const NO_DELEGATION = ["crew_engineer", "crew_code_reviewer", "subagent", "subagent_fork"];
 
-// Read-only roles. `bash` is in this list because a live test proved the point:
-// with only `write` and `edit` denied, a code reviewer wrote a file anyway with
-// `echo hello > file`. A shell IS a file-writing tool. `read`, `glob` and `grep`
-// stay, which is everything a reviewer needs to judge a change; running the
-// tests is the engineer's job, and the reviewer asks the PM if it needs a
-// command run.
-//
-// `str_replace_editor` and `pwsh` are deliberately absent: they ship disabled
-// (or do not exist) in the stock profiles, so naming them here would break
-// spawning. Add them through `roleDeny` if your preset turns them on.
-const NO_WRITING = ["write", "edit", "bash"];
+// Why the reviewer uses an allow list instead: two live tests. With only
+// `write` and `edit` denied it wrote a file with `echo hello > file` — a shell
+// is a file-writing tool. With `bash` denied too, its own tool report still
+// listed `workflow`, `ralph` and desktop-control MCP tools. A deny list cannot
+// name what a deployment has not added yet; an allow list does not have to.
 
 /**
  * The crew roles that exist as delegation tools.
@@ -62,6 +56,8 @@ export const ROLES = [
     personaFile: "engineer.md",
     // 3-5 word display description shown in the UI for the delegation tool.
     summary: "Write code for one crew task",
+    // Deny list: an engineer needs most of the tool set, so naming what it may
+    // NOT have is the only workable shape here.
     deny: [...NO_DELEGATION],
   },
   {
@@ -69,7 +65,16 @@ export const ROLES = [
     toolName: "crew_code_reviewer",
     personaFile: "code-reviewer.md",
     summary: "Review one crew task's code",
-    deny: [...NO_DELEGATION, ...NO_WRITING],
+    // ALLOW list, not a deny list. A live test showed why: the same session also
+    // handed the reviewer `workflow`, `ralph` and a set of desktop-control MCP
+    // tools, and a deny list can never name everything a deployment might add.
+    // Allowing three read tools closes all of it at once, and keeps closing it
+    // when a preset gains new tools tomorrow.
+    //
+    // `report` is not listed because it does not need to be: dsh installs it
+    // per child and it survives the filter, so the reviewer can still answer
+    // the PM.
+    allow: ["read", "glob", "grep"],
   },
 ];
 

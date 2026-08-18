@@ -47,7 +47,8 @@ function limitOf(configured, fallback, field) {
  * registered tool names.
  */
 function runtimeFactsSection(limits) {
-  const roleLines = ROLES.map(role => `- \`${role.toolName}\` — start a ${role.key.replace(/_/g, " ")} (${role.summary}).`);
+  const roleLines = ROLES.map(role => `- \`${role.toolName}\` — start a ${role.key.replace(/_/g, " ")} (${role.summary}).`
+    + (role.allow ? ` It can ONLY call ${role.allow.map(name => `\`${name}\``).join(", ")}, so run any command it asks for yourself and give it the output.` : ""));
   return [
     "## Your crew tools and limits (from the plugin config — these are facts, not suggestions)",
     "",
@@ -87,9 +88,16 @@ export function apply(ctx, config) {
   }), "dsh-crew: PM prompt section");
 
   for (const role of ROLES) {
-    // `roleDeny` replaces (not extends) the shipped deny list, so a profile
-    // missing one of those tools can be fixed without editing the package.
+    // A role ships either an allow list (everything else is closed) or a deny
+    // list. `roleAllow` / `roleDeny` replace the shipped list, so a profile
+    // whose preset lacks one of those tool names can be fixed in config instead
+    // of in the package — dsh rejects an unknown name when the child starts.
+    const allow = config?.roleAllow?.[role.key] ?? role.allow;
     const deny = config?.roleDeny?.[role.key] ?? role.deny;
+    const filter = {
+      ...allow?.length > 0 ? { allow } : {},
+      ...deny?.length > 0 ? { deny } : {},
+    };
     const model = config?.roleModels?.[role.key];
 
     ctx.plugin(toolSubagent, {
@@ -99,7 +107,7 @@ export function apply(ctx, config) {
       // answer their parent (`report`) — the two channels the crew runs on.
       backgroundMode: "continuable",
       persona: rolePersonas.get(role.key),
-      ...deny.length > 0 ? { toolFilter: { deny } } : {},
+      ...Object.keys(filter).length > 0 ? { toolFilter: filter } : {},
       // Second, independent guard on the flat tree: a caller that is already a
       // child (depth 1 or deeper) cannot start a crew role at all.
       maxDepth: 1,
