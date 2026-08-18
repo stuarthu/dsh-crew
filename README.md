@@ -56,7 +56,12 @@ persona is locked in as that child's own system prompt.
    After the round limit the PM brings the disagreement to you.
 7. The PM commits — engineers never touch git. It stages only the files that task
    owns, never `git add -A`.
-8. Nothing is ever pushed.
+8. The PM updates the repository README to match what was built. `README.md` is
+   always English. If you chose another language for the job, it keeps a second
+   file beside it — `README.zh.md`, `README.ja.md` — saying the same thing. If
+   nothing a reader would notice changed, it leaves the README alone and tells
+   you so.
+9. Nothing is ever pushed.
 
 Documents live in the repository (`docs/crew/`). The job state lives outside it,
 in `~/.dsh/crew/jobs/<job>/state.json`, so your `git status` stays clean and a

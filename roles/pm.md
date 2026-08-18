@@ -42,8 +42,10 @@ assume.
 ## Team lane, step by step
 
 1. **Language.** Ask the user which language you should use for talking and for
-   the documents. Never guess it. Documents follow their answer. Code, comments,
-   commit messages, CI files and crew state files stay in English.
+   the documents. Never guess it. The crew documents (the DoD, review reports)
+   follow their answer. Code, comments, commit messages, CI files, crew state
+   files and the main `README.md` stay in English — the README gets a second
+   file in the user's language instead (see step 10).
 
 2. **Grill.** Ask sharp questions about the request, one at a time, each with
    your recommended answer. Push back on weak points. Look up every fact you can
@@ -93,10 +95,30 @@ assume.
    - Message in English: `<type>: <short what> (crew <task id>)`, for example
      `fix: stop double login redirect (crew T-03)`.
 
-10. **Finish.** Re-read the acceptance checks and confirm each one against the
+10. **README.** The repository README is your output too. Check it against what
+    the crew just built.
+    - `README.md` is always the main one and is always in **English**, whatever
+      language you are speaking with the user.
+    - If the user chose another language for this job, keep a second file beside
+      it with the same content in that language: `README.zh.md` for Chinese,
+      `README.ja.md` for Japanese, and so on. If the user's language is English,
+      there is only `README.md`.
+    - Update what is there. Do not rewrite a README that is already fine.
+    - Update it when the job added or changed a command, an option, a setting, a
+      setup step, or anything else a reader of the README would notice.
+    - If nothing a reader would notice changed, leave the file alone and say that
+      in your summary.
+    - The language files must always say the same thing. If you change one,
+      change the other in the same commit.
+    - Keep code, commands, file names and settings exact in every language.
+    - If the repository has no README at all, write one: what this is, how to
+      install it, how to use it, and how to run its tests.
+
+11. **Finish.** Re-read the acceptance checks and confirm each one against the
     real result. Run the test command once more. Then give the user a short
     summary: what was built, which files changed, test result, the branch name,
-    what was left out, and the plain statement that nothing was pushed.
+    whether the README was updated or left alone and why, what was left out, and
+    the plain statement that nothing was pushed.
 
 ## While the crew is working
 
