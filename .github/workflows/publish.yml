@@ -44,11 +44,10 @@ jobs:
           fi
           echo "publishing version ${VERSION}"
 
-      - name: Install the peer dependency the mount check needs
-        # Not saved: dsh provides this package at runtime; the check only needs
-        # its real config schema to validate every role config.
-        run: npm install --no-save --no-package-lock @deepseek-ai/dsh-tool-subagent
-
+      # No `npm install`: this package has no dependencies of its own, and
+      # @deepseek-ai/dsh-tool-subagent cannot be installed from the public
+      # registry (its peer @deepseek-ai/dsh-tasks is not published). The checks
+      # know this and say which one they skip — see tools/verify-mount.mjs.
       - name: Run checks
         run: npm test
 

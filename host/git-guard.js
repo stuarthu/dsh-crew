@@ -95,13 +95,61 @@ function pushRefusal(command, tokens) {
   if (PROTECTED_BRANCHES.some(branch => target === branch || target?.endsWith(`/${branch}`))) {
     return `"${target}" is a protected branch. Only the user pushes it.`;
   }
+  // A version-shaped ref (`v1.2.3`, `1.2.3`) is nearly always a release tag, and
+  // pushing one is how most projects start a release.
+  if (/^v?\d+\.\d+(\.\d+)?([-.+].*)?$/.test(target ?? "")) {
+    return `"${target}" looks like a release tag. Cutting a release is the user's decision.`;
+  }
   return undefined;
 }
 
 /**
- * Best-effort check for CI that publishes on push. Coarse on purpose: it would
- * rather refuse a safe push and let the user do it by hand than let an agent
- * trigger a release.
+ * Does a BRANCH push start this workflow? A tag-only trigger
+ * (`on: push: tags: [...]` with no `branches:`) cannot be started by pushing a
+ * branch, and tag-only publishing is the normal safe release setup — treating it
+ * as dangerous would block every ordinary push in those repositories.
+ *
+ * Text scanning, not YAML parsing: when the shape is unclear this answers "yes"
+ * so the guard errs towards refusing.
+ *
+ * @param text - the workflow file contents
+ * @returns true when a branch push can start it
+ */
+function branchPushTriggers(text) {
+  const lines = text.split(/\r?\n/);
+  const onAt = lines.findIndex(line => /^on\s*:/.test(line));
+  if (onAt === -1) return false;
+
+  // Inline forms: `on: push`, `on: [push, pull_request]`.
+  const inline = lines[onAt].slice(lines[onAt].indexOf(":") + 1).trim();
+  if (inline.length > 0) return /\bpush\b/.test(inline);
+
+  // Block form: read the lines indented under `on:` and find the `push:` key.
+  const pushAt = lines.findIndex((line, index) => index > onAt && /^\s+push\s*:/.test(line));
+  if (pushAt === -1) return false;
+  const pushIndent = lines[pushAt].search(/\S/);
+
+  const body = [];
+  for (let index = pushAt + 1; index < lines.length; index += 1) {
+    const line = lines[index];
+    if (line.trim().length === 0) continue;
+    if (line.search(/\S/) <= pushIndent) break; // back out to a sibling key
+    body.push(line);
+  }
+  const block = body.join("\n");
+
+  // `push:` with nothing under it means every branch.
+  if (block.trim().length === 0) return true;
+  if (/^\s*branches(-ignore)?\s*:/m.test(block)) return true;
+  // Only tags (and maybe paths) listed: a branch push cannot start it.
+  if (/^\s*tags(-ignore)?\s*:/m.test(block)) return false;
+  return true;
+}
+
+/**
+ * Best-effort check for CI that publishes when a BRANCH is pushed. Coarse on
+ * purpose: it would rather refuse a safe push and let the user do it by hand
+ * than let an agent trigger a release.
  *
  * @param cwd - folder the command runs in
  * @returns the workflow file name that looks like a publisher, or undefined
@@ -122,9 +170,8 @@ function publishingWorkflow(cwd) {
     } catch {
       continue;
     }
-    const runsOnPush = /^\s*on:/m.test(text) && /\bpush\b/.test(text);
     const publishes = /\b(npm|pnpm|yarn|bun)\s+publish\b|semantic-release|release-please|gh\s+release\s+create|JS-DevTools\/npm-publish/i.test(text);
-    if (runsOnPush && publishes) return entry;
+    if (publishes && branchPushTriggers(text)) return entry;
   }
   return undefined;
 }

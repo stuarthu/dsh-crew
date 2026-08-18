@@ -19,10 +19,17 @@ guard.apply({ on: (event, fn) => { if (event === "tools/execute") handler = fn; 
 
 const ALLOWED = Symbol("allowed");
 
+// Every case names its own working folder: the checkout this test runs from has
+// a publishing workflow of its own, and the guard reads the folder it is told
+// about. A test that depended on the current folder would pass or fail by
+// accident.
+const cleanRepo = join(workdir, "clean-repo");
+mkdirSync(cleanRepo, { recursive: true });
+
 /** Run one command through the guard. Returns ALLOWED or the refusal text. */
 async function run(command, args = {}) {
   const result = await handler(
-    { name: "bash", arguments: { command, ...args } },
+    { name: "bash", arguments: { command, workdir: cleanRepo, ...args } },
     () => ALLOWED,
   );
   return result === ALLOWED ? ALLOWED : result.error.message;
@@ -83,14 +90,49 @@ const second = await run("git push origin crew/my-job");
 if (second === ALLOWED) { failures += 1; console.error("FAIL  a second push was allowed on one approval"); }
 else console.log("ok    blocked  second push on the same approval");
 
-// A repository whose CI publishes on push: refused even with an approval.
-const repo = join(workdir, "repo");
-mkdirSync(join(repo, ".github", "workflows"), { recursive: true });
-writeFileSync(join(repo, ".github", "workflows", "release.yml"), "on:\n  push:\n    branches: ['**']\njobs:\n  release:\n    steps:\n      - run: npm publish\n");
+/** Build a throwaway repository holding one workflow file. */
+function repoWithWorkflow(name, yaml) {
+  const repo = join(workdir, name);
+  mkdirSync(join(repo, ".github", "workflows"), { recursive: true });
+  writeFileSync(join(repo, ".github", "workflows", "release.yml"), yaml);
+  return repo;
+}
+
+// A repository whose CI publishes when a BRANCH is pushed: refused even with an
+// approval, because the push itself would ship a package.
+const branchPublisher = repoWithWorkflow(
+  "branch-publisher",
+  "on:\n  push:\n    branches: ['**']\njobs:\n  release:\n    steps:\n      - run: npm publish\n",
+);
 writeFileSync(approvalFile, "");
-const publishing = await run("git push origin crew/my-job", { workdir: repo });
-if (publishing === ALLOWED) { failures += 1; console.error("FAIL  push allowed into a repo that publishes on push"); }
-else console.log("ok    blocked  push into a repo whose CI publishes on push");
+const publishing = await run("git push origin crew/my-job", { workdir: branchPublisher });
+if (publishing === ALLOWED) { failures += 1; console.error("FAIL  push allowed into a repo that publishes on a branch push"); }
+else console.log("ok    blocked  push into a repo whose CI publishes on a branch push");
+
+// The same repository with a bare `on: push` (every branch): still refused.
+const barePublisher = repoWithWorkflow(
+  "bare-publisher",
+  "on:\n  push:\njobs:\n  release:\n    steps:\n      - run: npm publish\n",
+);
+const bare = await run("git push origin crew/my-job", { workdir: barePublisher });
+if (bare === ALLOWED) { failures += 1; console.error("FAIL  push allowed into a repo with a bare on: push publisher"); }
+else console.log("ok    blocked  push into a repo with a bare `on: push` publisher");
+
+// Tag-only publishing (the normal safe release setup): a BRANCH push cannot
+// start it, so the approved push goes through.
+const tagPublisher = repoWithWorkflow(
+  "tag-publisher",
+  "on:\n  push:\n    tags: ['v*']\njobs:\n  publish:\n    steps:\n      - run: npm publish\n",
+);
+const tagOnly = await run("git push origin crew/my-job", { workdir: tagPublisher });
+if (tagOnly !== ALLOWED) { failures += 1; console.error(`FAIL  approved branch push blocked in a tag-only publishing repo: ${tagOnly}`); }
+else console.log("ok    allowed  approved branch push where CI publishes on tags only");
+
+// Pushing the tag itself in that same repository is still refused.
+writeFileSync(approvalFile, "");
+const tagPush = await run("git push origin v1.0.0", { workdir: tagPublisher });
+if (tagPush === ALLOWED) { failures += 1; console.error("FAIL  tag push allowed"); }
+else console.log("ok    blocked  tag push, even in a tag-only publishing repo");
 
 rmSync(workdir, { recursive: true, force: true });
 
