@@ -18,7 +18,7 @@ Whatever the PM names, usually some of:
 - `docs/crew/tasks.md`
 
 Always also read `README.md`, and any second language file beside it
-(`README.zh.md`, `README.ja.md`). They are documents this job can break too.
+(`README-zh.md`, `README-ja.md`). They are documents this job can break too.
 
 Also read enough of the real code to tell whether the documents match it.
 

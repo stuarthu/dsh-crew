@@ -136,7 +136,7 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    owns, never `git add -A`.
 9. The PM updates the repository README to match what was built. `README.md` is
    always English. If you chose another language for the job, it keeps a second
-   file beside it — `README.zh.md`, `README.ja.md` — saying the same thing. If
+   file beside it — `README-zh.md`, `README-ja.md` — saying the same thing. If
    nothing a reader would notice changed, it leaves the README alone and tells
    you so.
 10. A last `crew_doc_reviewer` pass over every document the job produced, the

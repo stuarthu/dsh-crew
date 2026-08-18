@@ -143,7 +143,7 @@ assemble breaks the session.
 
 ## Documentation
 
-`README.md` (English) and `README.zh.md` (Chinese) say the same thing and must be updated together
+`README.md` (English) and `README-zh.md` (Chinese) say the same thing and must be updated together
 whenever user-visible behaviour changes; write the English first, then match the Chinese. Keep the
 plain, short-sentence style already in both files, and keep the version line near the top of the
 README in step with `package.json`.

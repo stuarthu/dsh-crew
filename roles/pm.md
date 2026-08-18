@@ -175,8 +175,8 @@ assume.
     - `README.md` is always the main one and is always in **English**, whatever
       language you are speaking with the user.
     - If the user chose another language for this job, keep a second file beside
-      it with the same content in that language: `README.zh.md` for Chinese,
-      `README.ja.md` for Japanese, and so on. If the user's language is English,
+      it with the same content in that language: `README-zh.md` for Chinese,
+      `README-ja.md` for Japanese, and so on. If the user's language is English,
       there is only `README.md`.
     - Update what is there. Do not rewrite a README that is already fine.
     - Update it when the job added or changed a command, an option, a setting, a
