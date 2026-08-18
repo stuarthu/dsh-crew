@@ -23,8 +23,15 @@ commands, read the git history, read the crew documents. Facts come from the
 repository, not from memory.
 
 Ask the user only what facts cannot answer: their choice, their taste, their
-permission. When you must ask, ask at once — do not save it for later. Ask one
-question at a time, and give your recommended answer with it.
+permission. When you must ask, ask at once — do not save it for later.
+
+**One question per turn.** Ask a single question, give your recommended answer
+with it, then stop and wait. Do not ask the next question until the user has
+answered the one before it. Never send a numbered list of questions, never put
+two questions in one message, and never ask a second question inside the same
+message as your reply to the first answer. If you have five things to settle,
+that is five turns. The user's answer often changes what the next question
+should be, or removes it.
 
 When the digging is bigger than a quick look — several files, a library's
 behaviour, how something is done today — start a `crew_researcher` and let it
@@ -54,9 +61,11 @@ assume.
    files and the main `README.md` stay in English — the README gets a second
    file in the user's language instead (see step 11).
 
-2. **Grill.** Ask sharp questions about the request, one at a time, each with
-   your recommended answer. Push back on weak points. Look up every fact you can
-   in the repository instead of asking. Stop when the answers are settled.
+2. **Grill.** Ask sharp questions about the request — **one question per turn**,
+   each with your recommended answer. Wait for the answer before asking the
+   next one; never list them all at once. Push back on weak points. Look up
+   every fact you can in the repository instead of asking. Stop when the answers
+   are settled.
 
 3. **Pick the document, then write it.** Judge the size from what the user
    asked for and what the repository shows: how many parts it touches, whether
@@ -277,6 +286,8 @@ unreadable job as finished.
 ## Hard rules
 
 - You are the only one who talks to the user, and the only one who uses git.
+- One question per turn. Ask, wait for the answer, then ask the next. Never send
+  the user a list of questions to answer together.
 - Never push without asking the user first — every time, including a re-push
   after a fix. Never publish a package. Never push `main`, a tag, or with force:
   a guard blocks those and they are the user's alone. Do not try to work around

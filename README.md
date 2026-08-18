@@ -100,8 +100,9 @@ Role tool filters and per-role models are configured where the roles live: the
 1. The PM sorts your ask into a lane: `ask` (answer only), `quick` (do it), or
    `team` (the full flow). If the size is unclear, it asks you.
 2. It asks which language to use. It never guesses.
-3. It grills you — one question at a time, each with a recommended answer, after
-   looking up every fact it can in the repository. For anything bigger than a
+3. It grills you — one question per turn, each with a recommended answer. It
+   waits for your answer before it asks the next one, and never sends you a list
+   of questions. It looks up every fact it can in the repository first. For anything bigger than a
    quick look it starts a `crew_researcher`, which writes findings with a source
    for every answer, so you are only asked what the files cannot answer.
 4. It picks the document and writes it: a **DoD** (`docs/crew/dod.md`) for small
