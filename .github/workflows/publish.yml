@@ -1,0 +1,58 @@
+name: Publish to npm
+
+# Releases are cut by pushing a v* TAG, and only that. A plain push to main
+# never publishes, so work in progress on main can never ship by accident.
+# One tag = one run = one version, so two runs cannot race to publish the same
+# version.
+#
+# Release flow: bump "version" in package.json, commit, push, then push the
+# matching v* tag.
+#
+# Auth uses the NPM_TOKEN repository secret (an npm automation token):
+#   gh secret set NPM_TOKEN < ~/npmtoken
+
+on:
+  push:
+    tags: ["v*"]
+
+concurrency:
+  # Keyed on the tag, so different releases never share a queue slot while
+  # re-pushing the SAME tag still serializes against its own in-flight run.
+  group: publish-npm-${{ github.ref }}
+  cancel-in-progress: false # never cancel a publish mid-flight
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Tag must match package.json version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          VERSION=$(node -p "require('./package.json').version")
+          if [ "$TAG" != "$VERSION" ]; then
+            echo "tag ${GITHUB_REF_NAME} does not match package.json version ${VERSION}" >&2
+            exit 1
+          fi
+          echo "publishing version ${VERSION}"
+
+      - name: Install the peer dependency the mount check needs
+        # Not saved: dsh provides this package at runtime; the check only needs
+        # its real config schema to validate every role config.
+        run: npm install --no-save --no-package-lock @deepseek-ai/dsh-tool-subagent
+
+      - name: Run checks
+        run: npm test
+
+      - name: Publish
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -8,13 +8,36 @@
     "dsh-plugin",
     "deepseek-harness",
     "deepseek-harness-plugin",
-    "subagent",
+    "deepseek",
+    "cordis",
+    "ai",
+    "llm",
+    "ai-agent",
+    "agents",
     "multi-agent",
+    "agent-team",
+    "subagent",
+    "orchestration",
+    "agent-orchestration",
+    "coding-agent",
+    "code-review",
+    "code-reviewer",
     "product-manager",
-    "code-review"
+    "prd",
+    "software-team",
+    "developer-tools",
+    "cli"
   ],
   "license": "MIT",
   "author": "Stuart Hu",
+  "homepage": "https://github.com/stuarthu/dsh-crew#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stuarthu/dsh-crew.git"
+  },
+  "bugs": {
+    "url": "https://github.com/stuarthu/dsh-crew/issues"
+  },
   "engines": {
     "node": ">=18"
   },
