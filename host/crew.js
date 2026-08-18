@@ -114,7 +114,12 @@ function runtimeFactsSection(limits) {
     "",
     // Derived from the role table so this line cannot drift from what is really
     // registered — a promise of a role that does not exist is the worst kind.
-    `The crew is: a PM (you) plus ${ROLES.map(role => role.key.replace(/_/g, " ")).join(", ")}. Nothing else exists. There is no push step and no CI step yet. Do not report work by a role that never ran.`,
+    `The crew is: a PM (you) plus ${ROLES.map(role => role.key.replace(/_/g, " ")).join(", ")}. Nothing else exists. Do not report work by a role that never ran.`,
+    // Pushing and CI are the PM's OWN steps (roles/pm.md step 11), not a role's.
+    // This line used to say they did not exist, which was true in 0.3 and became
+    // a contradiction in 0.4 — the PM was told to skip a step its own rules told
+    // it to run. Anything named here must match roles/pm.md.
+    "Pushing the work branch and watching CI are your own steps, not a role's. Run them yourself, and ask the user before every push.",
   ].join("\n");
 }
 
