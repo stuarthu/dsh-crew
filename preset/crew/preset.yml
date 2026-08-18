@@ -1,8 +1,9 @@
 name: Crew
 description: >-
   The standard coding agent plus the dsh-crew roles: a product manager that
-  talks to you, and architect, engineer, code reviewer and doc reviewer agents
-  it starts. The only way to start an agent here is a crew role.
+  talks to you, and researcher, architect, engineer, QA, code reviewer,
+  security reviewer and doc reviewer agents it starts. The only way to start
+  an agent here is a crew role.
 order: 4
 
 # Kept for humans, not read by dsh: which dsh preset this was copied from, so a
