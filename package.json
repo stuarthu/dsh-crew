@@ -1,7 +1,12 @@
 {
   "name": "dsh-crew",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
   "description": "DeepSeek Harness (dsh) plugin: run work as a small crew of role agents (product manager, engineer, code reviewer) that talk through files on disk, with the PM as the only voice to the user.",
   "keywords": [
     "dsh",

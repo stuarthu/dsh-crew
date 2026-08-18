@@ -13,12 +13,37 @@
 //   ln -s ~/.dsh/profiles/node_modules/@deepseek-ai/dsh-tool-subagent \
 //         node_modules/@deepseek-ai/dsh-tool-subagent
 
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { PM_PERSONA_FILE, ROLES, readRoleText } from "../host/roles.js";
 
 let failures = 0;
 const fail = (message) => { failures += 1; console.error(`FAIL  ${message}`); };
 const ok = (message) => console.log(`ok    ${message}`);
 const skip = (message) => console.log(`SKIP  ${message}`);
+
+// ------------------------------------------------------------- package shape
+
+// Without `dsh.bundle.patch`, `dsh plugin add` installs the package and never
+// applies cordis.patch.yml — the plugin is present but nothing loads it. That
+// shipped once; this check is why it cannot ship again.
+const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const manifest = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
+const patch = manifest.dsh?.bundle?.patch;
+if (typeof patch !== "string") fail("package.json is missing dsh.bundle.patch, so dsh would never apply cordis.patch.yml");
+else if (!existsSync(join(packageRoot, patch))) fail(`dsh.bundle.patch points at "${patch}", which does not exist`);
+else ok(`package.json declares dsh.bundle.patch -> ${patch}`);
+
+for (const shipped of ["host", "roles", "cordis.patch.yml"]) {
+  if (!manifest.files?.includes(shipped)) fail(`package.json "files" is missing "${shipped}", so it would not be published`);
+}
+// Every module named by a cordis row must be exported, or dsh cannot resolve it.
+for (const [row, subpath] of [...readFileSync(join(packageRoot, patch ?? "cordis.patch.yml"), "utf8").matchAll(/name:\s*'dsh-crew\/([^']+)'/g)]) {
+  if (manifest.exports?.[`./${subpath}`] === undefined) fail(`cordis.patch.yml loads "./${subpath}" but package.json "exports" does not expose it (${row.trim()})`);
+}
+if (failures === 0) ok("every module the patch loads is exported from package.json");
 
 // ---------------------------------------------------------------- role files
 
