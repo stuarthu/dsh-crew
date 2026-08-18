@@ -95,6 +95,11 @@ and the plugin fails at startup naming the file.
 Role tool filters and per-role models are configured where the roles live: the
 `dsh-crew-roles` row in `~/.dsh/.agent-presets/crew/agent.cordis.yml`.
 
+That file sits inside the installed preset, and a new version of dsh-crew
+replaces the whole folder. Your edited files are kept beside the new ones as
+`agent.cordis.yml.bak`, and the boot log names them — but the settings do **not**
+come back by themselves. After an upgrade, copy your changes into the new file.
+
 ## How a job runs
 
 1. The PM sorts your ask into a lane: `ask` (answer only), `quick` (do it), or

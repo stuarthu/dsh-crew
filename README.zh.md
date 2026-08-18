@@ -84,6 +84,10 @@ dsh 对 agent 有三条硬规则，本设计完全按它来：
 角色的工具名单和按角色指定模型，配置在角色所在的位置：
 `~/.dsh/.agent-presets/crew/agent.cordis.yml` 里的 `dsh-crew-roles` 那一行。
 
+这个文件在装好的 preset 文件夹里，而 dsh-crew 升级时会整个替换该文件夹。你改过的
+文件会以 `agent.cordis.yml.bak` 的名字留在旁边，启动日志也会点名——但里面的设置
+**不会**自动回来。升级之后，请把你的改动重新抄进新文件。
+
 ## 一次任务怎么跑
 
 1. PM 先给你的需求分档：`ask`（只回答）、`quick`（直接做）、`team`（完整流程）。

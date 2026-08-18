@@ -15,7 +15,7 @@
 // two children cannot talk to each other at all. A deeper tree would put the
 // engineers out of the PM's reach. Peers share work through files on disk.
 
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -52,35 +52,111 @@ function limitOf(configured, fallback, field) {
   return configured;
 }
 
+/** Stamp file recording which version of this package wrote the preset folder. */
+const STAMP_FILE = ".installed-by-dsh-crew";
+
+/**
+ * The installed files that differ from the copy this package shipped — in other
+ * words, the user's own edits.
+ *
+ * This matters because role tool filters and per-role models are configured
+ * INSIDE the installed preset (`agent.cordis.yml`), which the upgrade below
+ * deletes and rewrites. Without this, a version bump would throw those settings
+ * away without a word.
+ *
+ * @param target - the installed preset folder
+ * @param source - the copy shipped in this package
+ * @param prefix - sub-path, used when walking folders
+ * @returns pairs of [path relative to the folder, file contents]
+ */
+function editedFiles(target, source, prefix = "") {
+  const edits = [];
+  let entries;
+  try {
+    entries = readdirSync(join(target, prefix), { withFileTypes: true });
+  } catch {
+    return edits; // unreadable: nothing we can save, and not worth failing boot
+  }
+  for (const entry of entries) {
+    const rel = prefix ? join(prefix, entry.name) : entry.name;
+    if (rel === STAMP_FILE) continue; // ours, and rewritten every time
+    if (entry.isDirectory()) {
+      edits.push(...editedFiles(target, source, rel));
+      continue;
+    }
+    if (!entry.isFile()) continue;
+    let mine;
+    try {
+      mine = readFileSync(join(target, rel), "utf8");
+    } catch {
+      continue; // binary or unreadable; the shipped preset holds neither
+    }
+    let shipped;
+    try {
+      shipped = readFileSync(join(source, rel), "utf8");
+    } catch {
+      shipped = undefined; // a file the user added
+    }
+    if (mine !== shipped) edits.push([rel, mine]);
+  }
+  return edits;
+}
+
 /**
  * Copy the shipped `crew` preset into the harness home so dsh's preset roster
  * finds it. Idempotent: a stamp file records which version wrote the folder, so
  * an unchanged version copies nothing and an upgrade refreshes it.
  *
+ * An upgrade REPLACES the folder, so any file the user edited is first read and
+ * then written back beside the new one as `<name>.bak`, and named in the boot
+ * log. Losing someone's `roleAllow` list silently would be much worse than
+ * leaving a file they have to look at.
+ *
  * Only a folder this plugin wrote is ever replaced. A `crew` preset that
  * someone else authored is left exactly as it is, and reported.
  *
  * @param version - this package's version, written into the stamp
- * @returns a line describing what happened, for the boot log
+ * @returns lines describing what happened, for the boot log
  */
 function installPreset(version) {
   const home = process.env.DSH_HOME ?? expandHome("~/.dsh");
   const target = join(home, ".agent-presets", PRESET_ID);
-  const stamp = join(target, ".installed-by-dsh-crew");
+  const stamp = join(target, STAMP_FILE);
   const source = join(PACKAGE_ROOT, "preset", PRESET_ID);
 
   if (!existsSync(source)) throw new Error(`dsh-crew: shipped preset missing at ${source}`);
 
+  let edits = [];
   if (existsSync(target)) {
     if (!existsSync(stamp)) return `dsh-crew: left the existing "${PRESET_ID}" preset alone (not written by dsh-crew)`;
     if (readFileSync(stamp, "utf8").trim() === version) return undefined; // already current
+    edits = editedFiles(target, source);
     rmSync(target, { recursive: true, force: true });
   }
 
   mkdirSync(dirname(target), { recursive: true });
   cpSync(source, target, { recursive: true });
   writeFileSync(stamp, `${version}\n`);
-  return `dsh-crew: installed the "${PRESET_ID}" agent preset (${version})`;
+
+  const lines = [`dsh-crew: installed the "${PRESET_ID}" agent preset (${version})`];
+  const kept = [];
+  for (const [rel, contents] of edits) {
+    const backup = join(target, `${rel}.bak`);
+    try {
+      mkdirSync(dirname(backup), { recursive: true });
+      writeFileSync(backup, contents);
+      kept.push(`${rel}.bak`);
+    } catch {
+      lines.push(`dsh-crew: WARNING — could not keep a copy of your edited ${rel}; the upgrade replaced it.`);
+    }
+  }
+  if (kept.length > 0) {
+    lines.push(
+      `dsh-crew: the upgrade replaced files you had edited. Your versions are kept as ${kept.join(", ")} in ${target}.`,
+      "dsh-crew: settings there do NOT carry over by themselves — re-apply your roleAllow / roleDeny / roleModels changes to the new agent.cordis.yml.",
+    );
+  }
+  return lines.join("\n");
 }
 
 /**

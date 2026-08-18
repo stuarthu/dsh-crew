@@ -14,11 +14,15 @@ There is no build step and no bundler. The package ships plain ES modules (`"typ
 ## Commands
 
 ```sh
-npm test                        # all three checks; this is what CI runs
-node tools/verify-guard.mjs     # git-guard rules, replayed against fake commands
-node tools/verify-jobs.mjs      # the unfinished-job notice, using throwaway job folders
-node tools/verify-mount.mjs     # package shape, preset shape, role table, real mount
+npm test                            # all four checks; this is what CI runs
+node tools/verify-guard.mjs         # git-guard rules, replayed against fake commands
+node tools/verify-jobs.mjs          # the unfinished-job notice, using throwaway job folders
+node tools/verify-mount.mjs         # package shape, preset shape, role table, real mount
+node tools/verify-preset-install.mjs # installing and upgrading the crew preset
 ```
+
+Every check runs against temporary folders and a throwaway `DSH_HOME`. None of
+them may read or write the real `~/.dsh` — keep it that way when adding cases.
 
 Run one check on its own by calling its file directly — that is the "single test" here.
 
@@ -55,6 +59,11 @@ split is load-bearing:
 `host/crew.js` also copies `preset/crew/` into `$DSH_HOME/.agent-presets/crew` at startup, stamped
 with the package version (`.installed-by-dsh-crew`). A `crew` folder without that stamp is somebody
 else's and is never touched.
+
+A **version bump deletes and rewrites that folder**, and users are told by the README to configure
+`roleAllow` / `roleDeny` / `roleModels` inside it. So the installer reads every file that differs
+from the shipped copy before deleting, writes it back as `<name>.bak`, and names it in the boot log.
+Never make that folder the only home for a setting a user has to keep.
 
 ## Design rules a change must not break
 
