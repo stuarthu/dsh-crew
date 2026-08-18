@@ -5,11 +5,19 @@ name: Publish to npm
 # One tag = one run = one version, so two runs cannot race to publish the same
 # version.
 #
-# Release flow: bump "version" in package.json, commit, push, then push the
+# Release flow: bump "version" in package.json, commit, push main, then push the
 # matching v* tag.
 #
-# Auth uses the NPM_TOKEN repository secret (an npm automation token):
-#   gh secret set NPM_TOKEN < ~/npmtoken
+# Auth is npm trusted publishing (OIDC): a short-lived token minted for this one
+# run, verified against the publisher configured on npmjs.com. There is no
+# secret to store or rotate.
+#
+# One-time setup on npmjs.com (dsh-crew -> Settings -> Trusted Publisher):
+#   Organization or user: stuarthu
+#   Repository:           dsh-crew
+#   Workflow filename:    publish.yml
+#   Environment:          (empty)
+# Renaming this file breaks publishing until that setting is updated to match.
 
 on:
   push:
@@ -26,23 +34,47 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write # required for OIDC trusted publishing (and provenance)
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24" # trusted publishing needs Node >= 22.14.0
           registry-url: "https://registry.npmjs.org"
 
-      - name: Tag must match package.json version
+      - name: Decide whether to publish
+        id: guard
         run: |
-          TAG="${GITHUB_REF_NAME#v}"
+          NAME=$(node -p "require('./package.json').name")
           VERSION=$(node -p "require('./package.json').version")
+          # The tag names the release, so a tag that disagrees with package.json
+          # would publish a version nobody asked for. Fail loudly instead.
+          TAG="${GITHUB_REF_NAME#v}"
           if [ "$TAG" != "$VERSION" ]; then
-            echo "tag ${GITHUB_REF_NAME} does not match package.json version ${VERSION}" >&2
+            echo "::error::tag v$TAG does not match package.json version $VERSION — fix the bump or the tag, then re-tag."
             exit 1
           fi
-          echo "publishing version ${VERSION}"
+          # --json makes failures machine-readable: npm prints {"error":{"code":...}}
+          # so E404 (not published yet) is detected structurally, not by grepping prose.
+          set +e
+          OUT=$(npm view "$NAME@$VERSION" version --json 2>stderr.txt)
+          CODE=$?
+          set -e
+          if [ $CODE -eq 0 ] && [ -n "$OUT" ]; then
+            echo "$NAME@$VERSION is already on npm — nothing to publish."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          elif node -e 'try { process.exit(JSON.parse(process.argv[1]).error.code === "E404" ? 0 : 1) } catch { process.exit(1) }' "$OUT"; then
+            echo "$NAME@$VERSION not found (E404) — will publish."
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          else
+            # Non-404 failure (network / registry 5xx / auth): fail the RUN, loudly.
+            # A green skip here would silently lose the release.
+            echo "::error::npm view failed for a non-404 reason — failing so the release isn't silently skipped. Re-run once the registry recovers."
+            printf '%s\n' "$OUT"
+            cat stderr.txt
+            exit 1
+          fi
 
       # No `npm install`: this package has no dependencies of its own, and
       # @deepseek-ai/dsh-tool-subagent cannot be installed from the public
@@ -51,7 +83,14 @@ jobs:
       - name: Run checks
         run: npm test
 
+      # Only the publish itself needs npm >= 11.5.1 (trusted publishing).
+      - name: Ensure npm supports trusted publishing
+        if: steps.guard.outputs.publish == 'true'
+        run: npm install -g npm@latest
+
+      # No NODE_AUTH_TOKEN: the npm CLI authenticates with the OIDC credential
+      # granted by `id-token: write`, checked against the trusted publisher
+      # configured on npmjs.com.
       - name: Publish
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        if: steps.guard.outputs.publish == 'true'
+        run: npm publish --provenance --access public
