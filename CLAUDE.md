@@ -39,7 +39,9 @@ ln -s ~/.dsh/profiles/node_modules/@deepseek-ai/dsh-tool-subagent \
 That link already exists in this working copy. Never add a real dependency on that package — it is a
 `peerDependencies` entry on purpose.
 
-Releases: bump `version` in `package.json`, commit, push `main`, then push the matching `v*` tag.
+Releases: add the new version's section to `CHANGELOG.md` (newest first, plain English, what a
+user would notice), bump `version` in `package.json`, commit, push `main`, then push the matching
+`v*` tag.
 Only the tag triggers `.github/workflows/publish.yml`. The workflow fails loudly if the tag and
 `package.json` disagree. Auth is npm trusted publishing (OIDC) — there is no secret to set.
 

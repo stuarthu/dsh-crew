@@ -9,7 +9,7 @@ starts an **architect** to design the work, **engineers** to write the code, and
 **reviewers** to judge both. The roles never talk to each other — they share work
 through files on disk, and the PM passes messages.
 
-> **Version 0.4.** PM, researcher, architect, engineer, QA, code reviewer,
+> **Version 0.4.3.** PM, researcher, architect, engineer, QA, code reviewer,
 > security reviewer, doc reviewer — plus pushing with your permission, CI
 > watching, and picking a job up after a crash.
 
