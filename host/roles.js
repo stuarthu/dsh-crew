@@ -20,21 +20,21 @@ const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 /** Role markdown files shipped with the package. */
 export const SHIPPED_ROLES_DIR = join(PACKAGE_ROOT, "roles");
 
-// Every crew child is denied the delegation tools. That is what keeps the crew
-// FLAT: only the PM (your session) starts agents. It matters because dsh can
-// send a message to direct children only — a grandchild would be unreachable
-// from the PM, and two children can never message each other at all.
+/** Every crew role tool name; the deny lists are built from this. */
+export const ROLE_TOOL_NAMES = ["crew_architect", "crew_engineer", "crew_code_reviewer", "crew_doc_reviewer"];
+
+// Every crew child is denied the crew tools. That is what keeps the crew FLAT:
+// only the PM (your session) starts agents. It matters because dsh can send a
+// message to direct children only — a grandchild would be unreachable from the
+// PM, and two children can never message each other at all.
 //
-// Kept SHORT on purpose. dsh checks these names when the child starts, against
-// what the agent's preset provides, and one name the preset does not have makes
-// every crew spawn fail. Model-facing tools live in the agent preset
-// (~/.dsh/.agent-presets/<preset>/agent.cordis.yml), and presets differ — so
-// only names that come with delegation itself are listed here. `maxDepth: 1` is
-// the guarantee that does not depend on any name at all.
-//
-// If your preset also provides `workflow`, `ralph`, `subagent_codex` or another
-// way to start agents, add them through the `roleDeny` config.
-const NO_DELEGATION = ["crew_engineer", "crew_code_reviewer", "subagent", "subagent_fork"];
+// The list names ONLY crew tools, and that is deliberate. dsh checks these
+// names when the child starts, against what the agent's preset provides, and a
+// name the preset does not have fails every spawn. The `crew` preset shipped in
+// `preset/crew` has no other way to start an agent — no `subagent`,
+// `subagent_fork`, `workflow` or `ralph` — so there is nothing else to name.
+// `maxDepth: 1` guards the same rule without depending on any name at all.
+const NO_DELEGATION = [...ROLE_TOOL_NAMES];
 
 // Why the reviewer uses an allow list instead: two live tests. With only
 // `write` and `edit` denied it wrote a file with `echo hello > file` — a shell
@@ -50,6 +50,15 @@ const NO_DELEGATION = ["crew_engineer", "crew_code_reviewer", "subagent", "subag
  * tools. Override `roleDeny` in the plugin config if your profile differs.
  */
 export const ROLES = [
+  {
+    key: "architect",
+    toolName: "crew_architect",
+    personaFile: "architect.md",
+    summary: "Design the work and split it into tasks",
+    // The architect writes design documents, so it needs the writing tools; it
+    // must not start agents, and it must not touch code.
+    deny: [...NO_DELEGATION],
+  },
   {
     key: "engineer",
     toolName: "crew_engineer",
@@ -74,6 +83,15 @@ export const ROLES = [
     // `report` is not listed because it does not need to be: dsh installs it
     // per child and it survives the filter, so the reviewer can still answer
     // the PM.
+    allow: ["read", "glob", "grep"],
+  },
+  {
+    key: "doc_reviewer",
+    toolName: "crew_doc_reviewer",
+    personaFile: "doc-reviewer.md",
+    summary: "Review the crew's documents",
+    // Same read-only shape as the code reviewer, and for the same reason: a
+    // reviewer that can edit the thing it judges is not a reviewer.
     allow: ["read", "glob", "grep"],
   },
 ];

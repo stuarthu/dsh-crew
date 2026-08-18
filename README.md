@@ -5,12 +5,32 @@ as a small crew of role agents.
 
 Your own dsh session becomes the **product manager (PM)**. The PM is the only one
 who talks to you. It writes down what "done" means, asks you to confirm it, then
-starts an **engineer** to write the code and a **code reviewer** to judge it. The
-roles never talk to each other — they share work through files on disk, and the
-PM passes messages.
+starts an **architect** to design the work, **engineers** to write the code, and
+**reviewers** to judge both. The roles never talk to each other — they share work
+through files on disk, and the PM passes messages.
 
-> **Version 0.1.** PM, engineer and code reviewer only. No architect, QA, doc
-> reviewer, researcher or security reviewer yet. No PRD, no push, no CI watching.
+> **Version 0.2.** PM, architect, engineer, code reviewer, doc reviewer. No
+> researcher, QA or security reviewer yet. No push, no CI watching.
+
+## Two planes
+
+dsh keeps model-facing tools in an **agent preset**, not in your profile. dsh-crew
+follows that, and splits itself in two:
+
+| Piece | Where | Why there |
+| --- | --- | --- |
+| PM rules | host plane (your profile) | They need no tools, so they work in every session, on any preset |
+| Role tools | the `crew` agent preset | A role's allow/deny list is checked against the preset when a child starts, so the names must be defined in the same place |
+
+Installing the plugin writes the preset into `$DSH_HOME/.agent-presets/crew`.
+Start a session on the **crew** preset to get the roles. In a session on another
+preset the PM still behaves like a PM, notices it has no role tools, and offers
+to either move to the crew preset or do the job itself.
+
+The crew preset is dsh's own `standard` preset with one change: `subagent`,
+`subagent_fork`, `workflow`, `ralph` and the product subagents are gone, and the
+crew roles are there instead. So inside it, **a crew role is the only way to
+start an agent.**
 
 ## Why the crew is flat
 
@@ -34,8 +54,10 @@ A role is not a prompt the PM pastes in. It is a real delegation tool built from
 
 | Role | Tool | Persona | Tools |
 | --- | --- | --- | --- |
-| Engineer | `crew_engineer` | `roles/engineer.md` | everything **except** the delegation tools |
+| Architect | `crew_architect` | `roles/architect.md` | everything **except** the crew tools |
+| Engineer | `crew_engineer` | `roles/engineer.md` | everything **except** the crew tools |
 | Code reviewer | `crew_code_reviewer` | `roles/code-reviewer.md` | **only** `read`, `glob`, `grep` |
+| Doc reviewer | `crew_doc_reviewer` | `roles/doc-reviewer.md` | **only** `read`, `glob`, `grep` |
 
 So a code reviewer **cannot** change a file, even if it decides it wants to. The
 persona is locked in as that child's own system prompt.
@@ -51,25 +73,23 @@ A deny list cannot name what a deployment has not installed yet. An allow list
 does not have to. The PM pastes the diff into the review task and runs any
 command the reviewer asks for.
 
-### What the crew needs from your agent preset
+Two more guards sit under the filters:
 
-In dsh, model-facing tools live in the **agent preset**
-(`~/.dsh/.agent-presets/<preset>/agent.cordis.yml`), not in the profile — the
-stock profiles ship every tool row disabled at the profile level. Two things
-follow:
+- **`maxDepth: 1`** on every role tool — only the root PM can start a role, and
+  it names no tool at all, so no preset change can weaken it.
+- The crew preset itself removes every other way to start an agent, so a role
+  cannot route around the filter through `workflow`, `ralph` or a bare
+  `subagent`.
 
-- Your preset must provide the delegation group (`send_message`,
-  `interrupt_agent`, `list_agents`). Without it the PM can start a role but
-  cannot notify it, and the crew flow does not work.
-- Every name in a role's deny list is checked **when a child starts**, against
-  what that preset provides. A name the preset does not have makes the spawn
-  fail with `tools.restrict() names unknown global tool "x"`. That is why the
-  shipped deny lists are short, and why `maxDepth: 1` — which depends on no
-  name at all — is the real guarantee that only the PM starts agents.
+### Editing the roles
 
-If your preset provides another way to start agents (`workflow`, `ralph`,
-`subagent_codex`, …), add those names through `roleDeny`. If a spawn fails with
-that error, remove the name it complains about from `roleDeny`.
+Role personas are plain markdown in `roles/`. Copy one into
+`~/.dsh/crew/roles/` under the same name and it replaces the shipped version.
+One limit: prompt text may not contain `{{` — dsh would read it as a variable,
+and the plugin fails at startup naming the file.
+
+Role tool filters and per-role models are configured where the roles live: the
+`dsh-crew-roles` row in `~/.dsh/.agent-presets/crew/agent.cordis.yml`.
 
 ## How a job runs
 
@@ -78,21 +98,26 @@ that error, remove the name it complains about from `roleDeny`.
 2. It asks which language to use. It never guesses.
 3. It grills you — one question at a time, each with a recommended answer, after
    looking up every fact it can in the repository.
-4. It writes `docs/crew/dod.md`: goal, not in scope, acceptance checks, and a
-   task list where each task owns exact files. **You confirm it before any work.**
-5. It creates a `crew/<job>` branch and runs one `crew_engineer` per task. Two
+4. It picks the document and writes it: a **DoD** (`docs/crew/dod.md`) for small
+   work, a **PRD** (`docs/crew/prd.md`) for a real product. It says which it
+   picked, and one word switches it. **You confirm before any work starts.**
+5. For PRD work it starts `crew_architect`, which writes the high level design,
+   the decision records and the task breakdown — then `crew_doc_reviewer` must
+   pass those before a single line of code is written.
+6. It creates a `crew/<job>` branch and runs one `crew_engineer` per task. Two
    engineers run together only when their file lists do not overlap.
-6. Each finished task goes to `crew_code_reviewer`: correctness first, then
+7. Each finished task goes to `crew_code_reviewer`: correctness first, then
    reuse, then simpler code. Round two only re-checks the blocking findings.
    After the round limit the PM brings the disagreement to you.
-7. The PM commits — engineers never touch git. It stages only the files that task
+8. The PM commits — engineers never touch git. It stages only the files that task
    owns, never `git add -A`.
-8. The PM updates the repository README to match what was built. `README.md` is
+9. The PM updates the repository README to match what was built. `README.md` is
    always English. If you chose another language for the job, it keeps a second
    file beside it — `README.zh.md`, `README.ja.md` — saying the same thing. If
    nothing a reader would notice changed, it leaves the README alone and tells
    you so.
-9. Nothing is ever pushed.
+10. A last `crew_doc_reviewer` pass over every document the job produced.
+11. Nothing is ever pushed.
 
 Documents live in the repository (`docs/crew/`). The job state lives outside it,
 in `~/.dsh/crew/jobs/<job>/state.json`, so your `git status` stays clean and a
@@ -128,7 +153,11 @@ prompts stay the real gate.
 dsh plugin --profile tui add dsh-crew     # or --profile web
 ```
 
-Then restart dsh. To check the plugin without dsh:
+Then restart dsh. Starting it writes the `crew` preset into
+`$DSH_HOME/.agent-presets/crew` (a `crew` folder somebody else wrote is left
+alone). Pick the **Crew** preset for a session to get the roles.
+
+To check the plugin without dsh:
 
 ```sh
 npm test        # replays the guard rules and the mount, no dsh needed
@@ -136,7 +165,10 @@ npm test        # replays the guard rules and the mount, no dsh needed
 
 ## Configuration
 
-Everything is optional — see the comments in `cordis.patch.yml`:
+Everything is optional. Settings live in the plane they belong to.
+
+**PM and guard** — the `dsh-crew-core` and `dsh-crew-git-guard` rows in your
+profile's `cordis.patch.yml`:
 
 | Setting | Default | What it does |
 | --- | --- | --- |
@@ -144,14 +176,19 @@ Everything is optional — see the comments in `cordis.patch.yml`:
 | `limits.liveAgents` | `4` | Crew agents awake at the same time |
 | `limits.agentsPerJob` | `20` | Crew agents one job may use |
 | `limits.reviewRounds` | `3` | Review rounds before the PM asks you to decide |
-| `roleModels` | session model | Per-role provider and model |
-| `roleDeny` | see table above | Tools a role may not call (replaces the shipped list) |
+| `installPreset` | `true` | Write the `crew` preset into `$DSH_HOME/.agent-presets` |
+| `enabled` (guard) | `true` | Turn the git guard off — not recommended |
 | `approvalFile` | `~/.dsh/crew/push-ok` | One-shot push approval file |
 
-Role files are plain markdown. Copy one out of `roles/`, edit it, and drop it in
-`~/.dsh/crew/roles/` under the same name. One limit: prompt text may not contain
-`{{` — dsh would try to read it as a variable, and the plugin fails at startup
-with the file name so you know which one to fix.
+**Roles** — the `dsh-crew-roles` row in
+`~/.dsh/.agent-presets/crew/agent.cordis.yml`:
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| `rolesDir` | `~/.dsh/crew/roles` | Same override folder, for the role personas |
+| `roleAllow` | reviewers: `read, glob, grep` | Only these tools for that role; everything else is closed |
+| `roleDeny` | makers: the crew tools | Everything except these for that role |
+| `roleModels` | session model | Per-role provider and model |
 
 ## License
 

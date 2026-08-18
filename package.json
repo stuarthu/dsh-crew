@@ -1,10 +1,18 @@
 {
   "name": "dsh-crew",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "type": "module",
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "desktop": {
+      "presets": [
+        {
+          "id": "crew",
+          "path": "./preset/crew"
+        }
+      ]
     }
   },
   "description": "DeepSeek Harness (dsh) plugin: run work as a small crew of role agents (product manager, engineer, code reviewer) that talk through files on disk, with the PM as the only voice to the user.",
@@ -51,12 +59,14 @@
   },
   "exports": {
     "./host/crew.js": "./host/crew.js",
+    "./host/roles-preset.js": "./host/roles-preset.js",
     "./host/git-guard.js": "./host/git-guard.js",
     "./package.json": "./package.json"
   },
   "files": [
     "host",
     "roles",
+    "preset",
     "cordis.patch.yml",
     "README.md",
     "README.zh.md",

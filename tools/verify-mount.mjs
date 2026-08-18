@@ -36,9 +36,36 @@ if (typeof patch !== "string") fail("package.json is missing dsh.bundle.patch, s
 else if (!existsSync(join(packageRoot, patch))) fail(`dsh.bundle.patch points at "${patch}", which does not exist`);
 else ok(`package.json declares dsh.bundle.patch -> ${patch}`);
 
-for (const shipped of ["host", "roles", "cordis.patch.yml"]) {
+for (const shipped of ["host", "roles", "preset", "cordis.patch.yml"]) {
   if (!manifest.files?.includes(shipped)) fail(`package.json "files" is missing "${shipped}", so it would not be published`);
 }
+
+// ------------------------------------------------------------- crew preset
+
+// The role tools live in this preset, and the preset is what makes their
+// allow/deny names safe: every name is defined in the same file. So the preset
+// must exist, must load the role module, and must NOT re-open another way to
+// start an agent — that would break "only the PM starts agents".
+const presetDir = join(packageRoot, "preset", "crew");
+const presetYaml = join(presetDir, "agent.cordis.yml");
+if (!existsSync(join(presetDir, "preset.yml"))) fail("preset/crew/preset.yml is missing");
+if (!existsSync(presetYaml)) fail("preset/crew/agent.cordis.yml is missing");
+else {
+  const preset = readFileSync(presetYaml, "utf8");
+  if (!preset.includes("dsh-crew/host/roles-preset.js")) fail("the crew preset does not load dsh-crew/host/roles-preset.js, so it would have no role tools");
+  for (const escape of ["toolName: subagent", "dsh-tool-workflow", "dsh-tool-ralph", "provider: codex", "provider: claude-code"]) {
+    if (new RegExp(`^\\s*[^#\\n]*${escape.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "m").test(preset)) {
+      fail(`the crew preset still enables "${escape}" — a role could start its own agent through it`);
+    }
+  }
+  if (!/dsh-tool-subagent-control/.test(preset)) fail("the crew preset lacks the subagent-control tools, so the PM could not message its crew");
+  for (const needed of ["dsh-tool-fs", "dsh-tool-fs-search", "dsh-tool-bash"]) {
+    if (!preset.includes(needed)) fail(`the crew preset lacks ${needed}, which the roles' allow/deny names rely on`);
+  }
+  if (failures === 0) ok("crew preset loads the roles, keeps subagent-control, and re-opens no other way to start an agent");
+}
+
+if (manifest.dsh?.desktop?.presets?.[0]?.path !== "./preset/crew") fail("package.json does not declare the crew preset under dsh.desktop.presets");
 // Every module named by a cordis row must be exported, or dsh cannot resolve it.
 for (const [row, subpath] of [...readFileSync(join(packageRoot, patch ?? "cordis.patch.yml"), "utf8").matchAll(/name:\s*'dsh-crew\/([^']+)'/g)]) {
   if (manifest.exports?.[`./${subpath}`] === undefined) fail(`cordis.patch.yml loads "./${subpath}" but package.json "exports" does not expose it (${row.trim()})`);
@@ -74,16 +101,16 @@ for (const role of ROLES) {
     continue;
   }
 
-  // Every deny-list role must be unable to start further agents: that is what
-  // keeps the crew flat and every member reachable from the PM.
-  for (const required of ["subagent", "subagent_fork", ...toolNames]) {
+  // Every deny-list role must be unable to start another crew role: that is
+  // what keeps the crew flat and every member reachable from the PM.
+  for (const required of toolNames) {
     if (!role.deny.includes(required)) fail(`${role.toolName}: deny list is missing "${required}"`);
   }
-  // A denied name that the agent's preset does not provide makes dsh reject the
-  // child at start, so the shipped list must stay small and predictable. Tools
-  // that ship DISABLED in the stock profiles must not be in it.
-  for (const risky of ["str_replace_editor", "pwsh"]) {
-    if (role.deny.includes(risky)) fail(`${role.toolName}: deny list names "${risky}", which many presets do not provide — every spawn would fail. Leave it to roleDeny.`);
+  // dsh checks a denied name against the PRESET when the child starts, and a
+  // name the crew preset does not define fails every spawn. The crew preset
+  // removes these, so naming them here would be a self-inflicted outage.
+  for (const absent of ["subagent", "subagent_fork", "workflow", "ralph", "str_replace_editor", "pwsh"]) {
+    if (role.deny.includes(absent)) fail(`${role.toolName}: deny list names "${absent}", which the crew preset does not define — every spawn would fail`);
   }
 }
 if (failures === 0) ok("every role is denied all delegation tools (the crew stays flat)");
@@ -102,15 +129,21 @@ if (ROLES.find(role => role.key === "engineer").deny?.includes("bash")) {
 
 // --------------------------------------------------------------- real mount
 
-let crew;
+// Host plane: the PM section. Never installs the preset here — these checks
+// must not write into anyone's harness home.
+const crew = await import("../host/crew.js");
+
+// Agent plane: the role tools. Needs dsh, which a bare npm install cannot
+// provide, so this half is skipped out loud on CI.
+let roles;
 try {
-  crew = await import("../host/crew.js");
+  roles = await import("../host/roles-preset.js");
 } catch (error) {
-  skip(`mount checks: dsh is not reachable from here (${error.code ?? "import failed"})`);
+  skip(`role-tool mount checks: dsh is not reachable from here (${error.code ?? "import failed"})`);
 }
 
 let SubagentConfig;
-if (crew) {
+if (roles) {
   try {
     ({ Config: SubagentConfig } = await import("@deepseek-ai/dsh-tool-subagent"));
   } catch {
@@ -131,10 +164,11 @@ function fakeContext() {
   };
 }
 
-if (crew) {
+{
   const ctx = fakeContext();
-  crew.apply(ctx, {});
+  crew.apply(ctx, { installPreset: false });
 
+  if (ctx.mounts.length !== 0) fail(`the host plugin mounted ${ctx.mounts.length} plugin(s); role tools belong in the preset`);
   if (ctx.sections.length !== 1) fail(`expected 1 prompt section, got ${ctx.sections.length}`);
   else {
     const [section] = ctx.sections;
@@ -144,6 +178,18 @@ if (crew) {
     else if (section.text.includes("{{")) fail("PM section contains {{ }}, which dsh would try to interpolate");
     else ok(`PM prompt section registered (order ${section.order}, ${section.text.length} chars)`);
   }
+
+  try {
+    crew.apply(fakeContext(), { installPreset: false, limits: { liveAgents: 0 } });
+    fail("liveAgents: 0 was accepted; it should throw");
+  } catch (error) {
+    ok(`bad limit rejected at load: ${error.message}`);
+  }
+}
+
+if (roles) {
+  const ctx = fakeContext();
+  roles.apply(ctx, {});
 
   if (ctx.mounts.length !== ROLES.length) fail(`expected ${ROLES.length} role mounts, got ${ctx.mounts.length}`);
   for (const { plugin, config } of ctx.mounts) {
@@ -166,15 +212,8 @@ if (crew) {
     }
   }
 
-  try {
-    crew.apply(fakeContext(), { limits: { liveAgents: 0 } });
-    fail("liveAgents: 0 was accepted; it should throw");
-  } catch (error) {
-    ok(`bad limit rejected at load: ${error.message}`);
-  }
-
   const custom = fakeContext();
-  crew.apply(custom, { roleDeny: { engineer: ["subagent"] } });
+  roles.apply(custom, { roleDeny: { engineer: ["crew_engineer"] } });
   const engineer = custom.mounts.find(mount => mount.config.toolName === "crew_engineer");
   if (engineer?.config.toolFilter?.deny?.length !== 1) fail("roleDeny did not replace the shipped deny list");
   else ok("roleDeny replaces the shipped deny list");

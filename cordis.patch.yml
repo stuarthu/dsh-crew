@@ -1,15 +1,20 @@
-# dsh-crew bundle patch — mounts the two host-side plugins.
+# dsh-crew bundle patch — mounts the two HOST-plane plugins.
 # Applied when this package is listed in a dsh profile's `dsh.profile.bundles`
 # (i.e. after `dsh plugin --profile tui add dsh-crew`).
 #
 # Rows are addressed by id, so your own cordis.patch.yml can override or
 # disable either of them.
 #
-#   dsh-crew-core       the always-on PM prompt section + one delegation tool
-#                       per crew role (crew_engineer, crew_code_reviewer),
-#                       each with a locked persona and tool filter
+#   dsh-crew-core       the always-on PM prompt section, and the installer that
+#                       copies the shipped `crew` agent preset into
+#                       $DSH_HOME/.agent-presets
 #   dsh-crew-git-guard  blocks pushes, tag pushes, force pushes and package
 #                       publishing, whoever asks for them
+#
+# The role TOOLS are not here. They live in the `crew` agent preset
+# (preset/crew/agent.cordis.yml -> dsh-crew/host/roles-preset.js), because a
+# role's allow/deny list is checked against the preset's tool set when a child
+# starts. Configure the roles in that file; configure the PM here.
 - insert:
     - id: dsh-crew-core
       name: 'dsh-crew/host/crew.js'
@@ -24,25 +29,10 @@
       #     agentsPerJob: 20    # crew agents one job may use in total
       #     reviewRounds: 3     # review rounds before the PM asks you to decide
       #
-      #   # Per-role model override. Left out = every role uses the session model.
-      #   roleModels:
-      #     engineer: { provider: '', model: '' }
-      #     code_reviewer: { provider: '', model: '' }
-      #
-      #   # Which tools a role may use. Setting a role in either map REPLACES
-      #   # the shipped list for that role. dsh checks these names against the
-      #   # agent preset when a child STARTS, and one name your preset does not
-      #   # have fails every spawn — so fix a failure here, not in the package.
-      #
-      #   # roleAllow: only these; everything else is closed, including tools
-      #   # installed later. This is how the reviewer stays read-only.
-      #   roleAllow:
-      #     code_reviewer: ['read', 'glob', 'grep']
-      #
-      #   # roleDeny: everything except these. Add any other way your preset
-      #   # offers to start agents, e.g. 'workflow', 'ralph', 'subagent_codex'.
-      #   roleDeny:
-      #     engineer: ['crew_engineer', 'crew_code_reviewer', 'subagent', 'subagent_fork']
+      #   # Set false to stop the plugin writing the `crew` preset into
+      #   # $DSH_HOME/.agent-presets. A preset folder this plugin did not write
+      #   # is never touched, whatever this says.
+      #   installPreset: true
 
     - id: dsh-crew-git-guard
       name: 'dsh-crew/host/git-guard.js'

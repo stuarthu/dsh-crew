@@ -3,12 +3,30 @@
 在 [DeepSeek Harness (dsh)](https://github.com/deepseek-ai/deepseek-harness) 里，
 用一个小团队（多个角色 agent）来完成工作。
 
-你自己的 dsh 会话会变成**产品经理（PM）**。PM 是唯一直接和你对话的角色。它先写清
-楚"什么算做完"，请你确认，然后启动**工程师**写代码、**代码评审**来把关。各角色之
-间不能互相说话——他们通过磁盘上的文件协作，消息由 PM 转达。
+你自己的 dsh 会话会变成**产品经理（PM）**。PM 是唯一直接和你对话的角色。它先写清楚
+"什么算做完"，请你确认，然后启动**架构师**做设计、**工程师**写代码、**评审**来把关。
+各角色之间不能互相说话——他们通过磁盘上的文件协作，消息由 PM 转达。
 
-> **0.1 版本。** 只有 PM、工程师、代码评审。还没有架构师、QA、文档评审、调研、安全
-> 评审。没有 PRD，不推送，不监控 CI。
+> **0.2 版本。** 包含 PM、架构师、工程师、代码评审、文档评审。还没有调研、QA、安全
+> 评审。不推送，不监控 CI。
+
+## 两个平面
+
+dsh 把面向模型的工具放在**agent 预设（preset）**里，而不是 profile 里。dsh-crew 遵循
+这一点，把自己拆成两半：
+
+| 部分 | 放在哪 | 为什么 |
+| --- | --- | --- |
+| PM 规则 | 宿主平面（你的 profile） | 它不需要任何工具，所以在任何预设、任何会话里都生效 |
+| 角色工具 | `crew` agent 预设 | 角色的白/黑名单会在子 agent 启动时按预设的工具集校验，名字必须和预设定义在同一个地方 |
+
+安装插件后，预设会被写入 `$DSH_HOME/.agent-presets/crew`。想用角色，就把会话切到
+**Crew** 预设。在别的预设里，PM 依然是 PM，它会发现自己没有角色工具，并请你选择：
+换到 crew 预设，还是由它自己独立完成。
+
+crew 预设就是 dsh 自带的 `standard` 预设，只改了一处：去掉 `subagent`、
+`subagent_fork`、`workflow`、`ralph` 和产品化子 agent，换成 crew 角色。所以在这个预设
+里，**只有 crew 角色能启动 agent**。
 
 ## 为什么团队是"扁平"的
 
@@ -21,21 +39,21 @@ dsh 对 agent 有三条硬规则，本设计完全按它来：
 | 两个子 agent 之间**完全不能**通信 | 角色之间用文件协作，不用聊天 |
 
 如果由架构师去启动工程师，PM 就完全联系不到工程师了。所以只有 PM 能启动 agent。
-两道独立的保护来保证这一点：每个角色都被禁用了委派类工具；并且每个角色工具都设置
-了 `maxDepth: 1`，所以团队里的子 agent 无法再启动子 agent。
 
 ## "角色"到底是什么
 
-角色不是 PM 临时粘贴的一段提示词，而是基于 `@deepseek-ai/dsh-tool-subagent` 生成
-的真实委派工具：
+角色不是 PM 临时粘贴的一段提示词，而是基于 `@deepseek-ai/dsh-tool-subagent` 生成的
+真实委派工具：
 
 | 角色 | 工具 | 人设文件 | 可用工具 |
 | --- | --- | --- | --- |
-| 工程师 | `crew_engineer` | `roles/engineer.md` | 除委派类工具外**都能用** |
+| 架构师 | `crew_architect` | `roles/architect.md` | 除 crew 工具外**都能用** |
+| 工程师 | `crew_engineer` | `roles/engineer.md` | 除 crew 工具外**都能用** |
 | 代码评审 | `crew_code_reviewer` | `roles/code-reviewer.md` | **只有** `read`、`glob`、`grep` |
+| 文档评审 | `crew_doc_reviewer` | `roles/doc-reviewer.md` | **只有** `read`、`glob`、`grep` |
 
-所以代码评审**无法**修改文件，即使它自己想改也不行。人设会作为那个子 agent 自己的
-系统提示词固定下来。
+所以评审**无法**修改文件，即使它自己想改也不行。人设会作为那个子 agent 自己的系统
+提示词固定下来。
 
 评审改用"白名单"，是两次实测逼出来的：
 
@@ -47,21 +65,21 @@ dsh 对 agent 有三条硬规则，本设计完全按它来：
 黑名单永远列不全"以后才装上的工具"，白名单不需要列。diff 由 PM 贴进评审任务里，
 需要跑的命令也由 PM 代跑。
 
-### 团队对 agent 预设（preset）的要求
+名单之下还有两道保险：
 
-在 dsh 里，面向模型的工具是放在**agent 预设**里的
-（`~/.dsh/.agent-presets/<预设>/agent.cordis.yml`），不在 profile 层——自带 profile
-把工具行全部关掉了。由此有两点：
+- 每个角色工具都设了 **`maxDepth: 1`**——只有根节点的 PM 能启动角色，而且它不依赖
+  任何工具名，改预设也削弱不了它。
+- crew 预设本身去掉了其他所有启动 agent 的方式，角色无法绕过名单从 `workflow`、
+  `ralph` 或裸 `subagent` 走。
 
-- 你的预设必须提供委派工具组（`send_message`、`interrupt_agent`、`list_agents`）。
-  否则 PM 能启动角色，却无法通知它，整个流程跑不起来。
-- 角色禁用列表里的每个名字，都会在**子 agent 启动时**按该预设实际提供的工具校验。
-  预设里没有的名字会让启动失败，报 `tools.restrict() names unknown global tool "x"`。
-  所以自带的禁用列表很短；真正的保证是 `maxDepth: 1`——它不依赖任何工具名。
+### 修改角色
 
-如果你的预设还提供了别的启动 agent 的方式（`workflow`、`ralph`、`subagent_codex`
-等），用 `roleDeny` 把它们加进去。如果启动失败并报上面那个错，就把它抱怨的那个名字
-从 `roleDeny` 里去掉。
+角色人设就是 `roles/` 下的普通 markdown。把文件复制到 `~/.dsh/crew/roles/`，用同名
+即可替换自带版本。唯一限制：提示词里不能出现 `{{`——dsh 会把它当变量解析，插件会在
+启动时直接报错并告诉你是哪个文件。
+
+角色的工具名单和按角色指定模型，配置在角色所在的位置：
+`~/.dsh/.agent-presets/crew/agent.cordis.yml` 里的 `dsh-crew-roles` 那一行。
 
 ## 一次任务怎么跑
 
@@ -69,17 +87,20 @@ dsh 对 agent 有三条硬规则，本设计完全按它来：
    如果规模判断不清，它会问你。
 2. 它会问用哪种语言。它绝不猜。
 3. 它会盘问你——一次一个问题，每个都带推荐答案，并且先在仓库里查清所有能查到的事实。
-4. 它写 `docs/crew/dod.md`：目标、不做什么、验收检查项，以及任务表，每个任务明确
-   拥有哪些文件。**开工前必须你确认。**
-5. 它创建 `crew/<任务名>` 分支，每个任务启动一个 `crew_engineer`。只有当两个任务的
+4. 它决定写哪种文档并写出来：小活写 **DoD**（`docs/crew/dod.md`），真正的产品写
+   **PRD**（`docs/crew/prd.md`）。它会说明选了哪种，一个词就能换。**开工前必须你确认。**
+5. PRD 类任务会启动 `crew_architect`，产出高层设计、决策记录（ADR）和任务拆分；
+   然后必须由 `crew_doc_reviewer` 通过，才允许写第一行代码。
+6. 它创建 `crew/<任务名>` 分支，每个任务启动一个 `crew_engineer`。只有当两个任务的
    文件列表不重叠时，工程师才会同时跑。
-6. 每个完成的任务交给 `crew_code_reviewer`：先看正确性，再看复用，再看能否更简单。
+7. 每个完成的任务交给 `crew_code_reviewer`：先看正确性，再看复用，再看能否更简单。
    第二轮只复查"阻塞项"。超过轮次上限，PM 会把分歧交给你决定。
-7. PM 负责提交——工程师完全不碰 git。只暂存该任务拥有的文件，绝不 `git add -A`。
-8. PM 会把仓库 README 更新到与成果一致。`README.md` 永远是英文；如果这次任务你选了
+8. PM 负责提交——工程师完全不碰 git。只暂存该任务拥有的文件，绝不 `git add -A`。
+9. PM 会把仓库 README 更新到与成果一致。`README.md` 永远是英文；如果这次任务你选了
    别的语言，它会在旁边再维护一个内容相同的文件，例如 `README.zh.md`、
    `README.ja.md`。如果这次改动读者根本看不到，它就不动 README，并在总结里说明。
-9. 永远不推送。
+10. 最后再由 `crew_doc_reviewer` 通读这次产出的所有文档。
+11. 永远不推送。
 
 文档放在仓库里（`docs/crew/`）。任务状态放在仓库外的
 `~/.dsh/crew/jobs/<任务名>/state.json`，这样 `git status` 保持干净，中断后也能续上。
@@ -111,7 +132,10 @@ mkdir -p ~/.dsh/crew && touch ~/.dsh/crew/push-ok
 dsh plugin --profile tui add dsh-crew     # 或 --profile web
 ```
 
-然后重启 dsh。不启动 dsh 也可以自检：
+然后重启 dsh。启动时会把 `crew` 预设写入 `$DSH_HOME/.agent-presets/crew`（如果那里
+已有别人写的 `crew` 文件夹，则原样保留）。要用角色，请把会话切到 **Crew** 预设。
+
+不启动 dsh 也可以自检：
 
 ```sh
 npm test        # 重放 git 保护规则与插件挂载检查，不需要 dsh
@@ -119,7 +143,10 @@ npm test        # 重放 git 保护规则与插件挂载检查，不需要 dsh
 
 ## 配置
 
-全部可选，详见 `cordis.patch.yml` 里的注释：
+全部可选，各自放在所属的平面。
+
+**PM 与 git 保护**——你 profile 的 `cordis.patch.yml` 里 `dsh-crew-core` 和
+`dsh-crew-git-guard` 两行：
 
 | 配置 | 默认值 | 作用 |
 | --- | --- | --- |
@@ -127,13 +154,18 @@ npm test        # 重放 git 保护规则与插件挂载检查，不需要 dsh
 | `limits.liveAgents` | `4` | 同时活跃的团队 agent 数 |
 | `limits.agentsPerJob` | `20` | 单个任务最多用多少个 agent |
 | `limits.reviewRounds` | `3` | 评审轮次上限，超过就交给你决定 |
-| `roleModels` | 会话模型 | 按角色指定 provider 和 model |
-| `roleDeny` | 见上表 | 角色禁用的工具（会替换自带列表） |
+| `installPreset` | `true` | 是否把 `crew` 预设写入 `$DSH_HOME/.agent-presets` |
+| `enabled`（保护） | `true` | 关闭 git 保护——不建议 |
 | `approvalFile` | `~/.dsh/crew/push-ok` | 一次性推送审批文件 |
 
-角色文件就是普通 markdown。把 `roles/` 里的文件复制出来改好，用同名放进
-`~/.dsh/crew/roles/` 即可。唯一限制：提示词里不能出现 `{{`——dsh 会把它当变量解析，
-插件会在启动时直接报错并告诉你是哪个文件。
+**角色**——`~/.dsh/.agent-presets/crew/agent.cordis.yml` 里的 `dsh-crew-roles` 一行：
+
+| 配置 | 默认值 | 作用 |
+| --- | --- | --- |
+| `rolesDir` | `~/.dsh/crew/roles` | 同样的人设覆盖目录 |
+| `roleAllow` | 评审：`read, glob, grep` | 该角色只能用这些，其余一律关闭 |
+| `roleDeny` | 生产角色：crew 工具 | 该角色除这些外都能用 |
+| `roleModels` | 会话模型 | 按角色指定 provider 和 model |
 
 ## 许可
 
