@@ -26,8 +26,17 @@ const ALLOWED = Symbol("allowed");
 const cleanRepo = join(workdir, "clean-repo");
 mkdirSync(cleanRepo, { recursive: true });
 
-/** Run one command through the guard. Returns ALLOWED or the refusal text. */
+/** Run one command through the guard as a CREW ROLE (a child, with a parent). */
 async function run(command, args = {}) {
+  const result = await handler(
+    { name: "bash", arguments: { command, workdir: cleanRepo, ...args }, parent: {} },
+    () => ALLOWED,
+  );
+  return result === ALLOWED ? ALLOWED : result.error.message;
+}
+
+/** Run one command through the guard as the ROOT agent (the PM, no parent). */
+async function runRoot(command, args = {}) {
   const result = await handler(
     { name: "bash", arguments: { command, workdir: cleanRepo, ...args } },
     () => ALLOWED,
@@ -133,6 +142,42 @@ writeFileSync(approvalFile, "");
 const tagPush = await run("git push origin v1.0.0", { workdir: tagPublisher });
 if (tagPush === ALLOWED) { failures += 1; console.error("FAIL  tag push allowed"); }
 else console.log("ok    blocked  tag push, even in a tag-only publishing repo");
+
+// The root agent (the PM, your own session) passes straight through: any git
+// push, tag, force, delete, mirror — and publishing — are all allowed.
+const rootCases = [
+  ["git push", "bare push"],
+  ["git push origin main", "main push"],
+  ["git push origin v1.0.0", "tag push"],
+  ["git push -f origin main", "force push"],
+  ["git push origin --delete crew/x", "remote delete"],
+  ["git push --mirror origin", "mirror push"],
+  ["npm publish", "publishing"],
+  ["gh release create v1.0.0", "release"],
+];
+for (const [command, note] of rootCases) {
+  const result = await runRoot(command);
+  if (result !== ALLOWED) { failures += 1; console.error(`FAIL  ${command}\n      expected allowed for the root agent (${note}), got blocked: ${result}`); }
+  else console.log(`ok    allowed  ${command} (root agent: ${note})`);
+}
+
+// Even the root agent may not write the approval file: only the user's own hand
+// approves a child's push.
+const rootTouch = await runRoot(`touch ${approvalFile}`);
+if (rootTouch === ALLOWED) { failures += 1; console.error("FAIL  root agent was allowed to write the approval file"); }
+else console.log("ok    blocked  root agent writing the approval file");
+
+// `trustRootAgent: false` restores the old behaviour: the root agent is guarded
+// exactly like a child.
+let strictHandler;
+guard.apply({ on: (event, fn) => { if (event === "tools/execute") strictHandler = fn; } }, { approvalFile, trustRootAgent: false });
+const strictRun = async (command) => {
+  const result = await strictHandler({ name: "bash", arguments: { command, workdir: cleanRepo } }, () => ALLOWED);
+  return result === ALLOWED ? ALLOWED : result.error.message;
+};
+const strictMain = await strictRun("git push origin main");
+if (strictMain === ALLOWED) { failures += 1; console.error("FAIL  trustRootAgent:false allowed a root main push"); }
+else console.log("ok    blocked  root main push with trustRootAgent:false");
 
 rmSync(workdir, { recursive: true, force: true });
 

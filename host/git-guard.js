@@ -1,22 +1,24 @@
 // dsh-crew git guard (host side).
 //
 // Blocks the shell commands that can push work off this machine or publish a
-// package, for EVERY agent including your own PM session. It exists because a
-// role rule written in prose is advice, while a `tools/execute` wrapper is the
-// place a call is actually stopped.
+// package. The root agent — your own session, the PM — is trusted and passes
+// straight through; every crew role (a child agent with a parent) stays fully
+// guarded. It exists because a role rule written in prose is advice, while a
+// `tools/execute` wrapper is the place a call is actually stopped.
 //
-// What it always refuses:
+// What it always refuses, from a crew role:
 //   - `git push` of main / master / trunk / develop / HEAD, or with no branch
 //     named (a bare `git push` can push whatever branch is checked out)
 //   - any tag push, delete push, `--mirror`, `--all`, or force push
 //   - `npm|pnpm|yarn|bun publish`, `npm dist-tag`, `gh release create`
 //   - a push into a repo whose CI runs on push and looks like it publishes
+//   - any command that touches the approval file — not even the trusted root
+//     may write it, because only your own hand approves a child's push
 //
-// What it allows once, per approval: a push of any other branch, but only while
-// the one-shot approval file exists. You create that file yourself; the guard
-// deletes it as soon as one push uses it, so one approval means one push. The
-// guard also refuses any command that tries to create the file, so an agent
-// cannot approve itself.
+// What it allows once, per approval: a child's push of any other branch, but
+// only while the one-shot approval file exists. You create that file yourself;
+// the guard deletes it as soon as one push uses it, so one approval means one
+// push.
 //
 // Honest limits: this reads command text. A determined agent could hide a push
 // inside a script file or change the remote first. It is a strong seat belt, not
@@ -183,6 +185,12 @@ export function apply(ctx, config) {
   // approval file in your home folder (see tools/verify-guard.mjs).
   const approvalFile = config?.approvalFile ? expandHome(config.approvalFile) : PUSH_OK_FILE;
 
+  // The root agent (your own session, the PM) has no parent execution token;
+  // every crew role does. When true (the default), its git and publishing
+  // commands pass straight through. Set false to guard the PM exactly like
+  // every child.
+  const trustRootAgent = config?.trustRootAgent !== false;
+
   ctx.on("tools/execute", async (exec, next) => {
     if (!SHELL_TOOLS.has(exec.name)) return next();
     const command = exec.arguments?.command;
@@ -190,10 +198,14 @@ export function apply(ctx, config) {
 
     const tokens = tokensOf(command);
 
-    // An agent must not be able to write its own approval.
+    // No agent — not even the trusted PM — may write the approval file. Only
+    // your own hand creates it, so a child's push still needs you.
     if (command.includes(basename(approvalFile)) || command.includes(approvalFile)) {
       return block(`it touches the push approval file. Only the user creates it.\n${howToApprove(approvalFile)}`);
     }
+
+    // The trusted root agent (your own session) passes straight through.
+    if (trustRootAgent && exec.parent === undefined) return next();
 
     if (/\b(npm|pnpm|yarn|bun)\s+publish\b|\bnpm\s+dist-tag\b|\bgh\s+release\s+create\b/.test(command)) {
       return block("publishing a package or creating a release is the user's decision, never an agent's.");

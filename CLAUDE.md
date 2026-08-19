@@ -121,11 +121,14 @@ options are documented.
 ## The git guard
 
 `host/git-guard.js` is middleware on `tools/execute`. It reads the command text of `bash` and `pwsh`
-calls and refuses pushes of protected branches, bare pushes with no branch, tag pushes, force pushes,
-remote deletes, package publishing, releases, any push into a repo whose CI publishes on a branch
-push, and any command that touches the approval file. Anything else needs the one-shot approval file
-that the **user** creates; the guard deletes it before the push runs, so a crash cannot leave a
-second push approved.
+calls. The **root agent** — your own session, the PM — is trusted and passes straight through (any
+push, tag, force, delete, publish, release). Every **child** (a crew role, which carries a parent
+execution token) is refused: pushes of protected branches, bare pushes with no branch, tag pushes,
+force pushes, remote deletes, package publishing, releases, any push into a repo whose CI publishes
+on a branch push, and any command that touches the approval file. A child's other push needs the
+one-shot approval file that the **user** creates; the guard deletes it before the push runs, so a
+crash cannot leave a second push approved. `trustRootAgent: false` guards the PM exactly like a
+child.
 
 It reads command text, so it is a seat belt, not a locked door — a push hidden in a script file gets
 through. Say so plainly in docs; do not describe it as airtight.

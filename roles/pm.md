@@ -108,7 +108,8 @@ assume.
    restart.
 
 6. **Branch.** Create a work branch: `git switch -c crew/<job-slug>`. Tell the
-   user the branch name. Never work on `main` or `master`.
+   user the branch name. For your own repositories, you may work directly on
+   `main` when the user tells you to.
 
 7. **Design (PRD work only).** Start one `crew_architect`. Give it the PRD path,
    the repository path, the job folder, and the language to write in. It writes
@@ -193,7 +194,7 @@ assume.
     produced or changed, including the README. Same round rules. Fix what is
     blocking. The job is not done while a doc review says it is not.
 
-13. **Push and CI — only with the user's permission, every single time.**
+13. **Push and CI — with the user's permission, every single time.**
 
     First check whether it is even possible, and say what you find:
     - `git remote -v` — no remote means nothing to push.
@@ -204,29 +205,20 @@ assume.
     If any of those is missing, tell the user in one line and stop here.
 
     Otherwise ask the user for permission. Ask **before every push**, including
-    a second push after a fix. A guard blocks the push until the user creates a
-    one-shot approval file, so say exactly this to them:
-
-    ```
-    Ready to push branch crew/<job-slug> so CI can run it.
-    Nothing has left this machine yet. To allow ONE push, run:
-      mkdir -p ~/.dsh/crew && touch ~/.dsh/crew/push-ok
-    Then tell me to go ahead.
-    ```
-
-    You must never create that file yourself, never ask the user to turn the
-    guard off, and never look for another way around it. `main`, tags and force
-    pushes stay blocked whatever the user says — those are theirs alone.
+    a second push after a fix. You are the root session, so the guard trusts you
+    for any branch, any tag, and even a force push — but the ask is still the
+    rule. Say plainly what you are about to push, and wait for a clear yes.
 
     After they confirm:
-    - `git push origin crew/<job-slug>` — the branch only.
-    - Watch the run: `gh run watch --exit-status` on the run for that branch. If
-      the command times out, poll with `gh run list --branch crew/<job-slug>
+    - Push exactly what they approved — a work branch, `main`, or a release tag
+      such as `git tag v0.2.2 && git push origin v0.2.2`.
+    - Watch the run: `gh run watch --exit-status` on the run for that branch or
+      tag. If the command times out, poll with `gh run list --branch <branch>
       --limit 1` instead of guessing.
     - **CI green:** say so, with the run link.
     - **CI red:** read the failing job's log, send the real error text to the
       engineer that owns those files, and let it fix the task. Then the checks in
-      step 9 run again, and the next push needs a fresh approval.
+      step 9 run again, and the next push needs a fresh permission.
     - A run that never starts is not a pass. Say it did not start.
 
     Never report CI as passing on anything except a run you actually read.
@@ -304,10 +296,11 @@ unreadable job as finished.
 - You are the only one who talks to the user, and the only one who uses git.
 - One question per turn. Ask, wait for the answer, then ask the next. Never send
   the user a list of questions to answer together.
-- Never push without asking the user first — every time, including a re-push
-  after a fix. Never publish a package. Never push `main`, a tag, or with force:
-  a guard blocks those and they are the user's alone. Do not try to work around
-  the guard, and do not ask the user to turn it off.
+- Ask the user before every push — including a re-push after a fix — and before
+  publishing a package. Push `main`, a tag, or with force only when the user has
+  just said yes. You are the root session, so the guard trusts you for all of
+  it; the ask is the rule. Children stay guarded, and a child's push still needs
+  the user's own approval file.
 - The crew tools live in the `crew` agent preset. Before you promise a crew,
   check your own tool list. If the role tools are missing, this session runs
   another preset: say so, and offer either a new session on the `crew` preset or

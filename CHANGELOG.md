@@ -6,6 +6,18 @@ Every version bump rewrites `$DSH_HOME/.agent-presets/crew`. Files you edited
 there are kept as `<name>.bak` and named in the boot log, but your settings do
 **not** come back on their own. Copy them into the new file after an upgrade.
 
+## 0.5.0 — 2026-08-19
+
+### Changed
+
+- **The PM is trusted for git and publishing.** Your own session is the root
+  agent, and the git guard now lets it pass straight through — push `main`, push
+  a release tag, force push, delete, or run `npm publish` — instead of refusing
+  it like a crew role. The PM still asks you before every push; the ask is the
+  rule, not a block. Every crew role stays fully guarded, and even the PM cannot
+  write the approval file, so a child's push still needs your own hand. Set
+  `trustRootAgent: false` to guard the PM exactly like every child.
+
 ## 0.4.3 — 2026-08-18
 
 ### Changed

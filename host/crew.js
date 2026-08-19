@@ -195,7 +195,7 @@ function runtimeFactsSection(limits) {
     // This line used to say they did not exist, which was true in 0.3 and became
     // a contradiction in 0.4 — the PM was told to skip a step its own rules told
     // it to run. Anything named here must match roles/pm.md.
-    "Pushing the work branch and watching CI are your own steps, not a role's. Run them yourself, and ask the user before every push.",
+    "Pushing the work branch and watching CI are your own steps, not a role's. Run them yourself, and ask the user before every push. The guard trusts your root session, so you may push any branch or tag once the user says yes; children stay guarded.",
   ].join("\n");
 }
 

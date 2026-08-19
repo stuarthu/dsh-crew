@@ -9,7 +9,7 @@ starts an **architect** to design the work, **engineers** to write the code, and
 **reviewers** to judge both. The roles never talk to each other — they share work
 through files on disk, and the PM passes messages.
 
-> **Version 0.4.3.** PM, researcher, architect, engineer, QA, code reviewer,
+> **Version 0.5.0.** PM, researcher, architect, engineer, QA, code reviewer,
 > security reviewer, doc reviewer — plus pushing with your permission, CI
 > watching, and picking a job up after a crash.
 
@@ -148,9 +148,9 @@ come back by themselves. After an upgrade, copy your changes into the new file.
     wording, but only if it writes the replacement sentence itself.
 11. **Push and CI, if you allow it.** The PM checks there is a remote, a
     workflow and a working `gh` first. Then it asks you — before **every** push,
-    including a re-push after a fix. It pushes only the `crew/*` branch, watches
-    the run, and sends a red CI's real error text back to the engineer that owns
-    those files. `main`, tags and force pushes stay blocked whatever anyone says.
+    including a re-push after a fix. It pushes only what you said yes to — a
+    `crew/*` branch, `main`, or a release tag — watches the run, and sends a red
+    CI's real error text back to the engineer that owns those files.
 
 Documents live in the repository (`docs/crew/`). The job state lives outside it,
 in `~/.dsh/crew/jobs/<job>/state.json`, so your `git status` stays clean.
@@ -175,23 +175,27 @@ than counted as finished. Turn the whole thing off with `resumeNotice: false`.
 
 ## The git guard
 
-`host/git-guard.js` inspects every shell command, from every agent including the
-PM, and refuses:
+`host/git-guard.js` inspects every shell command. Your own session is the root
+agent, and it is trusted: its git and publishing commands pass straight through.
+Every crew role is a child agent, and the guard refuses, from a child:
 
 - `git push` of `main`, `master`, `trunk`, `develop`, `HEAD`, or with no branch
   named;
 - any tag push, remote delete, `--mirror`, `--all`, or force push;
 - `npm`/`pnpm`/`yarn`/`bun publish`, `npm dist-tag`, `gh release create`;
 - a push into a repository whose CI runs on push and looks like it publishes;
-- any command that touches the approval file, so an agent cannot approve itself.
+- any command that touches the approval file — not even the trusted root may
+  write it, so an agent cannot approve itself.
 
-Any other branch push needs a one-shot approval that **you** create:
+A child's other branch push needs a one-shot approval that **you** create:
 
 ```sh
 mkdir -p ~/.dsh/crew && touch ~/.dsh/crew/push-ok
 ```
 
 The guard deletes that file as soon as one push uses it. One approval, one push.
+
+Set `trustRootAgent: false` to guard your own session exactly like every child.
 
 This reads command text, so it is a strong seat belt, not a locked door: a
 command hidden inside a script file could still slip past. Your dsh approval
@@ -230,6 +234,7 @@ profile's `cordis.patch.yml`:
 | `jobsDir` | `~/.dsh/crew/jobs` | Where job state lives, and what the crash notice reads |
 | `resumeNotice` | `true` | Put unfinished jobs in front of the PM at session start |
 | `enabled` (guard) | `true` | Turn the git guard off — not recommended |
+| `trustRootAgent` (guard) | `true` | Trust your own session (the PM) with any git or publish command |
 | `approvalFile` | `~/.dsh/crew/push-ok` | One-shot push approval file |
 
 **Roles** — the `dsh-crew-roles` row in

@@ -46,6 +46,11 @@
       #   # Set false to turn the guard off completely (not recommended).
       #   enabled: true
       #
+      #   # Trust the root agent (your own session, the PM): its git and
+      #   # publishing commands pass straight through. Every crew role stays
+      #   # guarded. Set false to guard the PM exactly like every child.
+      #   trustRootAgent: true
+      #
       #   # One-shot push approval file. YOU create it; the guard deletes it as
       #   # soon as one push uses it. Default: ~/.dsh/crew/push-ok
       #   approvalFile: '~/.dsh/crew/push-ok'
