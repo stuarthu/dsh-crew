@@ -28,9 +28,11 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
   the candidates with a source per claim, what the machine already has, and what
   each one costs, and is **not** allowed to recommend one. The PM then recommends
   one, names the runner-up and why not, and writes a **Language and stack** section
-  into the PRD or DoD: language and version, package manager, framework, database,
-  and the test framework with its exact test command. You confirm it together with
-  the document. After that it moves only through a CRD.
+  into the PRD: language and version, package manager, framework, database,
+  and the test framework with its exact test command. *(Correction, 2026-08-21:
+  this line said "the PRD or DoD". There is no DoD file any more — the section goes
+  into `docs/design/prd.md`, which now opens both lanes.)* You confirm it together
+  with the document. After that it moves only through a CRD.
 - **One test framework for the whole crew.** Engineers write their tests with the
   framework that section names, and QA writes its cases with the same one, so the
   tests cannot split in two on an empty repository.
@@ -161,6 +163,40 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
 
 ### Changed
 
+- **There is no `dod.md` any more. "What done means" is a section, and it lives in
+  your repository.** Both lanes now open with one document, `docs/design/prd.md` —
+  for a small job as much as for a real product, because the weight belongs in the
+  content and not in the file name (a small job's PRD is three paragraphs). Both
+  lanes keep one task table, `docs/design/tasks.md`: one row per task with the
+  files it owns, the test file it must write, and its **DoD section**. Every
+  milestone of a big job carries a DoD section too. A DoD section says what "done"
+  means for that one thing and **how somebody else checks it** — which QA case,
+  which exact command. There is no numbered list of acceptance checks anywhere: a
+  check is "item 2 of T-05's DoD", written next to the work it governs.
+
+  **A bug now becomes a task row, and the PM writes its DoD section before the
+  fix starts** — never the engineer doing the fix. The row also holds what was
+  reported: who saw it, the command, what happened, what they expected. Test first
+  does produce a test, but the person doing the fix writes it, and that is exactly
+  how a fix for a symptom passes: before the work started, nobody else had said
+  what "fixed" means. A one-line typo fix is not this; it stays a well-written
+  commit message.
+
+  **Why this changed, plainly: the job that wrote these rules lost 75 of its own
+  acceptance checks in about an hour, and got 48 of them back.** They lived in a
+  `dod.md` in the job folder, which the rules said to drop at the end of the job,
+  and the closing migration step named five destinations that a DoD item's own
+  wording fits none of. Four change requests were left pointing at check numbers no
+  document defined any more, and 22 pushed commit subjects named a task whose
+  defining document had been deleted. Of the 75, 48 were recovered with their
+  wording, 7 with only a number and a topic, and 20 are gone; 46 of the 48 came out
+  of the header comments QA's own case files happen to write. The recovered table
+  is in this repository at `docs/design/tasks.md`, with every lost item marked as
+  lost. The migration step now has **seven** destinations, the two new ones being a
+  DoD item's own wording and the list of files a task owns, both going to
+  `docs/design/tasks.md`. `principles.md` 20 carries the whole flow in one table
+  and the reasons; `docs/decisions/crd/0010-dod-is-a-section.md` is the change
+  request, corrections included.
 - **No cap any more on how many crew agents one job may use, and 20 awake at
   once instead of 4.** One job used to be limited to 20 agents in total, and only
   4 of them could be awake together. So tasks whose files did not overlap queued
@@ -216,11 +252,12 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
   something was done, `crd/` for change requests), `docs/qa/` (QA's runnable cases
   and its standing list of what no case can check), `docs/research/` (a
   researcher's answers) and `docs/release/` (the
-  release and upgrade plan per shipped milestone). The DoD moved too: it now lives
-  in the job folder beside the state file, at
-  `~/.dsh/crew/jobs/<job-slug>/dod.md`, because it is one job's document and not
-  the project's. Every role writes to the new paths. If you have a job in flight
-  with files under `docs/crew/`, move them to the matching new folder — nothing
+  release and upgrade plan per shipped milestone). *(Correction, 2026-08-21: this
+  entry also said the DoD moved into the job folder as
+  `~/.dsh/crew/jobs/<job-slug>/dod.md`. That was true for a day and it cost 75
+  acceptance checks. There is no `dod.md` at any path now — see the entry at the
+  top of this section.)* Every role writes to the new paths. If you have a job in
+  flight with files under `docs/crew/`, move them to the matching new folder — nothing
   reads the old path any more.
 - **A decision about *how* now gets an ADR, whatever the size of the job.** The
   rule used to depend on who was staffed: PRD work wrote an ADR, and small work
@@ -236,9 +273,10 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
   a pointer at a file that disappears deletes the most valuable part of the record.
 - **What survives a job, and what does not.** Documents are now split by how long
   they live. Single-use documents stay in the job folder outside your repository
-  and go when it goes: the DoD, QA's test plans (`<task-id>-plan.md`), the `Q-`
+  and go when it goes: `state.json`, QA's test plans (`<task-id>-plan.md`), the `Q-`
   question files in `inbox/`, and a test run's output, which is printed and never
-  written to a file. Durable ones are in your repository: the ADRs and CRDs, the
+  written to a file. *(Correction, 2026-08-21: the DoD headed that list. It does
+  not any more, and taking it off is the entry at the top of this section.)* Durable ones are in your repository: the ADRs and CRDs, the
   PRD and design, QA's runnable cases, the release plans, the researcher's
   answers. **Before anything is dropped, the durable half moves out** — a rule the
   crew must keep to `principles.md`, a decision about how to an ADR, a decision

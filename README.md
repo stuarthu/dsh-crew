@@ -136,20 +136,33 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    through a **CRD** — a change request document, explained further down. An
    engineer may pick freely among the libraries the project
    already has; adding a brand-new dependency goes back to the PM.
-5. It picks the document and writes it: a **DoD** (definition of done,
-   `~/.dsh/crew/jobs/<job-slug>/dod.md`) for small work, a **PRD** (product
-   requirements document, `docs/design/prd.md`) for a real product. It says
-   which it picked, and one word switches it. **You confirm before any work
-   starts.**
-   A PRD is cut into **milestones** — three to six stops, each one something you
-   can look at and judge, written in your words rather than in code words. `M1`
-   is the proof of concept: the thinnest real path through the riskiest part,
-   running for real. You confirm the milestone list on its own, because it decides
-   when you get a say.
+5. It writes the opening document. **There is one, and it is always
+   `docs/design/prd.md`** (a PRD, a product requirements document) — for a small
+   job as much as for a real product. The weight is in the content, not in the file
+   name: a small job's PRD is three paragraphs, the goal, what is out of scope, and
+   the Language and stack section. It says how big it judged the job, and one word
+   changes that. **You confirm before any work starts.**
+   A big job's PRD is cut into **milestones** — three to six stops, each one
+   something you can look at and judge, written in your words rather than in code
+   words. `M1` is the proof of concept: the thinnest real path through the riskiest
+   part, running for real. You confirm the milestone list on its own, because it
+   decides when you get a say.
+
+   **"What done means" is a section, never a separate file.** Every milestone
+   carries a **DoD** section (definition of done), and so does every task row in
+   the task table `docs/design/tasks.md`. A DoD section says two things: what
+   "done" means for that one thing, and **how somebody else checks it** — which QA
+   case, and which exact command. Both live in your repository, so what was
+   promised is still readable long after the job is over. There is no `dod.md` any
+   more, and no numbered list of acceptance checks: a check is "item 2 of T-05's
+   DoD", written next to the work it governs.
 6. It turns your job name into a short slug — lowercase letters, digits and `-`,
    nothing else — tells you the slug it picked, and creates a `crew/<job-slug>`
-   branch with it. Then, for PRD work, it starts `crew_architect`, which writes
-   the high level design, the decision records and the task breakdown. It also
+   branch with it. Then, for a big job, it starts `crew_architect`, which writes
+   the high level design, the decision records and the task table
+   `docs/design/tasks.md`, with a DoD section on every row. On a small job there
+   is no architect, so the PM writes that same table itself, in the same place and
+   the same shape — only the typist changes. The architect also
    splits the system into
    modules — reusing what the repository already has before it invents anything
    new — and when two or more modules talk to each other it writes one contract
@@ -209,7 +222,7 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    milestone, go on without shipping, change something, or stop — one question,
    four answers. A change that touches the PRD sends the plan back through the
    architect and the doc reviewer before code starts again. No milestone begins
-   until you have answered the one before it. Small DoD work has no milestones —
+   until you have answered the one before it. A small job has no milestones —
    it is one piece of work with one report at the end.
 11. **A milestone you ship gets two plans, and their shape is looked up, not
    guessed.** These plans are not alike. An npm package cannot un-publish a
@@ -265,7 +278,19 @@ come back by themselves. After an upgrade, copy your changes into the new file.
     protection of its own. With `trustRootAgent: false` that remote delete is
     refused on purpose; the PM then hands you the command to run yourself
     instead of retrying. A work branch that simply stays is a normal ending too.
-16. **Fixing a bug can come back to you as a question, and every choice gets
+16. **A bug becomes a task row, and the PM writes what "fixed" means before
+    anyone fixes it.** A real bug — one you reported, one QA found, one a review
+    found — gets its own row in `docs/design/tasks.md`, written by the PM before
+    any engineer starts. The row holds what was reported (who saw it, the command,
+    what happened, what they expected) and its **DoD section**: the failing case
+    that has to exist and pass, and the behaviour that has to change. The engineer
+    doing the fix never writes that section. Test first does produce a test, but
+    the person doing the fix writes it — and that is exactly how a fix for a
+    symptom passes: nobody else had said what "fixed" means before the work
+    started. A one-line typo fix is not this: that stays a well-written commit
+    message.
+
+    **Then fixing it can come back to you as a question, and every choice gets
     written down.** This can happen at any time inside step 8. An engineer
     fixing a bug — a defect QA found, a blocking review finding, or one it hit
     itself — first finds at least two ways that would really work. If the ways
@@ -291,8 +316,8 @@ come back by themselves. After an upgrade, copy your changes into the new file.
 
     The decision is written down before any code is built, and it holds
     **every** option. It goes in one place, whatever the size of the job: an
-    **ADR** — a decision record in `docs/decisions/adr/`. On PRD work an
-    architect may write it; small work has no architect, so the PM writes it
+    **ADR** — a decision record in `docs/decisions/adr/`. On a big job an
+    architect may write it; a small job has no architect, so the PM writes it
     itself. The ADR holds the cause of the bug, every option with what it costs,
     where it would hurt later and **why it lost**, which one was taken, who
     decided, and the reason. The options section **quotes the engineer's own
@@ -319,7 +344,7 @@ started tomorrow reads what a role started an hour ago read.
 
 On top of that, every **change request** gets its own file. If anyone — you, a
 role, or the PM itself — asks for something that changes what you get (the scope,
-an acceptance check, the milestone list) or how two modules talk (a boundary
+a DoD item, the milestone list) or how two modules talk (a boundary
 contract), the PM writes `docs/decisions/crd/NNNN-<short-name>.md` first: who asked,
 what they want, why, which documents and tasks it touches, what it costs, and the
 decision with its reason. Nothing is built from an undecided one, and a rejected
@@ -330,7 +355,7 @@ Who decides which:
 - **A contract fix that changes nothing you see** is the PM's call. It writes the
   CRD, sends the architect to change the contract file, and tells you at the next
   milestone review.
-- **Anything that changes scope, an acceptance check or the milestone list needs
+- **Anything that changes scope, a DoD item or the milestone list needs
   your yes.** The PM writes the CRD, then stops and asks. No version is raised and
   no task starts until you answer.
 
@@ -347,25 +372,32 @@ had an architect. Small work has no architect, so the PM writes the ADR itself.
 
 **Where a document lives depends on how long it lives.** What outlives the job is
 in your repository, under `docs/`, and each folder name says what it holds: the
-PRD and the design in `docs/design/` (with one contract file per module boundary
-in `docs/design/api/`), the decision records and the change requests in
+PRD, the task table and the design in `docs/design/` (with one contract file per
+module boundary in `docs/design/api/`) — and with them every DoD section, so what
+"done" meant is still readable next year; the decision records and the change
+requests in
 `docs/decisions/` (`adr/` and `crd/`), QA's runnable cases and its standing list
 of what no test can check in `docs/qa/`, the release and upgrade plans for each milestone you ship in
 `docs/release/`, and the researcher's answers in `docs/research/`.
 
 What belongs to this one job is outside the repository, in
 `~/.dsh/crew/jobs/<job-slug>/`, so your `git status` stays clean: the job state
-(`state.json`), the DoD (`dod.md`), QA's test plans, and the `Q-` question files a
+(`state.json`), QA's test plans, and the `Q-` question files a
 role leaves for the PM. That whole folder is dropped when the job ends, and a test
-run's output was never a file at all.
+run's output was never a file at all. What "done" means is deliberately **not** in
+there any more: it is a DoD section inside `docs/design/prd.md` or
+`docs/design/tasks.md`, in your repository, because a file of its own is a file
+that gets dropped.
 
 **Before anything is dropped, the durable half moves out.** This is a real step at
 the end of a job, and it happens after the PM's closing summary to you — not the
-moment the acceptance checks turn green, because the thinking usually carries on
+moment the DoD items turn green, because the thinking usually carries on
 past that point. A rule the crew must keep next time goes into `principles.md`, a
 decision about how into an ADR, a decision about what or a contract into a CRD,
-this change's reasons and its real test numbers into the commit message, and QA's
-"what I could not test here, and why" into `docs/qa/gaps.md`. "Not needed any
+this change's reasons and its real test numbers into the commit message, QA's
+"what I could not test here, and why" into `docs/qa/gaps.md`, and — the two the
+crew learned the hard way — a DoD item's own wording and the list of files a task
+owns into `docs/design/tasks.md`. "Not needed any
 more" has to be earned. It is the same reason an ADR copies the engineer's options
 in instead of pointing at the file they came from.
 

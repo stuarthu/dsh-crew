@@ -10,7 +10,9 @@ was paying for.
 Who "the user" means in this file: whoever installed the plugin and is running
 the session. Not the person who wrote the plugin.
 
-Short names used below: **PRD** (product requirements document), **DoD** (definition of done),
+Short names used below: **PRD** (product requirements document, the file
+`docs/design/prd.md`, which opens both lanes), **DoD** (definition of done — always
+a **section** of another document, never a file of its own; see principle 20),
 **HLD** (high level design, the file `docs/design/hld.md`), **ADR** (architecture decision record),
 **CRD** (change request document), **QA** (the role that tests the result).
 
@@ -142,7 +144,9 @@ The milestone goals are the PM's and the user confirms them. The architect may
 not add, rename or reorder them. If one cannot be built as written, the architect
 says so, and the PM takes it back to the user.
 
-**Lives in** `roles/pm.md` (steps 4, 5, 8, 9, 12), `roles/architect.md`,
+**Lives in** `roles/pm.md` (step 4 **Write the opening document**, step 5
+**Confirm**, step 8 **Design**, step 9 **Run the tasks**, step 12 **Milestone
+review**), `roles/architect.md`,
 `roles/doc-reviewer.md`, `host/jobs.js` (a restart says which milestone).
 
 **Source.** [The 2020 Scrum Guide](https://scrumguides.org/scrum-guide.html)
@@ -193,7 +197,8 @@ item).
 ## 8. The stack is settled once and confirmed, then shape and library split
 
 **Rule.** Before anything is designed, the **PM** settles the language and stack
-and the **user confirms it**, as a *Language and stack* section in the PRD or DoD:
+and the **user confirms it**, as a *Language and stack* section in
+`docs/design/prd.md`, the opening document of both lanes:
 language and version, package manager, framework, database, and the test framework
 with its exact test command. If the repository already has a stack, that is the
 stack — no options, no research, just state it and confirm. Only when the choice is
@@ -221,13 +226,13 @@ cases in the same framework, so a disagreement splits the tests too. It is also
 the decision a user most wants a say in, and the PM is the only role that talks to
 them.
 
-**Why the PM and not the architect.** Small DoD work has no architect at all, and
+**Why the PM and not the architect.** Small work has no architect at all, and
 the design itself depends on the stack, so it must be settled before the architect
 starts. Facts still come from a researcher — it lists candidates with costs and
 sources and is forbidden to recommend one — so "the PM decides" does not mean the
 PM guesses.
 
-**Lives in** `roles/pm.md` (step 3), `roles/researcher.md`,
+**Lives in** `roles/pm.md` (step 3 **Language and stack**), `roles/researcher.md`,
 `roles/architect.md`, `roles/engineer.md`, `roles/qa.md`,
 `roles/doc-reviewer.md` (a named library in a contract is a finding).
 
@@ -322,7 +327,7 @@ of them — including cases written for tasks that finished long ago — on ever
 task it checks, and an old case that now fails is a blocking regression.
 
 **QA's test plan is not one of those files.** The plan is single-use: it exists to
-turn acceptance checks into cases, and once the cases are written the cases carry
+turn the task's DoD items into cases, and once the cases are written the cases carry
 the same information in a runnable form. So the plan is written to
 `<job folder>/<task-id>-plan.md`, outside the repository, and it goes when the job
 folder goes (principle 19). One part of it is durable and must not go with it:
@@ -369,7 +374,8 @@ runner can check", not "everything".
 
 **Lives in** `roles/qa.md`, `roles/engineer.md` ("Your test is a file that
 stays"), `roles/architect.md` (the test-file column in a task row),
-`roles/pm.md` (steps 4, 10c, 11, 12, 18), `docs/qa/gaps.md` (which states its own
+`roles/pm.md` (step 4 **Write the opening document**, step 10c **QA**, step 11
+**Commit**, step 12 **Milestone review**, step 18 **Finish**), `docs/qa/gaps.md` (which states its own
 rules at the top), `package.json` (`scripts.test`),
 `.github/workflows/test.yml`.
 
@@ -382,14 +388,14 @@ rules at the top), `package.json` (`scripts.test`),
 **Rule.** Nothing that matters lives only in a message. A child's `report` points
 at the file it wrote; the PM's answer points at the document it changed and that
 document's new version. And any request that would change **what the user gets**
-(scope, an acceptance check, the milestone list) or **how two modules talk** (a
+(scope, a DoD item, the milestone list) or **how two modules talk** (a
 boundary contract) becomes a change request document — `docs/decisions/crd/NNNN-<short-name>.md` —
 written by the PM before anything moves, whoever asked: the user, a role, or the
 PM itself. A CRD is never deleted, and a rejected one stays.
 
 Who decides: a contract fix that changes nothing the user sees is the PM's call,
-reported at the next milestone review. Anything touching scope, an acceptance
-check or the milestone list needs the user's yes first.
+reported at the next milestone review. Anything touching scope, a DoD item or the
+milestone list needs the user's yes first.
 
 **Why (ours).** The crew is flat, so a message reaches exactly one role and dies
 there (principle 1). Two engineers building two sides of a boundary cannot
@@ -412,8 +418,10 @@ a CRD.
 
 **The channel is not the archive.** Being the only channel does not make a
 document permanent. Some of the documents the crew talks through are single-use
-and live in the job folder — the DoD, QA's test plans, the `Q-` files in
-`<job folder>/inbox/` — and they are dropped with the job (principle 19). So the
+and live in the job folder — QA's test plans, the `Q-` files in
+`<job folder>/inbox/`, `state.json` itself — and they are dropped with the job
+(principle 19). A DoD is no longer one of them: it is a section of a document that
+stays in the repository, and principle 20 says what it cost to learn that. So the
 rule has a second half. Anything that may not live only in a message may not live
 only in a document that is about to be thrown away either — the reason is the
 same one, that it has to be readable by somebody who is not here yet. A decision about **how** goes in an
@@ -465,7 +473,8 @@ fiction, and fiction that a reader may mistake for a decision. The gap list give
 the same early warning at a fraction of the cost, and turns into the real plan
 when shipping starts.
 
-**Lives in** `roles/pm.md` (steps 12 and 13), `roles/researcher.md`.
+**Lives in** `roles/pm.md` (step 12 **Milestone review** and step 13 **Release and
+upgrade plans**), `roles/researcher.md`.
 
 ---
 
@@ -527,7 +536,8 @@ and a warning that always fires teaches the user to say yes without reading it.
 **Why the slug inside those commands has a fixed shape (ours).** The job slug is
 not only a label. It is pasted into a file path
 (`~/.dsh/crew/jobs/<job-slug>/state.json`) and into almost every git command of
-steps 7 and 17. A slug holding `..` writes outside the jobs folder. A slug holding
+step 7 **Branch** and step 17 **Merge and clean up**. A slug holding `..` writes
+outside the jobs folder. A slug holding
 a space or a `;` turns one command into two. And the session that runs those
 commands is the PM's own — the root agent, the one the git guard trusts and lets
 straight through. Two security reviews of the merge step landed on the same hole:
@@ -547,7 +557,8 @@ is still where it was — and this step forbids both `--force` and
 proof in the same turn as the yes is the honest limit of this design, not a
 guarantee. Say it that way; do not call it airtight.
 
-**Lives in** `roles/pm.md` (steps 6, 7, 17 and 18), `tools/verify-mount.mjs`.
+**Lives in** `roles/pm.md` (step 6 **Job folder**, step 7 **Branch**, step 17
+**Merge and clean up**, step 18 **Finish**), `tools/verify-mount.mjs`.
 
 ---
 
@@ -569,14 +580,14 @@ or compatibility changes. When it stops it uses the channel that already exists
 works on another task it was given, if it can finish that one alone. The PM
 decides by the same line a CRD uses: a difference the user can see goes to the
 user; a difference that stays inside the code is the PM's own call, named at the
-next milestone review — or, in small DoD work that has no milestone review, in
+next milestone review — or, in small work that has no milestone review, in
 the PM's finish summary; a way that would change a boundary contract gets a CRD.
 
 Every such decision is written into a document before the engineer starts again,
 and holds the same five things: the cause, **every** option with its cost and
 **why it lost**, which one was chosen, who chose it, and the reason. It goes in an
 ADR at `docs/decisions/adr/NNNN-<short-name>.md`, whatever the size of the job.
-PRD work may have a fresh architect write it; small DoD work has no architect, so
+Big work may have a fresh architect write it; small work has no architect, so
 the PM writes it itself, in the same shape. And every ADR — bug fix
 or not — lists every option with its cost and why it lost, **marks** the one it
 recommends with a one sentence reason, and
@@ -635,7 +646,8 @@ PM asks about those on the spot and does not wait for the review.
 
 **Lives in** `roles/engineer.md` ("When you fix a bug: find at least two ways
 first"), `roles/architect.md` (**Your outputs**, decision records),
-`roles/doc-reviewer.md` (check 7), `roles/pm.md` (steps 10 and 12).
+`roles/doc-reviewer.md` (check 7), `roles/pm.md` (step 10 **Check the finished
+task** and step 12 **Milestone review**).
 
 ---
 
@@ -647,7 +659,8 @@ only for a real dependency: the two tasks share a file, or the later one has to
 read what the earlier one wrote. Nothing else counts. One agent that would cover
 several tasks is a signal to **split** the work, not to bundle it. Agent count
 is never a reason to serialize — if a live-agent limit really is in the way, the
-PM stops and asks the user. The three checks of step 10 — code review, security
+PM stops and asks the user. The three checks of step 10 **Check the finished
+task** — code review, security
 review, QA — also start together by default; running them in a fixed order is a
 named exception the PM picks out loud for a risky change.
 
@@ -689,7 +702,8 @@ test — no test can tell a half-written file from a broken one. And the run tha
 counts is still the PM's own, on a still tree, after every parallel task has
 landed. An engineer's or QA's green is evidence, not the verdict.
 
-**Lives in** `roles/pm.md` (steps 9 and 10), `roles/engineer.md` ("A false red is
+**Lives in** `roles/pm.md` (step 9 **Run the tasks** and step 10 **Check the
+finished task**), `roles/engineer.md` ("A false red is
 not evidence").
 
 ---
@@ -701,29 +715,37 @@ outlive the job?**
 
 - **Durable, in the repository.** An ADR in `docs/decisions/adr/` for a decision
   about **how**; a CRD in `docs/decisions/crd/` for a decision about **what**, the
-  scope or a contract; the PRD, the design and the boundary contracts in
+  scope or a contract; the opening document `docs/design/prd.md`, the task table
+  `docs/design/tasks.md`, the design and the boundary contracts, all in
   `docs/design/`; QA's runnable cases and `gaps.md`, its standing list of what no
   case can check, in `docs/qa/`; a
   researcher's answers in `docs/research/`; the release and upgrade plans in
-  `docs/release/`; a rule the crew must keep, here in `principles.md`.
+  `docs/release/`; a rule the crew must keep, here in `principles.md`. **Every DoD
+  section rides in one of those two `docs/design/` files** — that is principle 20,
+  and it is the correction this principle needed most.
 - **Single-use, in the job folder** (`~/.dsh/crew/jobs/<job-slug>/`, outside the
-  repository, beside `state.json`): the **DoD**, because the acceptance checks it
-  lists become history the moment they are all true; **QA's test plans**
-  (`<task-id>-plan.md`), because the cases carry the same information in a runnable
-  form as soon as they are written; the **`Q-` files** in `inbox/`; and the
-  **output of a test run**, which was never on disk and now may not be.
+  repository): **`state.json`**, which is progress and nothing else; **QA's test
+  plans** (`<task-id>-plan.md`), because the cases carry the same information in a
+  runnable form as soon as they are written; the **`Q-` files** in `inbox/`; and the
+  **output of a test run**, which was never on disk and now may not be. A **DoD**
+  used to head this list, and taking it off cost 75 acceptance checks (principle
+  20).
 - **Neither the size of the job nor who was in the room decides anything.** An
   ADR is written for a one-file bug fix as readily as for a milestone, and small
   work — which has no architect — has the PM write it.
 - **Dropping a single-use document requires moving its durable half out first**,
-  and only after the PM has given the user the final summary. A rule goes to
-  `principles.md`, a decision about how to an ADR, a decision about what to a CRD,
-  this change's reasons and its real test numbers to the commit message, and QA's
-  "what I could not test here, and why" to `docs/qa/gaps.md`.
+  and only after the PM has given the user the final summary. There are **seven**
+  destinations, not five: a rule goes to `principles.md`, a decision about how to
+  an ADR, a decision about what to a CRD, this change's reasons and its real test
+  numbers to the commit message, QA's "what I could not test here, and why" to
+  `docs/qa/gaps.md`, **a DoD item's own wording** to `docs/design/tasks.md`, and
+  **which files a task owns** to `docs/design/tasks.md`. The last two were added
+  after each of them nearly leaked a second time; principle 20 has the count and
+  the reason.
 
 **Why not by who was in the room (ours).** The old rule sent a decision to an ADR
 when there was an architect and to a **Decisions** section of the DoD when there
-was not. So where a reader had to look depended on who happened to be staffed on
+was not — back when a DoD was still a file of its own. So where a reader had to look depended on who happened to be staffed on
 the job, which tells them nothing about the decision. An ADR does not need an
 architect to exist; it needs a decision to exist.
 
@@ -738,10 +760,13 @@ CRDs (`0001`–`0009`), every one a real change to what was already agreed, and 
 one decided by the user. Had small work's CRD folder been taken over by design
 decisions, two completely different kinds of file would be lying in one folder.
 
-**Why the record outlives the negotiation.** A DoD is job progress wearing a
-document's clothes: `state.json` already lives outside the repository so the
-user's `git status` stays clean, and the DoD is the same kind of thing. But what
-gets *written inside* a single-use document usually is not single-use. That is the
+**Why the record outlives the negotiation.** `state.json` is job progress wearing
+a document's clothes: it lives outside the repository so the user's `git status`
+stays clean, and it holds nothing a later reader needs. That reading was extended
+to the DoD, and that was the mistake — principle 20 records what it cost, and the
+DoD is now a section of a file that stays. The reasoning itself still holds, and
+it is the more important half: what gets *written inside* a single-use document
+usually is not single-use. That is the
 asymmetry the split has to respect, and it is where this rule earns its keep: the
 `Q-` file that an ADR quotes is dropped with the job, so an ADR must copy the
 options in and may never point at the file; and the `Q-` files of this crew's own
@@ -751,20 +776,189 @@ nothing in the rules asked it to. Now something does.
 **Why "not needed any more" has to be earned.** The cheap reading of "single-use"
 is "delete it and move on", and that quietly means "lost". The migration step is
 what makes the word honest. It also runs late on purpose: not when the acceptance
-checks all turn green, but after the PM's final summary. This job's own DoD had
-every check green at version 19 and then carried five more rounds of decisions, up
-to version 26.
+checks all turn green, but after the PM's final summary. This job's own DoD — a
+file of its own at the time — had every check green at version 19 and then carried
+five more rounds of decisions, up to version 26.
 
 **The known cost.** Every job now ends with a step that produces files somebody
 has to read — and a PM in a hurry can do it badly, which is worse than not having
 the step, because the folder is gone afterwards either way. The doc reviewer's last
-pass (step 15) and the PM's final summary are where that shows up.
+pass (step 15, **Last doc review**) and the PM's final summary are where that shows
+up. It has already been paid once: see principle 20.
 
-**Lives in** `roles/pm.md` (steps 4, 10c, 11, 18, and the hard rules),
-`roles/qa.md` (the plan's home, and step 6), `roles/engineer.md`,
+**Lives in** `roles/pm.md` (step 4 **Write the opening document**, step 10c **QA**,
+step 11 **Commit**, step 18 **Finish**, and the hard rules),
+`roles/qa.md` (the plan's home, and its step 6 **Feed the standing gap list**),
+`roles/engineer.md`,
 `roles/architect.md`, `roles/doc-reviewer.md`, `docs/qa/gaps.md`,
 `docs/decisions/crd/0006-split-by-lifetime.md` (the change request that settled
-it).
+it) and `docs/decisions/crd/0010-dod-is-a-section.md` (the one that took the DoD
+off the single-use list).
+
+---
+
+## 20. Every change leaves a record in the repository, and one table holds the whole flow
+
+**Rule (ours).** Any change, requirement or decision — big or small — has to leave
+a record that **survives the job**. Surviving has exactly one meaning here: **the
+record is in the repository.** The job folder is not a record. It is progress, and
+it is dropped when the job ends.
+
+So `DoD` is the name of a **section**, never the name of a file. There is no
+`dod.md`, in any folder, including `docs/design/`. Both lanes open with the same
+document, `docs/design/prd.md`, and both keep one task table,
+`docs/design/tasks.md`. Every milestone carries a DoD section (big work) and every
+task row carries one (both lanes), and a DoD section says two things at least:
+what "done" means for that one thing, and **how somebody else checks it** — which
+QA case under `docs/qa/<task-id>/`, and which exact command. A check is an item
+inside one of those sections, named that way ("item 2 of T-05's DoD"). There is no
+globally numbered list of checks anywhere.
+
+**The flow is one table.** The workflow (which step, who does it) and the document
+flow (what that step produces, where it lives, whether it survives) are columns of
+the same table, never two tables. The `Lane` column says which of the three lanes
+the row belongs to — `big`, `small`, `bug` — so each lane is covered without
+repeating a row that all three share.
+
+| Lane | Step, by name | Who does it | What it produces | Where that lives | Survives the job? |
+| --- | --- | --- | --- | --- | --- |
+| all | Step 1 of the lane rules, **Pick a lane** | PM | one line naming the lane (`[lane: team]`) | the reply to the user | No — and nothing needs it. Only the `team` lane runs the steps below |
+| team | Step 1, **Language** | PM asks, user answers | the language every crew document is written in | the documents themselves; `state.json` names it | The documents, yes. `state.json`, no |
+| team | Step 2, **Grill** | PM asks, user answers | settled answers, one question per turn | nothing of its own — they become the content of step 4, **Write the opening document** | No. Step 4 is where they land |
+| team | Step 3, **Language and stack** | PM decides, user confirms; a `crew_researcher` when the choice is real | the **Language and stack** section: language and version, package manager, framework, database, test framework with its exact command. Plus the researcher's answer, with a source per claim | the section in `docs/design/prd.md`; the answer in `docs/research/<short-name>.md` | Yes, both |
+| team | Step 4, **Write the opening document** | PM | `docs/design/prd.md`. Small work: goal, out of scope, Language and stack. Big work: the same file with the problem, the users, success, risks, open questions and the **milestones, each with a DoD section** | `docs/design/prd.md` | Yes |
+| small, bug | Step 4, **Write the task table** | PM, because small work has no architect | `docs/design/tasks.md`: one row per task with an id, one sentence of work, the exact files it owns, the test file it must write, and its **DoD section** | `docs/design/tasks.md` | Yes |
+| bug | **A bug becomes a task row** — before any engineer starts | PM, never the engineer that will do the fix | one row: **what was reported** (who reported it, the command, the input, what happened, what was expected) and its **DoD section** (the failing case that must exist and pass, and the behaviour that must change) | `docs/design/tasks.md` | Yes |
+| team | Step 5, **Confirm** | PM asks, user answers | the user's yes on the document, on the stack, and — big work — on the milestone list on its own | no file; the confirmed document is the record | No, and the document carries it |
+| team | Step 6, **Job folder** | PM | `state.json`: tasks, milestones, document versions, the CRD list, the merge result | `~/.dsh/crew/jobs/<job-slug>/state.json` | **No, on purpose.** It is progress, not a record, and it stays out of the user's `git status` |
+| team | Step 7, **Branch** | PM | the work branch `crew/<job-slug>` | git | The branch is deleted in step 17, **Merge and clean up**. Its commits stay on `main`, so the work survives |
+| big | Step 8, **Design** | `crew_architect` | `docs/design/hld.md`; `docs/design/tasks.md` with a **DoD section on every row**; one contract per boundary; an ADR per open choice, with every option and why it lost | `docs/design/`, `docs/design/api/<caller>-<callee>.md`, `docs/decisions/adr/` | Yes |
+| big | Step 8, **Doc review before any code** | `crew_doc_reviewer` | findings, each blocking or optional — including "this row has no DoD section" | its report to the PM; the fix lands in the document | The report, no. The corrected documents, yes |
+| team | Step 9, **Run the tasks** | PM starts one `crew_engineer` per task | the code and its test file, both named in the task row, with the failing run shown before the passing one | the project's own source and test folders | Yes |
+| team | Step 9 or 10, **a question the files cannot answer** | engineer, QA or architect | `inbox/Q-<number>.md`: the cause, every way found, the files each one changes, its cost, and the way it recommends | `<job folder>/inbox/` | **No** — which is why the ADR below **quotes** it word for word and may never point at it |
+| team | Step 10a, **Code review** | `crew_code_reviewer` | findings with file and line, each blocking or optional | report to the PM; fixes land in the code | The report, no. The code, yes |
+| team | Step 10b, **Security review** | `crew_security_reviewer`, when the change earns one | findings, or the PM's stated reason it was skipped | report to the PM; the skip reason goes into step 12 **Milestone review** or step 18 **Finish** | The report, no. The reason, yes, in the summary |
+| team | Step 10c, **QA** | `crew_qa` | the test plan, written from the document before it reads the code; then runnable cases, a `run.sh` per task and `docs/qa/run-all.sh`; then what no case can check | plan in `<job folder>/<task-id>-plan.md`; cases in `docs/qa/<task-id>/`, with any helper they share in `docs/qa/lib/`; gaps in `docs/qa/gaps.md` | Plan, no — the cases say the same thing in a form that runs. Cases and gaps, yes |
+| team | Step 10, **two ways to fix — the PM decides** | PM; the user when they can see the difference | an ADR: the cause, **every** option with its cost and why it lost, the choice, who decided, and the reason | `docs/decisions/adr/NNNN-<short-name>.md` | Yes |
+| team | Any step, **a change to scope, a DoD item, the milestone list or a contract** | PM, whoever asked | a CRD — and the DoD items it adds are written into the task row or the milestone it changes, with a note in the CRD of where they went and how many | `docs/decisions/crd/NNNN-<short-name>.md`, plus `docs/design/tasks.md` or `docs/design/prd.md` | Yes |
+| team | Step 11, **Commit** | PM, the only one who uses git | the commit: the task's files, QA's cases, its `gaps.md` entries, any ADR or CRD — and the message, which carries this change's reasons and its real test numbers | git history | Yes |
+| big | Step 12, **Milestone review** | PM reports, user answers | what works now, how to try it, what is missing, the real test numbers, every CRD and every ADR of that milestone, one line each | the reply to the user; whatever the user decides becomes a CRD | The report, no. Its decisions, yes |
+| big | Step 13, **Release and upgrade plans**, for a milestone that really ships | PM plus a `crew_researcher`, with a source and a date per claim | `<milestone>-release.md` and `<milestone>-upgrade.md`; or, when nothing ships, a gap list naming what is still missing | `docs/release/` | The plans, yes. The gap list travels in the review and is carried forward by hand |
+| team | Step 14, **README** | PM | `README.md` in English, plus `README-<lang>.md` when the job's language is not English | the repository root | Yes |
+| team | Step 15, **Last doc review** | `crew_doc_reviewer` | findings on every document this job produced or changed, the README included | report to the PM; fixes land in the documents | The report, no. The documents, yes |
+| team | Step 16, **Push and CI** | PM, with the user's yes every single time | the pushed commits, and `merge.publishCheck` — the CI files that were read and whether this push would publish | the remote; `state.json` | The commits, yes. `publishCheck`, no, and it is re-read after a restart |
+| team | Step 17, **Merge and clean up** | PM, three separate yeses | the merge commit on `main`, never squashed, so every task's commit and its test-first proof stay readable; then the deleted branch | git history | Yes |
+| team | Step 18, **Finish**, and the migration inside it | PM | every DoD section re-read and confirmed item by item, the real numbers from both test commands, the closing summary — and then the durable half moved out of everything about to be dropped, to **seven** destinations | a rule to `principles.md`; a decision about how to `docs/decisions/adr/`; a decision about what, the scope or a contract to `docs/decisions/crd/`; the reasons and the test numbers to the commit message; what no case can check to `docs/qa/gaps.md`; **a DoD item's own wording to `docs/design/tasks.md`**; **which files a task owns to `docs/design/tasks.md`** | Everything it moves, yes. The job folder goes, and a test run's output was never a file at all |
+
+**The matching rule, and it is meant to be checked.** Every step that produces a
+document appears in that table, and every crew document in the repository has a
+step in that table that produces it. Run it in both directions. A surplus on the
+step side means a step writes something nobody can find; a surplus on the document
+side means a file exists that no rule asked for. Either way the rules and the
+repository have come apart, and the table is the thing to fix first.
+
+Run on this repository, it already finds one: **`CHANGELOG.md` exists and no step
+produces it.** Step 13 writes "the release notes a user will read" into a release
+plan, and a changelog is where those notes actually live in a package like this
+one, but no step says so, and a changelog is written per change rather than once
+per release. That is a real hole, written down here rather than left to be
+discovered — which is the whole point of running the rule in the second
+direction.
+
+**Why (ours): 75 acceptance checks were lost in an hour.** The closing migration
+step named five destinations — a rule to `principles.md`, a decision about how to
+an ADR, a decision about what to a CRD, this change's reasons and test numbers to
+the commit message, a testability gap to `docs/qa/gaps.md`. **A DoD item's own
+wording is none of those five.** It is not a rule, not a how-decision, not a
+scope decision, not a test number, not a gap. So when this crew's own job folder
+was dropped, all 75 of its acceptance checks went with it — they fell between all
+five destinations at once. Four change requests still pointed at check numbers that
+no document defined any more (CRD `0001`'s 18-21, `0002`'s 44-46, `0005`'s 33,
+`0006`'s 67), and 22 pushed commit subjects named a task whose defining document
+had been deleted.
+
+**The recovery, measured.** Digging the checks back out of the repository got
+**48 of 75 back with their wording**, **7 back with only a number and a topic**,
+and **20 lost outright**. 46 of those 48 came from one place nobody had planned as
+an archive: the header comment each of the 42 QA cases writes about which check it
+covers. The lesson is not "we were lucky". It is that the only parts that survived
+were the parts that had been written into the repository for another reason.
+
+**Why the root cause was an asymmetry, not a location.** Big work's opening
+document lived in `docs/design/` and survived every job. Small work's opening
+document lived in the job folder and was destroyed by design. The two are the same
+position in the flow, played by the same role, and the destroyed one was the one
+that carried the acceptance checks. Moving a file would have fixed one case; giving
+both lanes the same document, in the repository, fixes the class.
+
+**Why the DoD is not folded into a CRD.** That was the first shape proposed, and it
+is wrong for a reason worth keeping: a CRD is the record of one decision at one
+moment and must never be rewritten, while a DoD is a living document — this job's
+went through 26 versions. One file cannot be both an immutable record and a living
+document. The answer was not a different file, it was **no file**: what "done" means
+grows inside the thing it belongs to.
+
+**Why the flat numbered list of checks is gone.** A global number points into a
+table that nobody keeps in step with the work. Three of this job's own checks
+failed *as checks* for exactly that reason: check 11 contradicted checks 48-52
+(it forbade touching anything under `host/` except the guard, while a later task
+had to change `host/crew.js`), check 67 was too literal to pass on correct code,
+and check 70 pointed at a folder that no longer existed once the documents moved. A check that sits
+next to the task it governs is read by the person doing that task, so it gets
+fixed instead of rotting.
+
+**Why a bug's DoD section is written by the PM, before the fix.** Test-first does
+produce a test — but the person doing the fix writes it. That is precisely how a
+fix for a symptom passes: the engineer writes a test for the behaviour it decided
+to fix, and before it started, nobody else had said what "fixed" means. Two people,
+two moments: the PM says what fixed means, then the engineer proves it. This is the
+`team` lane only. A `quick` fix — a typo, a one-line change — stays a well-written
+commit message, or the rule reads as "every typo needs a document" and nobody
+follows it at all.
+
+**Why one file name for both lanes.** It removes a name instead of adding one. The
+weight belongs in the content, not in the file name: a small job's
+`docs/design/prd.md` is three paragraphs, and that is correct rather than lazy. Two
+names for the same position in the flow is what produced the asymmetry above.
+
+**Why one table and not two.** Two descriptions of one thing drift apart, and this
+repository has been bitten by that three times: the README against the code,
+`CLAUDE.md` against the folder layout, and step 17's own sentence against what the
+git guard really covers. A workflow table beside a document table is the same
+entrance, left open on purpose. One table can still be wrong, but it cannot
+disagree with itself.
+
+**Why a step is named and not only numbered.** Principle 13's pointer once read
+"step 17" and meant Finish. Then the merge step took 17, Finish became 18, and the
+pointer was stale the moment the new step landed. A pointer that reads "step 18,
+Finish" still finds its target after the numbers move, and a reader can see when
+the two halves disagree.
+
+**An honest limit: the migration step now has seven destinations, and it still
+runs on trust.** The two new ones exist because two more things nearly leaked a
+second time, in the very job that was cleaning up after the first leak. A DoD
+item's wording: check 67's text survived only inside
+`<job folder>/inbox/Q-19.md`, a file the rules mark for deletion, and it was
+copied into `docs/design/tasks.md` by hand. Which files a task owns: that list
+survived only because one QA case happened to hardcode it into an assertion. Both
+were coincidences. Seven destinations is a longer list than five, not a proof that
+the list is complete — the next thing to leak will be the next thing nobody thought
+to name. And the step is still done by a PM in a hurry, after the folder's contents
+are the only copy. The matching rule above is the cheapest defence there is: if a
+document exists that no step produces, or a step produces something no destination
+holds, that is the leak, before it happens.
+
+**Lives in** `roles/pm.md` (**A bug becomes a task row, and you write its DoD
+section first**, step 4 **Write the opening document**, step 8 **Design**, step 9
+**Run the tasks**, step 10c **QA**, step 18 **Finish**, and the hard rules),
+`roles/architect.md` (**Task breakdown**), `roles/engineer.md` (what to read
+first, and the bug-fix section), `roles/qa.md` (the plan starts from the task's
+DoD section), `roles/doc-reviewer.md` (check 1),
+`docs/design/tasks.md` (this job's own rebuilt table, with every recovered check
+and every lost one marked as lost),
+`docs/decisions/crd/0010-dod-is-a-section.md` (the change request that settled it,
+with its own corrections at the end), `CLAUDE.md` (**State and documents**), both
+READMEs.
 
 ---
 
@@ -782,7 +976,7 @@ it).
 | QA cases as plain shell scripts, one exit code each | Portable and needs no framework. Rejected: a shell can only test what a shell can reach, so a library's return value or a browser app has to be squeezed through a command, and the assertions end up weaker than the ones the project already has. The project's own framework is used instead, with the runner-cannot-see-the-folder problem handled by asking the PM. |
 | A CRD for every request, question and review finding | A complete audit trail, and nothing lost. Rejected: most of those are answered from the files in one turn, and the PM would spend the job writing records instead of deciding. Scope and contract changes are the ones that cost real work, so those are the ones that get a file. |
 | The PM deciding scope changes on its own, and telling the user later | Faster, and the CRD folder would still hold the history. Rejected: it defeats the milestone stop (principle 5). The whole reason milestones exist is that the user judges direction while changing it is cheap. |
-| The architect chooses the stack | It is the most technical decision in the job, so this looked right. Rejected: small DoD work has no architect, the design already depends on the stack, and the user has to approve it — and only the PM talks to the user. The architect designs inside the stack instead, and must say so if the stack cannot carry the design. |
+| The architect chooses the stack | It is the most technical decision in the job, so this looked right. Rejected: small work has no architect, the design already depends on the stack, and the user has to approve it — and only the PM talks to the user. The architect designs inside the stack instead, and must say so if the stack cannot carry the design. |
 | Each engineer picks its own libraries in a new repository | This is what the old principle 8 implied. Rejected once the crew met an empty repository: roles cannot talk, so two engineers pick two languages and two test frameworks and nobody notices until the halves are joined. QA's cases would split the same way. |
 | The researcher recommends a stack | It has the sources in front of it. Rejected: a researcher that recommends is deciding, and its findings are then read as a verdict nobody approved. It lists candidates and costs; the PM decides and the user confirms. |
 | A full release and upgrade plan at every milestone | The user asked for exactly this first, then chose the narrower rule with the cost in front of them. A plan for a milestone nobody ships is written from guesses, and a reader cannot tell a guessed plan from an agreed one. The gap list carries the warning instead. |
@@ -792,10 +986,13 @@ it).
 | The user merges the branch by hand, and the PM only cleans up afterwards | Rejected: the PM is the only one who uses git, and it is the one that knows which tasks are committed and whether CI is green. Handing the merge back splits that knowledge, and the clean-up would then be proved against work the PM never did. |
 | Refusing a push of `main` that would start a publishing workflow | Considered, and the user chose the loud warning instead, with the cost in front of them. A refusal in the user's own session is a rule they would route around, and the guard already refuses the same push from every child. |
 | Closing the gap between the last proof and the remote delete with a leased delete | It would make the delete safe against a commit that arrives while the user is thinking. Rejected: it is the `--force-with-lease` shape, and this step forbids every force form — that ban is what has kept a wrong push from happening. Re-running the proof in the same turn narrows the window, and the limit is written down instead of hidden. |
-| Checking the job slug's shape in the git guard instead of the prompt | Rejected: the slug is not input arriving from outside, it is a value the PM invents in step 6. The middleware reads command text and would only see the damage after the fact, while the guard trusts the root session anyway. The place to make a value safe is where it is made. |
+| Checking the job slug's shape in the git guard instead of the prompt | Rejected: the slug is not input arriving from outside, it is a value the PM invents in step 6, **Job folder**. The middleware reads command text and would only see the damage after the fact, while the guard trusts the root session anyway. The place to make a value safe is where it is made. |
 | The team writes its own Definition of Done (Scrum) | Ours is written by the PM and confirmed by the user. There is no self-organising team here to agree on anything, and the user is the only one who can say what "done" is worth. |
-| A new document type, `docs/decisions/fix/<task-id>.md`, for bug-fix choices | Rejected: an ADR is already the file that records one open choice, so a second type would give the same thing two homes and split the place a reader has to look. Small DoD work writes an ADR too (principle 19), so there is no size of job left for a second folder to serve. |
-| Sending a small job's decision to a **Decisions** section of the DoD | This was the rule for one day, and principle 19 replaced it. Rejected: it made the home of a decision depend on whether the job had an architect, and the DoD is single-use — the decision would have been dropped with the job folder. |
+| A new document type, `docs/decisions/fix/<task-id>.md`, for bug-fix choices | Rejected: an ADR is already the file that records one open choice, so a second type would give the same thing two homes and split the place a reader has to look. Small work writes an ADR too (principle 19), so there is no size of job left for a second folder to serve. |
+| Sending a small job's decision to a **Decisions** section of the DoD | This was the rule for one day, and principle 19 replaced it. Rejected: it made the home of a decision depend on whether the job had an architect, and the DoD was then a file of its own, single-use — the decision would have been dropped with the job folder. Principle 20 has since removed that file altogether. |
+| Folding the DoD into a CRD, as a section of it | The user's first shape, and it keeps every check in the repository. Rejected after the PM pushed back, and the user then tightened it further himself: a CRD is the record of one decision at one moment and must never be rewritten, while a DoD is a living document — this job's went through 26 versions. One file cannot be both. What replaced it is not another file but **no file**: the DoD grows inside the thing it belongs to. |
+| Keeping a `dod.md`, but moving it into `docs/design/` so it survives | The one-line fix, and it would have saved this job's 75 checks. Rejected: it fixes one case and leaves the class. Two names for the same position in the flow is what produced the asymmetry in the first place — big work opened with a PRD, small work with a DoD — so the shape that holds is one opening document for both lanes, with the checks living in the task or milestone they belong to. |
+| A global, numbered list of acceptance checks | It reads well in a review and gives every check a short name. Rejected on this crew's own evidence: three of its 75 checks failed *as checks* because they sat far from the work they governed (11 contradicted 48-52, 67 was too literal, 70 pointed at a renamed folder), and four CRDs still point at numbers no document defines. A check now lives in the DoD section of its task or milestone and is named that way. |
 | Every ADR stops and waits for the user to pick | Rejected: one design often holds several ADRs, so the job would stop once per ADR and the user would be interrupted with choices about the inside of the code. The architect marks a recommendation and the design keeps moving; the user sees every option at the milestone review and may overturn one. Options the user can see are still asked on the spot. |
 
 ---

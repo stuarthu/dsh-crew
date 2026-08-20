@@ -161,33 +161,51 @@ Note that this repository's own `.github/workflows/publish.yml` is tag-triggered
 | File | What it is |
 | --- | --- |
 | `state.json` | job progress: tasks, milestones, versions, the merge result |
-| `dod.md` | the DoD for small work — its acceptance checks are history once they are all true |
 | `<task-id>-plan.md` | QA's test plan, written before it reads the code; the cases replace it |
 | `inbox/Q-<number>.md` | a role's question to the PM, and the ways an engineer found for a fix |
 | — | the output of a test run: it goes to stdout and is never written to a file |
+
+There is **no `dod.md`** in that table, and there is none anywhere else either. `DoD` is the name of
+a section, never of a file (`principles.md` 20, `docs/decisions/crd/0010-dod-is-a-section.md`). A
+file of its own is a file that gets dropped: this crew lost 75 of its own acceptance checks that way
+in one hour, and recovered 48 of them.
 
 **Durable — inside the repository**, under `docs/`, and every folder name says **what the thing
 is**, never who made it:
 
 | Folder | What it holds |
 | --- | --- |
-| `docs/design/` | `prd.md`, `hld.md`, `tasks.md`, and one module boundary contract per pair of modules that talk (`docs/design/api/<caller>-<callee>.md`) |
+| `docs/design/` | `prd.md` — the opening document of **both** lanes, holding a **DoD section** per milestone on big work; `tasks.md` — the one task table of both lanes, holding a **DoD section** per task row; `hld.md`; and one module boundary contract per pair of modules that talk (`docs/design/api/<caller>-<callee>.md`) |
 | `docs/decisions/` | `adr/NNNN-<short-name>.md` (how it was done, whatever the size of the job) and `crd/NNNN-<short-name>.md` (one change request per scope-or-contract change) |
 | `docs/qa/` | QA's **runnable** cases — `<task-id>/case-*`, a `run.sh` per task and one `docs/qa/run-all.sh` that finds them all — plus `gaps.md`, the standing list of what no case can check |
 | `docs/release/` | a release and an upgrade plan for each milestone the user ships: `<milestone>-release.md` and `<milestone>-upgrade.md` |
 | `docs/research/` | one answer per question the PM sent to a researcher: `<short-name>.md` |
 
-Only `docs/decisions/` and `docs/qa/` exist in this repository today. The other three appear the
-first time a job writes into them.
+Today this repository has `docs/decisions/`, `docs/qa/`, and `docs/design/tasks.md` — the task table
+of the `pm-merge-step` job, rebuilt after the fact so its checks stop being lost work. There is no
+`prd.md`, no `hld.md`, no `docs/design/api/`, no `docs/release/` and no `docs/research/` yet: no job
+has written one. That is correct, not missing.
 
-Six rules there are load-bearing, and `principles.md` 8, 13, 14, 15 and 19 carry the reasons:
+Seven rules there are load-bearing, and `principles.md` 8, 13, 14, 15, 19 and 20 carry the reasons:
 
+- **`DoD` is a section, never a file, and the checks live next to the work they govern.** Both lanes
+  open with `docs/design/prd.md` and keep one task table at `docs/design/tasks.md`. Every milestone
+  (big work) and every task row (both lanes) carries a DoD section saying what "done" means and
+  **how somebody else checks it** — the QA case and the exact command. There is no globally numbered
+  list of acceptance checks anywhere: a check is "item 2 of T-05's DoD". A bug in the `team` lane
+  becomes a task row whose DoD section the **PM** writes before the fix starts, never the engineer
+  doing the fix. `principles.md` 20 carries the reasons and the measured cost.
 - **Dropping a single-use document requires moving its durable half out first**, and only after
-  the PM's final summary — not when the acceptance checks turn green. A rule goes to
+  the PM's final summary — not when the acceptance checks turn green. There are **seven**
+  destinations, not five: a rule goes to
   `principles.md`, a decision about **how** to an ADR, a decision about **what** or a contract to
-  a CRD, this change's reasons and its real test numbers to the commit message, and QA's "what I
-  could not test here, and why" to `docs/qa/gaps.md`. "Not needed any more" has to be earned; skip
-  the move and it quietly means "lost". The same reason makes an ADR **quote** the engineer's `Q-`
+  a CRD, this change's reasons and its real test numbers to the commit message, QA's "what I
+  could not test here, and why" to `docs/qa/gaps.md`, **a DoD item's own wording** to
+  `docs/design/tasks.md`, and **which files a task owns** to `docs/design/tasks.md`. The last two
+  were added because each of them nearly leaked a second time in the job that was cleaning up after
+  the first leak: check 67's wording lived only in a `Q-` file marked for deletion, and the file list
+  survived only because a QA case happened to hardcode it. "Not needed any more" has to be earned;
+  skip the move and it quietly means "lost". The same reason makes an ADR **quote** the engineer's `Q-`
   file word for word: an ADR that says "options: see Q-03" points at a file that is about to
   disappear.
 - **Every decision about how gets an ADR, whatever the size of the job**, and the test is one
@@ -205,7 +223,7 @@ Six rules there are load-bearing, and `principles.md` 8, 13, 14, 15 and 19 carry
   then changes only through a CRD.** An existing repository's stack is detected, not
   chosen. A real choice goes through a researcher that lists options and may not
   recommend one. `principles.md` 8 carries the reasons, including why the
-  architect does *not* own this: small DoD work has no architect, the design depends
+  architect does *not* own this: small work has no architect, the design depends
   on the stack, and only the PM talks to the user.
 - **A shipped milestone's release and upgrade plans are researched, not written
   from memory** (`principles.md` 15). The plans differ by project type — a
