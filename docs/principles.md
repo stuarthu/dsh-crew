@@ -590,6 +590,55 @@ first"), `roles/architect.md` (**Your outputs**, decision records),
 
 ---
 
+## 18. Agents run in parallel by default, and serializing needs a real reason
+
+**Rule (ours).** Every task that can start now starts now, in one message. Two
+tasks run together when their file lists do not overlap. The crew serializes
+only for a real dependency: the two tasks share a file, or the later one has to
+read what the earlier one wrote. Nothing else counts. One agent that would cover
+several tasks is a signal to **split** the work, not to bundle it. Agent count
+is never a reason to serialize — if a live-agent limit really is in the way, the
+PM stops and asks the user. The three checks of step 10 — code review, security
+review, QA — also start together by default; running them in a fixed order is a
+named exception the PM picks out loud for a risky change.
+
+**Why the wording had to change (ours).** The old rule was a permission:
+engineers *may* run at the same time when their files do not overlap. A
+permission carries a default, and that default was one at a time. This job is
+the evidence. Four tasks' worth of QA went into a single agent to save agent
+count, and it took about four times as long as four agents would have. The user
+asked why it was so slow. Agent count is easy to count, so it is easy to feel
+good about saving it; the time the user waits is the resource that actually
+costs, and it shows up in no report at all. A rule that only permits parallel
+work loses that trade every time, so the default was moved.
+
+**Why the fixed order stayed, as an exception.** Step 10's old reason is still
+true for a risky change: each check should read code that has stopped moving,
+because a blocking review finding changes the code and throws that round of QA
+away. What was wrong is that this reason was doing two jobs at once — a good
+reason for some changes, and a silent default for all of them. Now it is only
+the first, and the PM has to name which of the two it picked, and why.
+
+**An honest limit: no shared file does not mean no collision.** The test asks
+about overlapping **writes** — two tasks may not own the same file. But every
+engineer is also asked to prove its work by running the project's own suite, and
+that suite reads *everyone's* files. So three tasks with no file in common can
+still collide through their own verification. It happened twice in this job.
+`roles/pm.md` and `tools/verify-mount.mjs` were being rewritten by one task
+while another task's QA cases read them, and `docs/crew/qa/run-all.sh` gave
+three different answers in three minutes. The danger is not that a bad change
+gets in; nothing landed that should not have. The danger is a **false red**,
+which can send an engineer to fix something that was never broken, and a **false
+green**, which hides a real failure behind a half-written file. The rule as
+written does not cover this, and pretending it does would be worse than saying
+so. What the crew does about it today is small and manual: the run that counts
+is the PM's own, on a still tree, after every parallel task has landed. An
+engineer's or QA's green is evidence, not the verdict.
+
+**Lives in** `roles/pm.md` (steps 9 and 10).
+
+---
+
 ## What we looked at and did not take
 
 | Idea | Why not |
