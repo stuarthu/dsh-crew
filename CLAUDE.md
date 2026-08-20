@@ -142,7 +142,9 @@ Job state lives **outside** the repository, in `~/.dsh/crew/jobs/<job>/state.jso
 `git status` stays clean. Crew documents live **inside** it, in `docs/crew/`: DoD, PRD, design,
 ADRs, one module boundary contract per pair of modules that talk
 (`docs/crew/api/<caller>-<callee>.md`), one change request per scope-or-contract change
-(`docs/crew/crd/NNNN-<short-name>.md`), and QA's plan plus its **runnable** cases
+(`docs/crew/crd/NNNN-<short-name>.md`), a release and an upgrade plan for each
+milestone the user ships (`docs/crew/release/<milestone>-release.md` and
+`-upgrade.md`), and QA's plan plus its **runnable** cases
 (`docs/crew/qa/<task-id>-plan.md`, `docs/crew/qa/<task-id>/case-*`, a `run.sh` per task and one
 `docs/crew/qa/run-all.sh` that finds them all).
 
@@ -157,6 +159,12 @@ Two rules there are load-bearing, and `docs/principles.md` 13 and 14 carry the r
   recommend one. `docs/principles.md` 8 carries the reasons, including why the
   architect does *not* own this: small DoD work has no architect, the design depends
   on the stack, and only the PM talks to the user.
+- **A shipped milestone's release and upgrade plans are researched, not written
+  from memory** (`docs/principles.md` 15). The plans differ by project type — a
+  published npm version cannot be pulled back, a store app waits for review, a
+  service redeploys to roll back — so the PM asks a researcher for the shape, with
+  a source and a date per claim. A milestone that is not shipping gets a gap list,
+  not a plan. Approving a plan is never approving a push.
 - **A CRD is written by the PM for scope or contract changes only**, whoever asked. Scope needs the
   user's yes; a contract fix the user cannot see is the PM's call, reported at the milestone review.
   Questions, review findings and internal design changes are deliberately *not* CRDs — widening

@@ -136,7 +136,7 @@ assume.
    the documents. Never guess it. The crew documents (the DoD, review reports)
    follow their answer. Code, comments, commit messages, CI files, crew state
    files and the main `README.md` stay in English — the README gets a second
-   file in the user's language instead (see step 13).
+   file in the user's language instead (see step 14).
 
 2. **Grill.** Ask sharp questions about the request — **one question per turn**,
    each with your recommended answer. Wait for the answer before asking the
@@ -396,10 +396,15 @@ assume.
     - **Changes decided** — every CRD since the last review, one line each: who
       asked, what it was, accepted or rejected. Contract fixes you decided alone
       belong here; this is where the user sees them.
+    - **Shipping** — either the two plans, or the honest gap list. See step 13.
     - **Next** — the goal of the next milestone, in one line.
 
-    Then ask one question: go on, change something, or stop. Wait for the answer.
+    Then ask **one** question, with these four answers: ship this milestone, go on
+    without shipping, change something, or stop. Wait for the answer. One question,
+    four doors — never two questions in a row.
 
+    - **Ship this milestone** — do step 13, then come back here and treat it as
+      `go on`.
     - **Go on** — mark the milestone `done` in `state.json` and start the next
       one at step 9.
     - **Change something** — if the change touches the PRD, update the PRD, raise
@@ -414,7 +419,67 @@ assume.
     Never start the next milestone because the user said something that sounded
     positive. Only a clear yes moves the job on.
 
-13. **README.** The repository README is your output too. Check it against what
+13. **Release and upgrade plans — for a milestone that really ships.** A plan is
+    only worth writing when it will be used, so this step has two shapes.
+
+    **The milestone is not shipping.** Write no plan. In the review, give one
+    honest paragraph instead: that it is not shipping, and the list of what is
+    still missing before it could — the version scheme, the release notes, an
+    untested rollback, a missing token or account, a migration nobody has written.
+    Carry that list forward and shorten it as milestones pass. It is the first
+    draft of the real plan, and it stops the first release being a surprise.
+
+    **The milestone is shipping.** First find out what these plans look like *for
+    this kind of project*, because they are not alike: an npm package, a web
+    service, a mobile app in a store, a CLI tool, a container image, a library
+    with an API, a database with a schema — each one has its own steps, its own
+    version rules and its own way to go back. Do not write one from memory.
+
+    - Start a `crew_researcher`. Give it the project type from the **Language and
+      stack** section and ask what a release plan and an upgrade plan normally
+      contain for it, with a source per claim, and what usually goes wrong.
+    - Read what this repository already does first: `.github/workflows/`, a
+      `CHANGELOG.md`, existing tags (`git tag`), the manifest's version field, any
+      release script. What this project already does beats what is normal.
+    - Ask the researcher to run nothing — it has no shell. You run the checks:
+      `git tag`, `gh auth status`, whether a registry account or token exists.
+
+    Then write two files, in the user's language, and put them in the commit:
+
+    **`docs/crew/release/<milestone>-release.md`** — how this reaches users:
+    - what is being released, and the version number, with the rule you used to
+      pick it;
+    - the release notes a user will read: what is new, what changed, what broke;
+    - the exact steps in order, with the real commands, and who has to approve
+      each one;
+    - what must be true before you start (tests green, CI green, a clean branch,
+      a token that exists);
+    - how you check afterwards that it really worked;
+    - how to undo it, and how long that takes. If it cannot be undone, say that in
+      those words;
+    - what you could not check, and who has to.
+
+    **`docs/crew/release/<milestone>-upgrade.md`** — how someone already using the
+    old version moves up:
+    - who is upgrading and from which versions;
+    - every breaking change, and the exact thing the user must do about it;
+    - data, schema or config migration: the steps, in order, and whether they can
+      be run twice safely;
+    - what happens to someone who skips a version;
+    - how to go back after upgrading, and what data would be lost;
+    - how long it takes and whether anything is offline while it runs;
+    - if nothing breaks and nothing must be migrated, say exactly that in one
+      line — a short honest plan is a good plan.
+
+    Show both to the user and get a clear yes before anything is pushed or
+    published. The plan does not give you permission: every push and every publish
+    still needs its own yes in step 16, every time.
+
+    A `quick` job or DoD work has no milestones, so it has no plan step. If such a
+    job changes what a user installs or runs, say so in your final summary and ask
+    whether they want a release plan before you push anything.
+
+14. **README.** The repository README is your output too. Check it against what
     the crew just built.
     - `README.md` is always the main one and is always in **English**, whatever
       language you are speaking with the user.
@@ -433,11 +498,11 @@ assume.
     - If the repository has no README at all, write one: what this is, how to
       install it, how to use it, and how to run its tests.
 
-14. **Last doc review.** Start a `crew_doc_reviewer` on every document this job
+15. **Last doc review.** Start a `crew_doc_reviewer` on every document this job
     produced or changed, including the README. Same round rules. Fix what is
     blocking. The job is not done while a doc review says it is not.
 
-15. **Push and CI — with the user's permission, every single time.**
+16. **Push and CI — with the user's permission, every single time.**
 
     First check whether it is even possible, and say what you find:
     - `git remote -v` — no remote means nothing to push.
@@ -466,7 +531,7 @@ assume.
 
     Never report CI as passing on anything except a run you actually read.
 
-16. **Finish.** Re-read the acceptance checks and confirm each one against the
+17. **Finish.** Re-read the acceptance checks and confirm each one against the
     real result. Run the test command once more, and
     `bash docs/crew/qa/run-all.sh` once more, and give the real numbers of both. Then give the user a short
     summary: what was built, which files changed, test result, the branch name,

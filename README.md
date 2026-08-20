@@ -182,24 +182,44 @@ come back by themselves. After an upgrade, copy your changes into the new file.
 10. **Milestone review — the PM stops and asks you.** When every task in the
    milestone has passed those checks and is committed, the PM reports what works
    now, the exact commands to try it yourself, what is deliberately not there
-   yet, and the test results. Then you say: go on, change something, or stop.
-   A change that touches the PRD sends the plan back through the architect and
-   the doc reviewer before code starts again. No milestone begins until you have
-   answered the one before it. Small DoD work has no milestones — it is one
-   piece of work with one report at the end.
-11. The PM updates the repository README to match what was built. `README.md` is
+   yet, the test results, and where shipping stands. Then you say: ship this
+   milestone, go on without shipping, change something, or stop — one question,
+   four doors. A change that touches the PRD sends the plan back through the
+   architect and the doc reviewer before code starts again. No milestone begins
+   until you have answered the one before it. Small DoD work has no milestones —
+   it is one piece of work with one report at the end.
+11. **A milestone you ship gets a release plan and an upgrade plan, and their
+   shape is looked up, not guessed.** These plans are not alike: an npm package
+   cannot un-publish a version, a mobile app waits for a store review, a web
+   service rolls back by redeploying, a database schema needs a migration that is
+   safe to run twice. So the PM starts a `crew_researcher` for what those two plans
+   contain **for your project type**, with a source and a date per claim, and reads
+   what your repository already does first — the workflows, the changelog, the
+   tags, any release script. Then it writes
+   `docs/crew/release/<milestone>-release.md` (version and the rule behind it, the
+   release notes, the exact steps and who approves each, what must be true before
+   you start, how you check it worked, how to undo it — or the plain words that it
+   cannot be undone) and `docs/crew/release/<milestone>-upgrade.md` (who is
+   upgrading from what, every breaking change and what the user must do, migration
+   steps and whether they are safe to run twice, skipping a version, going back and
+   what data is lost, how long it takes, what goes offline). A milestone you are
+   **not** shipping gets no plan — it gets one honest paragraph naming what is
+   still missing before it could ship, and that list shortens as milestones pass.
+   Approving a plan is not approving a push: every push and publish still needs its
+   own yes, every time.
+12. The PM updates the repository README to match what was built. `README.md` is
    always English. If you chose another language for the job, it keeps a second
    file beside it — `README-zh.md`, `README-ja.md` — saying the same thing. If
    nothing a reader would notice changed, it leaves the README alone and tells
    you so.
-12. A last `crew_doc_reviewer` pass over every document the job produced, the
+13. A last `crew_doc_reviewer` pass over every document the job produced, the
     README included. It checks that the documents can be worked from, that they
     stay consistent (one name per idea, one shape, and the language files saying
     the same thing), and that they read easily for someone about 14 years old
     whose first language is not English — by counting things like sentence
     length, idioms and unexplained terms, not by taste. It may hold up the job on
     wording, but only if it writes the replacement sentence itself.
-13. **Push and CI, if you allow it.** The PM checks there is a remote, a
+14. **Push and CI, if you allow it.** The PM checks there is a remote, a
     workflow and a working `gh` first. Then it asks you — before **every** push,
     including a re-push after a fix. It pushes only what you said yes to — a
     `crew/*` branch, `main`, or a release tag — watches the run, and sends a red
@@ -235,7 +255,8 @@ Small questions do not become CRDs — a role's question that the files can answ
 is just a note in the job folder, and a review finding about code is a review
 finding. Only scope and contracts, the two things that cost real work to redo.
 
-Documents live in the repository, under `docs/crew/`: the PRD or DoD, the design
+Documents live in the repository, under `docs/crew/`: the release and upgrade
+plans for each milestone you ship (in `release/`), the PRD or DoD, the design
 and its decision records, one contract file per module boundary in `api/`, the
 change requests in `crd/`, and QA's plans and runnable cases in `qa/`. The job
 state lives outside it, in `~/.dsh/crew/jobs/<job>/state.json`, so your

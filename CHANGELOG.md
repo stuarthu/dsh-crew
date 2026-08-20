@@ -37,6 +37,30 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
   the libraries the project already has, but a brand-new package comes back to the
   PM, which says yes or no and writes it into the stack section. Engineers may not
   edit the manifest or the lock file to slip one in.
+- **A release plan and an upgrade plan for every milestone you ship.** At the
+  milestone review the PM now asks one question with four answers: ship this
+  milestone, go on without shipping, change something, or stop. If you ship, it
+  writes `docs/crew/release/<milestone>-release.md` (the version and the rule
+  behind it, the release notes, the exact steps and who approves each one, what
+  must be true before starting, how it is checked afterwards, and how to undo it —
+  or the plain words that it cannot be undone) and
+  `docs/crew/release/<milestone>-upgrade.md` (who upgrades from what, every
+  breaking change and what the user must do, migration steps and whether they are
+  safe to run twice, skipping a version, going back and what data is lost, how
+  long it takes, what goes offline).
+- **The shape of those plans is looked up, not guessed.** They differ a lot by
+  project type — a published npm version cannot be pulled back, a mobile app waits
+  for a store review, a web service rolls back by redeploying, a database schema
+  needs a migration that is safe to run twice. So the PM starts a
+  `crew_researcher` for what the two plans contain for *your* project type, with a
+  source and a date per claim, and reads what your repository already does first:
+  the workflows, the changelog, the tags, any release script.
+- **A milestone you are not shipping gets no plan** — it gets one honest paragraph
+  naming what is still missing before it could ship (a version scheme, release
+  notes, an untested rollback, a missing token, an unwritten migration). That list
+  shortens as milestones pass, so the first real release is not a surprise.
+  Approving a plan is not approving a push: every push and publish still needs its
+  own yes.
 - **Change request documents (CRDs).** When anyone — you, a crew role, or the PM
   itself — asks for something that changes what you get (the scope, an acceptance
   check, the milestone list) or how two modules talk (a boundary contract), the PM

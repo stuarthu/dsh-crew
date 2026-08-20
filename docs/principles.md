@@ -332,7 +332,7 @@ runnable. QA never edits project config, and never moves its files to dodge the
 problem.
 
 **Lives in** `roles/qa.md`, `roles/engineer.md` ("Your test is a file that
-stays"), `roles/pm.md` (steps 4, 10c, 11, 12, 16).
+stays"), `roles/pm.md` (steps 4, 10c, 11, 12, 17).
 
 **Source.** [The 2020 Scrum Guide](https://scrumguides.org/scrum-guide.html)
 
@@ -376,6 +376,41 @@ document that owns it. A question the files can answer stays an inbox `Q-` file.
 
 ---
 
+## 15. A milestone that ships needs a written release and upgrade plan, and its shape is researched
+
+**Rule.** When the user says a milestone ships, the PM writes two files before
+anything is pushed: `docs/crew/release/<milestone>-release.md` (version, release
+notes, exact steps, who approves, how to check, how to undo) and
+`docs/crew/release/<milestone>-upgrade.md` (breaking changes, migration, skipped
+versions, rollback, downtime). Their **shape is researched, not remembered**: the
+PM asks a `crew_researcher` what those plans contain for this project type, with a
+source and a date per claim, and reads what the repository already does first. A
+milestone that is not shipping gets no plan — it gets one honest paragraph naming
+what is still missing before it could ship, carried forward and shortened as
+milestones pass.
+
+**Why.** The milestone stop already asks the user to judge direction (principle 5).
+Shipping is the one part of that judgement the crew was silently leaving out, and
+it is where the surprises live: a version scheme nobody agreed, a rollback nobody
+tested, a token nobody has. Writing it down is also the only way the user can
+approve the *plan* separately from the *push*.
+
+**Why researched (ours).** These plans are not alike. An npm package cannot
+un-publish a version; a mobile app waits for a store review; a web service rolls
+back by redeploying; a database schema needs a migration that can run twice
+safely. An agent writing from memory produces a plausible average plan that fits
+none of them. The researcher lists what that type really needs, with dates,
+because release habits go stale fast.
+
+**Why not for every milestone.** A plan for a milestone nobody will ship is
+fiction, and fiction that a reader may mistake for a decision. The gap list gives
+the same early warning at a fraction of the cost, and turns into the real plan
+when shipping starts.
+
+**Lives in** `roles/pm.md` (steps 12 and 13), `roles/researcher.md`.
+
+---
+
 ## What we looked at and did not take
 
 | Idea | Why not |
@@ -393,6 +428,9 @@ document that owns it. A question the files can answer stays an inbox `Q-` file.
 | The architect chooses the stack | It is the most technical decision in the job, so this looked right. Rejected: small DoD work has no architect, the design already depends on the stack, and the user has to approve it — and only the PM talks to the user. The architect designs inside the stack instead, and must say so if the stack cannot carry the design. |
 | Each engineer picks its own libraries in a new repository | This is what the old principle 8 implied. Rejected once the crew met an empty repository: roles cannot talk, so two engineers pick two languages and two test frameworks and nobody notices until the halves are joined. QA's cases would split the same way. |
 | The researcher recommends a stack | It has the sources in front of it. Rejected: a researcher that recommends is deciding, and its findings are then read as a verdict nobody approved. It lists candidates and costs; the PM decides and the user confirms. |
+| A full release and upgrade plan at every milestone | The user asked for exactly this first, then chose the narrower rule with the cost in front of them. A plan for a milestone nobody ships is written from guesses, and a reader cannot tell a guessed plan from an agreed one. The gap list carries the warning instead. |
+| The PM writing the release plan from what it knows | Faster, and it would look right. Rejected: the plans differ so much by project type that a remembered one is an average of all of them — it would tell an npm package to roll back by redeploying, and a mobile app to un-publish. A researcher with dated sources answers for the actual type. |
+| The release plan doubling as permission to push | It would save a round trip. Rejected: a plan is written once and a push happens many times. Approving the plan is not approving each run of it, and the push rule (ask every single time) is the one that has kept a wrong push from happening. |
 | The team writes its own Definition of Done (Scrum) | Ours is written by the PM and confirmed by the user. There is no self-organising team here to agree on anything, and the user is the only one who can say what "done" is worth. |
 
 ---
