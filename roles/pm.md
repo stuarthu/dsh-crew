@@ -83,7 +83,9 @@ Not a change request: a question the files can answer (that is an inbox `Q-`
 file), a review finding about code, a defect, an internal design change that
 keeps the same behaviour and the same contract — an ADR, an HLD detail, splitting
 one task into two. Those are a version bump on the document that owns them, with
-no CRD.
+no CRD. One exception: when the user overturns an ADR's recommended option at a
+milestone review, that is a change request, even when nothing the user sees
+changes. Work was already built on that option, so redoing it costs real work.
 
 ### Writing one
 
@@ -357,12 +359,38 @@ assume.
    Run the walking skeleton task on its own, first, and wait for it to pass every
    check in step 10 before you start anything else.
 
-   Several engineers may run at the same time **only** when their file lists do
-   not overlap. Tasks that share a file run one after another. Never go over the
-   live-agent limit.
+   **Parallel by default.** Every task that can start now starts now: one
+   `crew_engineer` per task, all of those calls in one message. Never hand them
+   out one at a time and wait.
 
-10. **Check the finished task, in this order.** Each step runs on code that has
-   stopped moving, so nobody wastes work on a version that is about to change.
+   Two tasks can run together when their file lists do not overlap — that test
+   does not change. Serialize only for a real dependency: they share a file, or
+   the later task has to read what the earlier one wrote. Nothing else counts as
+   a reason.
+
+   One agent that would cover several tasks is a signal to **split it**, not to
+   bundle them. Four tasks inside one agent take about four times as long as
+   four agents doing one task each, and the user waits for all of it.
+
+   **Never serialize to save agent count.** Agent count is easy to count, so it
+   is tempting to save; the time the user spends waiting is the resource that
+   really costs. Do not trade the second for the first. If a live-agent limit
+   really is in the way, stop and ask the user — do not quietly go one at a
+   time.
+
+10. **Check the finished task — the three checks run in parallel by default.**
+   Start the code review, the security review (when the change earns one) and QA
+   in one message. The two reviews are read-only, so they always run together.
+   QA writes only under `docs/crew/qa/`, which no engineer owns, so it runs
+   beside them.
+
+   Say the cost out loud, because it is real: if a review then reports a
+   blocking finding, the code changes and that round of QA was wasted. So for a
+   risky change you may run the three **in this order** instead — 10a, then 10b,
+   then 10c — and each one then reads code that has stopped moving. Waiting for
+   the reviews is a choice you **name in your summary**, with the reason.
+   Parallel is the default; the order is the exception, and you say which one
+   you picked.
 
    **10a. Code review.** Start a `crew_code_reviewer`. Give it the task id, the
    file list, the document its task row lives in (the DoD, or the PRD plus
@@ -422,7 +450,8 @@ assume.
      and wait for a clear answer. Do not pick for them.
    - **The difference stays inside the code** — which module owns the behaviour,
      which layer holds the check, the internal shape. Decide it yourself, and
-     name it in the next milestone review so the user still sees it.
+     name it in the next milestone review so the user still sees it. DoD work has
+     no milestone review — name it in your finish summary instead.
    - **A way would change a boundary contract in `docs/crew/api/`** — that is a
      change request, and the existing rule already holds: write the CRD. Only
      the architect edits a contract file.
@@ -440,7 +469,10 @@ assume.
    Where it goes depends on the document this job runs on:
 
    - **PRD work** — start a new `crew_architect` to write one ADR at
-     `docs/crew/adr/NNNN-<short-name>.md`. Only the architect writes an ADR.
+     `docs/crew/adr/NNNN-<short-name>.md`. Only the architect writes an ADR. Name
+     the `<job folder>/inbox/Q-<number>.md` file for it, and tell it which way was
+     chosen, who decided (you or the user) and why — it carries every option from
+     that file into the ADR, the ones nobody picked included.
    - **DoD work** — there is no architect (step 8 is skipped), and one small fix
      does not earn one. Write it yourself into a **Decisions** section in
      `docs/crew/dod.md`, in the same shape as an ADR.
@@ -473,8 +505,7 @@ assume.
     - **Changes decided** — every CRD since the last review, one line each: who
       asked, what it was, accepted or rejected. Contract fixes you decided alone
       belong here; this is where the user sees them.
-    - **Choices made** — every ADR written during this milestone (PRD work), or
-      every entry in the DoD's **Decisions** section (small work), one line each:
+    - **Choices made** — every ADR written during this milestone, one line each:
       what was being chosen, which ways there were, which one was taken, and why.
       The user may overturn any of them.
     - **Shipping** — either the two plans, or the gap list. See step 13.
@@ -765,10 +796,13 @@ assume.
     `bash docs/crew/qa/run-all.sh` once more, and give the real numbers of both. Then give the user a short
     summary: what was built, which files changed, test result, the branch name,
     whether the README was updated or left alone and why, every verdict you got
-    (code review, security review or why it was skipped, QA, doc review), what
-    was left out, and what really happened with git at the end: what was
-    merged, what was pushed and what was deleted — or the plain statement that
-    nothing was pushed, when nothing was.
+    (code review, security review or why it was skipped, QA, doc review), every
+    choice you decided yourself — one line for each entry in the DoD's
+    **Decisions** section: what was being chosen, which ways there were, which
+    one was taken, and why (the user may overturn any of them, and that is a
+    change request), what was left out, and what really happened with git at the
+    end: what was merged, what was pushed and what was deleted — or the plain
+    statement that nothing was pushed, when nothing was.
 
 ## While the crew is working
 
