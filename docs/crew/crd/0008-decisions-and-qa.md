@@ -1,4 +1,4 @@
-# CRD 0008：`docs/crew/` 拆成 `docs/decisions/` 和 `docs/qa/`
+# CRD 0008：`docs/crew/` 整个消失，每个目录的名字说清自己是什么
 
 ## 谁提的
 
@@ -6,14 +6,24 @@
 
 ## 想要什么
 
-不是改名，是**拆**：
+不是改名，是**拆**，而且**一次做干净**：`docs/crew/` 彻底消失。
 
 ```
-docs/decisions/crd/   范围与契约的决定
-docs/decisions/adr/   设计决定（CRD 0006 之后才会出现）
-docs/qa/              能跑的测试用例
-principles.md         仓库根目录（CRD 0007）
+principles.md          仓库根目录（CRD 0007，已完成）
+docs/decisions/crd/    做什么 / 范围与契约的决定
+docs/decisions/adr/    怎么做的决定（CRD 0006 之后才会出现）
+docs/design/           prd.md、hld.md、tasks.md、api/
+docs/qa/               能跑的测试用例
+docs/research/         研究员的发现
+docs/release/          发布与升级计划
 ```
+
+**修订（第二版）**：第一版只点了 `crd` 和 `qa`。PM 在写执行briefing 时发现那样会留下三套
+命名——`docs/decisions/`、`docs/qa/`，和仍然指着 `docs/crew/` 的规则（`api/`、`hld.md`、
+`tasks.md`、`prd.md`、`research/`、`release/` 这六个位置**现在不存在**，是规则叫角色去
+创建的）。下一个 PRD 作业会在 `docs/decisions/` 旁边建出一个 `docs/crew/hld.md`，**比改之前
+更乱**。而代价是一样的：反正都要动那 24 个文件，分两次做才是浪费。用户听完之后说
+「yes」——一次做干净。
 
 ## 为什么不是改一个名字
 
@@ -43,8 +53,10 @@ principles.md         仓库根目录（CRD 0007）
 
 ## 一起做的顺序（给执行那次用）
 
-1. `git mv docs/crew/crd docs/decisions/crd`，`git mv docs/crew/qa docs/qa`。
-2. 改掉 146 处引用，`roles/` 下 7 个文件都要改（含对方那三个）。
+1. `git mv docs/crew/crd docs/decisions/crd`，`git mv docs/crew/qa docs/qa`。这两个是
+   仓库里**真实存在**的；其余六个位置只存在于提示词里，所以只改文字，没有文件要搬。
+2. 改掉 146 处引用，`roles/` 下 7 个文件都要改。改完 `docs/crew` 在仓库里应该**一次都
+   搜不到**，除了 CRD 里那些「当时的记录」（Q-19 的先例）。
 3. `docs/crew/qa/run-all.sh` 和 `lib/qa.mjs` 里也有路径，别漏。
 4. 跑 `npm test` 和 `bash docs/qa/run-all.sh`，并且确认仓库里再也搜不到 `docs/crew`。
 5. 同一次里做完 CRD 0006 的其余部分（决定进 ADR、计划进作业文件夹、
