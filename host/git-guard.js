@@ -23,6 +23,17 @@
 // Honest limits: this reads command text. A determined agent could hide a push
 // inside a script file or change the remote first. It is a strong seat belt, not
 // a locked door. Your dsh approval prompts remain the real gate.
+//
+// Two more, on the approval-file rule:
+//   - A command that only MENTIONS the file name is refused, the root agent
+//     included. `git commit -m "fix(guard): the push-ok substring false alarm"`
+//     is blocked, and so are `grep -n push-ok config.yml` and
+//     `git log --grep=push-ok`.
+//   - A name the shell assembles from pieces still gets through:
+//     `echo push-ok-flow | sed s/-flow// | xargs touch` is not stopped. The old
+//     substring check did stop that one; this one does not. Nothing really
+//     changed for a determined agent, though — the old check was just as
+//     useless against `touch pus''h-ok`.
 
 import { existsSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { homedir } from "node:os";
@@ -62,6 +73,25 @@ function block(reason) {
 /** Whitespace-separated tokens, so `-f` is matched as a flag and not inside a word. */
 function tokensOf(command) {
   return command.split(/\s+/).filter(token => token.length > 0);
+}
+
+/** Quote a configured file name so it is read as text, not as a pattern. */
+function escapeForRegExp(text) {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Build the whole-file-name pattern for one approval file, once per mount.
+ * A character that can be part of a longer file name on either side means the
+ * command is talking about a different file: `/push-ok` and `>push-ok` name
+ * the approval file, `push-ok-flow` and `push-okay` do not. `approvalFile` is
+ * configurable, so both its name and its full path are escaped first.
+ */
+function approvalNamePattern(approvalFile) {
+  const boundary = "[^A-Za-z0-9._+\\-]";
+  const name = escapeForRegExp(basename(approvalFile));
+  const full = escapeForRegExp(approvalFile);
+  return new RegExp(`(^|${boundary})(${name}|${full})($|${boundary})`);
 }
 
 /**
@@ -185,6 +215,21 @@ export function apply(ctx, config) {
   // approval file in your home folder (see tools/verify-guard.mjs).
   const approvalFile = config?.approvalFile ? expandHome(config.approvalFile) : PUSH_OK_FILE;
 
+  // A folder-shaped setting must fail loudly HERE, at mount. `~/.dsh/crew/`
+  // would leave `crew` as the protected name: every `crew/...` branch push
+  // refused as "you touched the approval file", and the real approval file not
+  // protected at all, so any agent could approve itself.
+  if (approvalFile.endsWith("/") || approvalFile.endsWith("\\") || basename(approvalFile).length === 0) {
+    throw new Error(
+      `dsh-crew: approvalFile "${approvalFile}" must be a file path, not a folder — the guard would protect the wrong name. `
+      + `Remove the trailing slash and name the file itself, for example "~/.dsh/crew/push-ok".`,
+    );
+  }
+
+  // Built once per mount, not once per command: a broken pattern must break
+  // startup, not every later `bash` call with an unrelated message.
+  const approvalName = approvalNamePattern(approvalFile);
+
   // The root agent (your own session, the PM) has no parent execution token;
   // every crew role does. When true (the default), its git and publishing
   // commands pass straight through. Set false to guard the PM exactly like
@@ -200,7 +245,7 @@ export function apply(ctx, config) {
 
     // No agent — not even the trusted PM — may write the approval file. Only
     // your own hand creates it, so a child's push still needs you.
-    if (command.includes(basename(approvalFile)) || command.includes(approvalFile)) {
+    if (approvalName.test(command)) {
       return block(`it touches the push approval file. Only the user creates it.\n${howToApprove(approvalFile)}`);
     }
 
