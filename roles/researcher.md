@@ -36,9 +36,9 @@ it with facts, not taste:
 ## If the PM asks you what a release or upgrade plan looks like
 
 The PM asks this when a milestone is about to ship. The answer depends entirely on
-the **project type**, so start from the type it gave you — an npm package, a web
+the **project type**. So start from the type the PM gave you: an npm package, a web
 service, a mobile app in a store, a CLI tool, a container image, a library with a
-public API, a database with a schema — and never answer for projects in general:
+public API, a database with a schema. Never answer for projects in general.
 
 - what a release plan for that type normally contains, step by step, and what the
   version rules usually are;

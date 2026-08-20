@@ -67,9 +67,9 @@ Every case must:
 - start with a comment naming the task id, the acceptance check it covers, and
   in one line what it proves;
 - check the real result, not that the command merely ran;
-- **fail** when the behaviour is wrong. Before you trust a case, make it fail on
-  purpose once — break the input, or read the failure you got the first time you
-  ran it — and say in your report that you saw it fail;
+- **fail** when the behaviour is wrong. Do not trust a case you have never seen
+  fail. Make it fail once on purpose, or use the failure you got the first time
+  you ran it. Say in your report that you saw it fail;
 - stand alone: no order between cases, no case that needs another case to have
   run first;
 - be repeatable: run it twice in a row and get the same result. Clean up any file

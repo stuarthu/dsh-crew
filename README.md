@@ -113,20 +113,26 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    quick look it starts a `crew_researcher`, which writes findings with a source
    for every answer, so you are only asked what the files cannot answer.
 4. **It settles the language and stack, and you approve it.** If the repository
-   already has one, that is the stack — the PM reads the manifest, the lock file,
-   the test folder and the CI workflow, states what it found, and you confirm it in
-   one line. When the choice is real (an empty repository, a new service), it
-   starts a `crew_researcher` first: what this kind of project is normally built
-   with today, with a source per claim, what the machine already has, and what each
-   option costs. The researcher lists the options and is not allowed to recommend
-   one. The PM then recommends one, names the runner-up and why not, and writes a
+   already has one, that is the stack. The PM reads the manifest, the lock file,
+   the test folder and the CI workflow, says what it found, and you confirm it in
+   one line.
+
+   When the choice is real — an empty repository, a new service — the PM starts a
+   `crew_researcher` first. The researcher reports what this kind of project is
+   normally built with today, with a source for every claim, what the machine
+   already has, and what each option costs. It lists the options and is not allowed
+   to recommend one.
+
+   Then the PM recommends one, names the runner-up and why it lost, and writes a
    **Language and stack** section into the document: language and version, package
    manager, framework, database, and the **test framework with the exact test
-   command** — engineers write their tests with it and QA writes its cases with it,
-   so it has to be one choice, not five. You confirm it together with the document,
-   and after that it moves only through a CRD. An engineer may pick freely among
-   the libraries the project already has; adding a brand-new dependency goes back
-   to the PM.
+   command**. That last one matters most. Engineers write their tests with it and
+   QA writes its cases with it, so it has to be one choice, not five.
+
+   You confirm the stack together with the document. After that it moves only
+   through a **CRD** — a change request document, explained further down. An
+   engineer may pick freely among the libraries the project
+   already has; adding a brand-new dependency goes back to the PM.
 5. It picks the document and writes it: a **DoD** (`docs/crew/dod.md`) for small
    work, a **PRD** (`docs/crew/prd.md`) for a real product. It says which it
    picked, and one word switches it. **You confirm before any work starts.**
@@ -184,29 +190,34 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    now, the exact commands to try it yourself, what is deliberately not there
    yet, the test results, and where shipping stands. Then you say: ship this
    milestone, go on without shipping, change something, or stop — one question,
-   four doors. A change that touches the PRD sends the plan back through the
+   four answers. A change that touches the PRD sends the plan back through the
    architect and the doc reviewer before code starts again. No milestone begins
    until you have answered the one before it. Small DoD work has no milestones —
    it is one piece of work with one report at the end.
-11. **A milestone you ship gets a release plan and an upgrade plan, and their
-   shape is looked up, not guessed.** These plans are not alike: an npm package
-   cannot un-publish a version, a mobile app waits for a store review, a web
-   service rolls back by redeploying, a database schema needs a migration that is
-   safe to run twice. So the PM starts a `crew_researcher` for what those two plans
-   contain **for your project type**, with a source and a date per claim, and reads
-   what your repository already does first — the workflows, the changelog, the
-   tags, any release script. Then it writes
-   `docs/crew/release/<milestone>-release.md` (version and the rule behind it, the
-   release notes, the exact steps and who approves each, what must be true before
-   you start, how you check it worked, how to undo it — or the plain words that it
-   cannot be undone) and `docs/crew/release/<milestone>-upgrade.md` (who is
-   upgrading from what, every breaking change and what the user must do, migration
-   steps and whether they are safe to run twice, skipping a version, going back and
-   what data is lost, how long it takes, what goes offline). A milestone you are
-   **not** shipping gets no plan — it gets one honest paragraph naming what is
-   still missing before it could ship, and that list shortens as milestones pass.
-   Approving a plan is not approving a push: every push and publish still needs its
-   own yes, every time.
+11. **A milestone you ship gets two plans, and their shape is looked up, not
+   guessed.** These plans are not alike. An npm package cannot un-publish a
+   version. A mobile app waits for a store review. A web service rolls back by
+   redeploying. A database schema needs a migration that is safe to run twice.
+
+   So the PM starts a `crew_researcher` and asks what those two plans hold **for
+   your project type**, with a source and a date for every claim. It reads what
+   your repository already does first: the workflows, the changelog, the tags, any
+   release script. Then it writes two files:
+
+   - `docs/crew/release/<milestone>-release.md` — the version and the rule behind
+     it, the release notes, the exact steps and who approves each one, what must be
+     true before you start, how you check afterwards that it worked, and how to
+     undo it. If it cannot be undone, the plan says so in those words.
+   - `docs/crew/release/<milestone>-upgrade.md` — who is upgrading and from which
+     versions, every breaking change and what the user must do about it, the
+     migration steps and whether they are safe to run twice, what happens to
+     someone who skips a version, how to go back and what data that loses, how long
+     it takes, and what goes offline while it runs.
+
+   A milestone you are **not** shipping gets no plan. It gets a **gap list**
+   instead: one honest paragraph naming what is still missing before it could ship.
+   That list gets shorter as milestones pass. And approving a plan is not approving
+   a push — every push and publish still needs its own yes, every time.
 12. The PM updates the repository README to match what was built. `README.md` is
    always English. If you chose another language for the job, it keeps a second
    file beside it — `README-zh.md`, `README-ja.md` — saying the same thing. If
@@ -240,7 +251,7 @@ an acceptance check, the milestone list) or how two modules talk (a boundary
 contract), the PM writes `docs/crew/crd/NNNN-<short-name>.md` first: who asked,
 what they want, why, which documents and tasks it touches, what it costs, and the
 decision with its reason. Nothing is built from an undecided one, and a rejected
-one is kept as the record of a road not taken.
+one is kept, so you can see later what was asked for and refused.
 
 Who decides which:
 

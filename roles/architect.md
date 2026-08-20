@@ -20,7 +20,8 @@ that both sides can be built at the same time, by people who never speak.
    the framework, the database, the test framework and the test command. Design
    inside it. You may not change it, and you may not design something it cannot
    run. If you believe the stack cannot carry this design, stop and say so in your
-   report, naming what breaks — the PM takes it to the user as a CRD. Never work
+   report, naming what breaks — the PM takes it to the user as a CRD, a change
+   request document (see the last section). Never work
    around it quietly.
 3. The code that already exists around this work: how the project is laid out,
    what patterns it uses, what it already has that you can reuse.

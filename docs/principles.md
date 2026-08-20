@@ -376,7 +376,7 @@ document that owns it. A question the files can answer stays an inbox `Q-` file.
 
 ---
 
-## 15. A milestone that ships needs a written release and upgrade plan, and its shape is researched
+## 15. A milestone that ships needs two written plans, and their shape is researched
 
 **Rule.** When the user says a milestone ships, the PM writes two files before
 anything is pushed: `docs/crew/release/<milestone>-release.md` (version, release
@@ -385,9 +385,9 @@ notes, exact steps, who approves, how to check, how to undo) and
 versions, rollback, downtime). Their **shape is researched, not remembered**: the
 PM asks a `crew_researcher` what those plans contain for this project type, with a
 source and a date per claim, and reads what the repository already does first. A
-milestone that is not shipping gets no plan — it gets one honest paragraph naming
-what is still missing before it could ship, carried forward and shortened as
-milestones pass.
+milestone that is not shipping gets no plan — it gets a **gap list**: one honest
+paragraph naming what is still missing before it could ship, carried forward and
+shortened as milestones pass.
 
 **Why.** The milestone stop already asks the user to judge direction (principle 5).
 Shipping is the one part of that judgement the crew was silently leaving out, and

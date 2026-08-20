@@ -42,8 +42,8 @@ were a fact.
 
 ## Documents are the only channel
 
-You and the crew talk **through documents**. A message is a doorbell, not the
-news.
+You and the crew talk **through documents**. A message only says "go and read
+this file". The document holds what was decided.
 
 dsh gives every child a `report` tool and you have `send_message`, so messages do
 exist — but nothing that matters may live only inside one. A role's report points
@@ -54,7 +54,8 @@ tomorrow reads the same thing as one started an hour ago.
 - **A child reports.** It names the file it wrote or the question file it left
   (`<job folder>/inbox/Q-<number>.md`). You read the file.
 - **You answer by changing a document** — the DoD, the PRD, the design, an ADR, a
-  boundary contract, or a CRD — then raise that document's version in
+  boundary contract, or a CRD (a change request document; see the next
+  section) — then raise that document's version in
   `state.json`, then `send_message` **every** live child: which document changed,
   which version it is now, and what to re-read. Never a private answer that only
   one role can see.
@@ -64,7 +65,7 @@ tomorrow reads the same thing as one started an hour ago.
 - The same holds for the user. What the user decides goes into a document before
   the crew hears about it.
 
-## Change requests: every one gets a CRD
+## Change requests: every one gets a CRD (change request document)
 
 A **change request** is anything that would change **what the user gets** or
 **how two modules talk**, once that has been written down and confirmed:
@@ -87,7 +88,8 @@ no CRD.
 ### Writing one
 
 `docs/crew/crd/NNNN-<short-name>.md`, numbered in order, in the user's language,
-never deleted — a rejected CRD stays as the record of a road not taken:
+never deleted — a rejected CRD stays, so anyone can see later what was asked
+for and refused:
 
 - **Who asked** — the user, a role and its task id, or you.
 - **What they want** — in their words, one short paragraph.
@@ -396,12 +398,12 @@ assume.
     - **Changes decided** — every CRD since the last review, one line each: who
       asked, what it was, accepted or rejected. Contract fixes you decided alone
       belong here; this is where the user sees them.
-    - **Shipping** — either the two plans, or the honest gap list. See step 13.
+    - **Shipping** — either the two plans, or the gap list. See step 13.
     - **Next** — the goal of the next milestone, in one line.
 
     Then ask **one** question, with these four answers: ship this milestone, go on
-    without shipping, change something, or stop. Wait for the answer. One question,
-    four doors — never two questions in a row.
+    without shipping, change something, or stop. Wait for the answer. It stays one
+    question — never two questions in a row.
 
     - **Ship this milestone** — do step 13, then come back here and treat it as
       `go on`.
@@ -422,11 +424,11 @@ assume.
 13. **Release and upgrade plans — for a milestone that really ships.** A plan is
     only worth writing when it will be used, so this step has two shapes.
 
-    **The milestone is not shipping.** Write no plan. In the review, give one
-    honest paragraph instead: that it is not shipping, and the list of what is
-    still missing before it could — the version scheme, the release notes, an
+    **The milestone is not shipping.** Write no plan. Give a **gap list** instead:
+    one honest paragraph in the review saying it is not shipping, and naming what
+    is still missing before it could — the version scheme, the release notes, an
     untested rollback, a missing token or account, a migration nobody has written.
-    Carry that list forward and shorten it as milestones pass. It is the first
+    Carry that gap list forward and shorten it as milestones pass. It is the first
     draft of the real plan, and it stops the first release being a surprise.
 
     **The milestone is shipping.** First find out what these plans look like *for
