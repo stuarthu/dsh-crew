@@ -356,10 +356,11 @@ Every crew role is a child agent, and the guard refuses, from a child:
   named;
 - any tag push, remote delete, `--mirror`, `--all`, or force push;
 - `npm`/`pnpm`/`yarn`/`bun publish`, `npm dist-tag`, `gh release create`;
-- a push into a repository whose CI runs on push and looks like it publishes;
-- any command that names the approval file — not even the trusted root may
-  write it, so an agent cannot approve itself. The name is matched as a whole
-  file name, so a longer name that merely contains it is left alone: a
+- a push into a repository whose GitHub Actions CI runs on a branch push and
+  looks like it publishes;
+- any shell command that names the approval file — your own session included,
+  so no agent can approve itself with a shell command. The name is matched as a
+  whole file name, so a longer name that merely contains it is left alone: a
   `crew/push-ok-flow` branch, a `push-okay.md` file and a `push-ok.bak` backup
   are not mistaken for the approval file.
 
@@ -371,18 +372,36 @@ mkdir -p ~/.dsh/crew && touch ~/.dsh/crew/push-ok
 
 The guard deletes that file as soon as one push uses it. One approval, one push.
 
+A refused child is told to ask you, and is **not** shown those two commands.
+Only your own session sees them, so the agent that was just refused does not
+also get the recipe.
+
 Set `trustRootAgent: false` to guard your own session exactly like every child.
 
 `approvalFile` must name a file, never a folder. A value like `~/.dsh/crew/`
 would leave `crew` as the protected name, so the guard refuses to load and the
 message tells you to name the file itself.
 
-This reads command text, so it is a strong seat belt, not a locked door: a
-command hidden inside a script file could still slip past, and so does a file
-name the shell builds from pieces. It cuts the other way too — a command that
-only *mentions* the approval file by name is refused as well, your own session
-included, so a commit message with `push-ok` in it will not run. Your dsh
-approval prompts stay the real gate.
+Three honest limits, and each one is a real hole, not a caveat. **It reads
+command text**, so it is a strong seat belt, not a locked door: a command
+hidden inside a script file could still slip past, and so does a file name the
+shell builds from pieces. It cuts the other way too — a command that only
+*mentions* the approval file by name is refused as well, your own session
+included, so a commit message with `push-ok` in it will not run. **And it reads
+`bash` and `pwsh` only.** A role that can write files — the engineer can —
+could create the approval file as a plain file write, and the guard never sees
+that call. Nothing here stops that; dsh's own approval prompt for writing a
+file is what stops it. Your dsh approval prompts stay the real gate.
+
+**And the publishing scan is GitHub-only.** The guard reads `.github/workflows`
+and understands GitHub's `on: push:` shape. GitLab, CircleCI, Jenkins and Azure
+Pipelines are outside it, on purpose: stretching GitHub's trigger rules
+half-way onto another CI system would produce false alarms, and a false alarm
+is worse than no alarm, because it teaches you to say yes without reading. So
+the guard is a GitHub-only backstop for child agents. The wider check is the
+PM's own judgement: in step 17 it also reads `.gitlab-ci.yml`,
+`.circleci/config.yml`, `Jenkinsfile` and `azure-pipelines.yml` when they
+exist, and tells you what it found before it pushes `main`.
 
 ## Install
 

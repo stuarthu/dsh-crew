@@ -228,6 +228,59 @@ try {
   if (strictMain === ALLOWED) { failures += 1; console.error("FAIL  trustRootAgent:false allowed a root main push"); }
   else console.log("ok    blocked  root main push with trustRootAgent:false");
 
+  // A refused CHILD must not be handed the steps that create the approval file.
+  // The guard reads shell command text only, so a role that has `write`/`edit`
+  // can create that file without this middleware ever seeing it; printing the
+  // steps to the agent that was just refused gives it both halves of a
+  // self-approval. The user's own root session still gets the whole recipe.
+  const RECIPE_MARKS = ["mkdir -p", "touch ", approvalFile, "push-ok"];
+  rmSync(approvalFile, { force: true }); // no approval present, so a push is refused
+
+  const childRefusals = [
+    [`touch ${approvalFile}`, "a child naming the approval file"],
+    ["git push origin crew/my-job", "a child pushing a work branch with no approval"],
+  ];
+  for (const [command, note] of childRefusals) {
+    const message = await run(command);
+    if (message === ALLOWED) {
+      failures += 1;
+      console.error(`FAIL  ${command}\n      expected blocked (${note}), got allowed`);
+      continue;
+    }
+    const leaked = RECIPE_MARKS.filter(mark => message.includes(mark));
+    if (leaked.length > 0) {
+      failures += 1;
+      console.error(`FAIL  ${command}\n      the child's refusal hands it the approval recipe (${leaked.join(", ")}): ${message}`);
+    } else if (!/ask the user/i.test(message)) {
+      failures += 1;
+      console.error(`FAIL  ${command}\n      the child's refusal leaves it no way forward; it must say to ask the user: ${message}`);
+    } else {
+      console.log(`ok    blocked  ${command} (child: no recipe, told to ask the user)`);
+    }
+  }
+
+  // The root session still gets the whole recipe, from both places that print
+  // it: the approval-file rule (which refuses root too) and, with
+  // `trustRootAgent: false`, the missing-approval refusal.
+  const rootRecipes = [
+    [await runRoot(`touch ${approvalFile}`), "the approval-file rule"],
+    [await strictRun("git push origin crew/my-job"), "the missing-approval refusal, trustRootAgent:false"],
+  ];
+  for (const [message, note] of rootRecipes) {
+    if (message === ALLOWED) {
+      failures += 1;
+      console.error(`FAIL  expected the root agent to be blocked (${note}), got allowed`);
+      continue;
+    }
+    const missing = ["mkdir -p", approvalFile].filter(mark => !message.includes(mark));
+    if (missing.length > 0) {
+      failures += 1;
+      console.error(`FAIL  the root refusal no longer carries the approval steps (missing ${missing.join(", ")}) via ${note}: ${message}`);
+    } else {
+      console.log(`ok    blocked  root agent still gets the full approval steps (${note})`);
+    }
+  }
+
   // CRD 0001: the approval file is configurable, so its name may hold characters
   // that mean something in a pattern. A name like `push+ok.flag` must be matched
   // as plain text, not as a pattern.

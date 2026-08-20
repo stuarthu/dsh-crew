@@ -11,20 +11,17 @@
 //     named (a bare `git push` can push whatever branch is checked out)
 //   - any tag push, delete push, `--mirror`, `--all`, or force push
 //   - `npm|pnpm|yarn|bun publish`, `npm dist-tag`, `gh release create`
-//   - a push into a repo whose CI runs on push and looks like it publishes
-//   - any command that touches the approval file — not even the trusted root
-//     may write it, because only your own hand approves a child's push
+//   - a push into a repo whose GitHub Actions CI runs on a branch push and
+//     looks like it publishes (`.github/workflows` only — see the limits below)
+//   - any shell command that names the approval file, the trusted root
+//     included (a shell command only — see the limits below)
 //
 // What it allows once, per approval: a child's push of any other branch, but
 // only while the one-shot approval file exists. You create that file yourself;
 // the guard deletes it as soon as one push uses it, so one approval means one
 // push.
 //
-// Honest limits: this reads command text. A determined agent could hide a push
-// inside a script file or change the remote first. It is a strong seat belt, not
-// a locked door. Your dsh approval prompts remain the real gate.
-//
-// Two more, on the approval-file rule:
+// Honest limits. Two on the approval-file rule:
 //   - A command that only MENTIONS the file name is refused, the root agent
 //     included. `git commit -m "fix(guard): the push-ok substring false alarm"`
 //     is blocked, and so are `grep -n push-ok config.yml` and
@@ -34,6 +31,27 @@
 //     substring check did stop that one; this one does not. Nothing really
 //     changed for a determined agent, though — the old check was just as
 //     useless against `touch pus''h-ok`.
+//
+// And three on the guard as a whole. Each one is a real hole, not a caveat:
+//   - It reads command text. A determined agent could hide a push inside a
+//     script file or change the remote first. It is a strong seat belt, not a
+//     locked door. Your dsh approval prompts remain the real gate.
+//   - It wraps `bash` and `pwsh` and nothing else (SHELL_TOOLS), so the
+//     approval-file rule holds for shell commands only. A role that has `write`
+//     or `edit` — the engineer does — can create the approval file as a plain
+//     file write, and this middleware never sees that call. The gate there is
+//     dsh's own approval prompt for writing a file, not this guard. That is also
+//     why a refused CHILD is never told how to create the file: the steps go to
+//     your own session only (howToApprove and ASK_THE_USER below).
+//   - The publishing scan reads `.github/workflows` and nothing else, and
+//     branchPushTriggers() understands GitHub's `on: push:` shape. GitLab,
+//     CircleCI, Jenkins and Azure Pipelines are outside it, on purpose:
+//     stretching GitHub trigger logic half-way onto another CI system would
+//     produce false alarms, and a false alarm is worse than no alarm, because it
+//     teaches you to say yes without reading. So this guard is a GitHub-only
+//     backstop for child agents. The wider check is the PM's own judgement, in
+//     step 17 of roles/pm.md, which reads `.gitlab-ci.yml`,
+//     `.circleci/config.yml`, `Jenkinsfile` and `azure-pipelines.yml` too.
 
 import { existsSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { homedir } from "node:os";
@@ -59,6 +77,14 @@ function howToApprove(approvalFile) {
     + `  mkdir -p ${join(approvalFile, "..")} && touch ${approvalFile}\n`
     + `Then ask again. The approval is used up by that single push.`;
 }
+
+/**
+ * What a refused CHILD is told instead of those steps. It names no command and
+ * no file on purpose: a role that can write files could follow the recipe
+ * without this guard ever seeing it, so the recipe goes to the user's own
+ * session only.
+ */
+const ASK_THE_USER = "Ask the user for approval. Only the user can give it, and the steps are deliberately not repeated here.";
 
 /** Deny the call with a message the model can act on. */
 function block(reason) {
@@ -183,6 +209,13 @@ function branchPushTriggers(text) {
  * purpose: it would rather refuse a safe push and let the user do it by hand
  * than let an agent trigger a release.
  *
+ * GitHub Actions only. It reads `.github/workflows` and nothing else, because
+ * branchPushTriggers() below reads GitHub's `on: push:` shape; a GitLab,
+ * CircleCI, Jenkins or Azure Pipelines file would be judged by rules that do
+ * not fit it, and a false alarm teaches the user to say yes without reading.
+ * This is the GitHub-only backstop for child agents. The wider scan is the PM's
+ * own, in step 17 of roles/pm.md.
+ *
  * @param cwd - folder the command runs in
  * @returns the workflow file name that looks like a publisher, or undefined
  */
@@ -243,14 +276,24 @@ export function apply(ctx, config) {
 
     const tokens = tokensOf(command);
 
-    // No agent — not even the trusted PM — may write the approval file. Only
-    // your own hand creates it, so a child's push still needs you.
+    // The root agent is your own session; every crew role carries a parent.
+    const isRootAgent = exec.parent === undefined;
+
+    // Only your own session is told how to create the approval file. A child is
+    // told to ask you, with no command it could copy.
+    const approvalHelp = isRootAgent ? howToApprove(approvalFile) : ASK_THE_USER;
+
+    // No SHELL COMMAND may name the approval file, the trusted PM included, and
+    // this rule sits above the root bypass for that reason. It is not a wall:
+    // this middleware only reads `bash` and `pwsh`, so a role that has `write`
+    // or `edit` can create that file without the guard seeing it. dsh's own
+    // approval prompt for writing a file is the gate there.
     if (approvalName.test(command)) {
-      return block(`it touches the push approval file. Only the user creates it.\n${howToApprove(approvalFile)}`);
+      return block(`it touches the push approval file. Only the user creates it.\n${approvalHelp}`);
     }
 
     // The trusted root agent (your own session) passes straight through.
-    if (trustRootAgent && exec.parent === undefined) return next();
+    if (trustRootAgent && isRootAgent) return next();
 
     if (/\b(npm|pnpm|yarn|bun)\s+publish\b|\bnpm\s+dist-tag\b|\bgh\s+release\s+create\b/.test(command)) {
       return block("publishing a package or creating a release is the user's decision, never an agent's.");
@@ -272,7 +315,7 @@ export function apply(ctx, config) {
     }
 
     if (!existsSync(approvalFile)) {
-      return block(`pushing needs the user's approval first.\n${howToApprove(approvalFile)}`);
+      return block(`pushing needs the user's approval first.\n${approvalHelp}`);
     }
 
     // Use the approval up BEFORE the push runs: a crash mid-push must not leave
