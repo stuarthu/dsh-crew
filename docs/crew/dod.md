@@ -1,6 +1,6 @@
 # DoD：PM 的合并与清理步骤
 
-版本：13
+版本：19
 语言：中文（本文件和评审报告用中文；被改的仓库文件仍然写英文）
 仓库：/home/stuart/workspace/dsh-crew
 分支：main（用户决定直接在 main 上做，和前两次作业一样）
@@ -74,8 +74,8 @@
 9. `README.md` 多第 15 条，`README-zh.md` 有对应的第 15 条，两份说同一件事，命令和
    文件名一字不差。
 10. `CHANGELOG.md` 的 `0.7.0` → `Added` 里多一条这个功能的说明，没有新版本段。
-11. `git diff --stat` 里不出现 `package.json`。`host/` 下的文件只允许出现
-    `host/git-guard.js`，且只能是 CRD 0001 那一处改动（T-05 拥有它）。**按任务**核对：
+11. `git diff --stat` 里不出现 `package.json`。`host/` 下的文件只允许出现 `host/git-guard.js`
+    （CRD 0001，T-05 拥有）和 `host/crew.js`（CRD 0003，T-07 拥有）。**按任务**核对：
     T-01 的改动只有 `roles/pm.md` 和 `tools/verify-mount.mjs`；T-05 的改动只有
     `host/git-guard.js` 和 `tools/verify-guard.mjs`。两个任务在同一个工作副本里，
     所以整棵树的 `git diff --stat` 会同时显示两边——这不是违规。（这条原来的写法
@@ -92,6 +92,10 @@
 | T-06 | CRD 0002：给 `<job-slug>` 定形状，并用断言钉住 | `roles/pm.md`、`tools/verify-mount.mjs` | 验收检查 44-46；**必须排在 T-01 的打磨轮之后**，同两个文件 |
 | T-07 | CRD 0003：删掉 `agentsPerJob`，`liveAgents` 默认改 20，旧设置静默忽略并记一行启动日志 | `host/crew.js`、`cordis.patch.yml`、`tools/verify-mount.mjs` | 汇报里有先红后绿的真实输出；验收检查 48-52 |
 | T-08 | CRD 0003 的文档部分：两份 README 的配置表、CHANGELOG 一条 | `README.md`、`README-zh.md`、`CHANGELOG.md` | 验收检查 53；**必须排在 T-02 之后**，同三个文件 |
+| T-09 | CRD 0004：把「默认并行」写成规则 | `roles/pm.md` | 验收检查 54、55 |
+| T-10 | CRD 0004 的原则条目 | `docs/principles.md` | 验收检查 56；**等另一个会话放开这个文件** |
+| T-11 | 修掉启动日志说两遍（QA 缺陷 1，是 T-07 自己写的新代码，按缺陷修） | `host/crew.js`、`tools/verify-mount.mjs` | 验收检查 57 |
+| T-12 | CRD 0005：检查脚本跑完不留临时目录 | `tools/verify-preset-install.mjs` | 验收检查 58 |
 
 T-01 必须先做完并过关，因为 T-02 要照着 pm.md 的最终措辞写。原来的 T-02、T-03、
 T-04 合成了一个 T-02：三份都是「照着写完的第 17 步写说明」，是一件连贯的写作活，
@@ -523,3 +527,98 @@ PM 已经把问题交给用户，等他回答后再决定要不要开 CRD 0003 �
   这一点在提交信息里点名。
 
 PM 在最后的总结里必须说清楚：文档评审是**按用户要求跳过的**，不是跑过、也不是漏掉。
+
+## 悬而未决：QA 的用例该不该落在测试命令找得到的地方（版本 16）
+
+**状态：未决定，用户要先想。** 用户提出「QA 的用例应该进项目自己的测试目录」，PM 认同
+其中大部分并给了一个形状；用户先说开独立作业，又说撤掉，最后说「I need to consider it
+first」。所以这里**没有结论**：不做也不是决定，做也不是决定。
+
+在他决定之前，规则照旧不变：QA 的用例只写在 `docs/crew/qa/` 下面（`docs/principles.md`
+第 13 条、`roles/qa.md`、`CLAUDE.md`）。本次作业按现行规则交付，不预设将来怎么改。
+
+下面的推理留着，供他决定时用，也免得下一个人从头再推一遍。
+
+**现行规则留下的已知代价，总结里要说清**：`npm test` 看不到 `docs/crew/qa/`，所以本次
+QA 的用例不进 `npm test`、不进 CI，只有人手敲 `bash docs/crew/qa/run-all.sh` 才会跑。
+原则 13 明确允许这个结果（「records the cases as not runnable」）。这是现状，不是遗漏，
+也不是对上面那个未决问题的回答。
+
+**现在的规则**（`docs/principles.md` 第 13 条、`roles/qa.md`、`CLAUDE.md`）：QA 只往
+`docs/crew/qa/` 写，绝不进项目自己的测试目录。
+
+**用户的理由，PM 认同的部分**：
+
+1. **它们跑不到。** 这个仓库的 `npm test` 是 `package.json` 里写死的四个脚本，看不到
+   `docs/crew/qa/`。所以 QA 的用例不进 `npm test`、不进 CI，只有人记得手敲
+   `bash docs/crew/qa/run-all.sh` 才会跑。一个不在默认测试命令里的套件会烂掉。原则 13
+   的目标是「作业结束、护栏留下」，放在跑不到的地方等于护栏留下了却没在守。
+2. 不认识 crew 的人来看这个仓库，「测试分在两个目录、取决于当初是哪个 agent 写的」
+   是纯粹的困惑。
+3. `run-all.sh` 加 `lib/qa.mjs` 是第二套测试基础设施，存在的唯一理由是第一套看不到它。
+
+**旧规则唯一真正值钱的一条**：「一个任务拥有它自己的文件」不能破——工程师的任务行点名
+了它拥有的测试文件，QA 往同一个目录写就可能撞文件。
+「路径就能看出测试是谁写的」这条不值钱，`git blame` 就能回答，不值得为它把测试放到跑
+不到的地方。
+
+**PM 建议的形状（两个性质都保住）**：QA 的用例进**项目测试命令找得到的地方**，但放在
+自己的、名字说明来历的子目录里，形如 `<项目测试根目录>/qa/<task-id>/`。归属仍然靠路径
+一眼看出，任务之间不会撞文件，同时随 `npm test` 一起跑。QA 自己**永远不改项目配置**：
+要加的那一行由 PM 加（原则 13 里本来就写了这个动作，只是现在几乎没人会去加）。
+
+**这个仓库的特殊之处**：它没有 `test/` 目录，测试就是 `tools/verify-*.mjs`，靠
+`package.json` 逐个点名调用。所以落地动作是把 QA 的 runner 接进 `npm test` 那条链子。
+
+**那件作业要碰的文件**：`docs/principles.md` 第 13 条、`roles/qa.md`、`roles/pm.md`
+第 10c 步、`CLAUDE.md`、`README.md`、`README-zh.md`、`CHANGELOG.md`、`package.json`，
+再加上把本次 QA 已经写出来的用例搬过去。
+
+## CRD 0004 追加的验收检查
+
+54. `roles/pm.md` 第 9 步是**默认并行**的写法，不再是「可以并行」：现在能开的任务一次
+    全开；串行只为真实依赖（共用文件，或后一件要读前一件写的东西）；一个 agent 要覆盖
+    好几个任务是该拆的信号；不许拿 agent 数量当串行的理由，撞上限就停下来问用户。
+55. `roles/pm.md` 第 10 步写明：两个评审只读，永远可以并行；QA 也可以一起跑，并写明
+    代价（评审随后报 blocking 时这一轮 QA 白跑），所以等评审是一次明说的选择，不是默认。
+56. `docs/principles.md` 多一条原则，格式和现有条目一致，理由里要有本次作业的实例
+    （四个任务的 QA 串在一个 agent 里，墙上时间约四倍）。号用文件里下一个空号：第 16 条
+    是本次作业的，第 17 条留给另一个会话，写的时候现场看文件确认。
+
+## QA 的结果与它报的缺陷（版本 18 追加）
+
+QA **verdict: pass，0 条 blocking**。42 个用例、278 项断言、4 个任务全过；`npm test`
+113 项 `ok`、exit 0；`bash docs/crew/qa/run-all.sh` 4 个任务全过 0 失败。它把 **42 个
+用例逐个弄红过**（在仓库的克隆里破坏被测的东西，看它变红，再还原），包括把 guard 换回
+CRD 0001 修掉的那个旧 bug、把 `agentsPerJob` 加回默认值、把边界里转义的 `-` 改回靠位置。
+跑完 `~/.dsh/crew/` 里只有 `jobs`，真的审批文件没有被读、建或删。PM 复跑了 `npm test`
+和 `run-all.sh`，数字一致。
+
+它报了 4 条缺陷，全部 optional，PM 的处理：
+
+1. **`host/crew.js:240` 的启动日志会说两遍。** 写法 `...?.info?.(note) ?? console.log(note)`
+   里，真实 logger 的 `info()` 返回 `undefined`，所以 `??` 右边也执行了。验收检查 50 说
+   「说一句」，用户实际看到两句。**未修**：PM 已经报给用户，等他决定（同一个写法在
+   `host/crew.js:245` 的 `.bak` 提示里也有，是 pre-existing）。
+2. **验收检查 11 的老措辞和 CRD 0003 自相矛盾。** 已在版本 18 修好：`host/` 下允许
+   `host/git-guard.js`（T-05）和 `host/crew.js`（T-07）。
+3. **T-07 的断言提交在别人的提交里。** `tools/verify-mount.mjs` 里那三段 `agentsPerJob`
+   断言落在 `9094fae`（T-01、T-06）里，T-07 自己的 `c6aeabf` 只有 `host/crew.js` 和
+   `cordis.patch.yml`。原因是 PM 的提交切分：那个文件同时装着 T-01/T-06 的钉字符串和
+   T-07 的限制用例，一个文件只能整体入一个提交，而先提交它会让 T-07 的用例在那一刻是红的。
+   **不改历史**，照实记在这里。
+4. **`tools/verify-preset-install.mjs` 每跑一次 `npm test` 漏 4 个临时目录**
+   （`mkdtempSync` 四处，全程没有 `rmSync`）。PM 实测本机 `/tmp` 里已有 570 个
+   `crew-home-*`。pre-existing，不在本 DoD 范围，**已报给用户**。
+
+QA 明确说它**没有**验证的：验收检查 8、9、10、21、47、53（文档措辞，用户决定跳过文档
+评审，所以这六条只有 PM 自己 grep 过，没有独立检查）；检查 50 的「运行时真的没有上限」
+（要真跑一个 dsh 作业才看得到，本仓库跑不了）。这些必须在总结里照实说。
+
+## QA 缺陷与 CRD 0005 追加的验收检查
+
+57. 带 logger 挂载时，同一句启动信息只出现**一次**；没有 `ctx.logger` 的宿主上仍然
+    出现一次（走 `console.log`）。两种情况都有用例，把修法弄坏会红。
+    `host/crew.js` 里同样写法的另一处（`.bak` 提示）一起修，否则 bug 只修了一半。
+58. `node tools/verify-preset-install.mjs` 跑完之后，它建的临时目录一个都不剩；脚本中途
+    抛错时也不剩。有用例证明，并且把清理弄坏会红。
