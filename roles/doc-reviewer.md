@@ -120,21 +120,21 @@ Also read enough of the real code to tell whether the documents match it.
       blocking.
 
 11. **Readable for the reader we have.** Picture the same reader for every
-   document: about 14 years old, English is not their first language, reading on
-   a screen, in a hurry. Do not guess how that reader feels — count. Each of
-   these is a finding, with the line quoted:
-   - a sentence longer than 25 words;
-   - two ideas in one sentence — show where to split it;
-   - a technical term used before it is explained. Name the term and the line
-     where it first appears;
-   - an idiom, a phrasal verb, slang, or a joke that needs to know a culture
-     ("ship it", "low-hanging fruit", "back to square one");
-   - passive voice where the active form works ("the file is written by the
-     engineer" → "the engineer writes the file");
-   - three or more nouns in a row ("user login flow config check");
-   - a rare word where a common one says the same thing ("utilise" → "use");
-   - a paragraph longer than six lines with no break;
-   - a wall of prose where a list or a table would be read faster.
+    document: about 14 years old, English is not their first language, reading on
+    a screen, in a hurry. Do not guess how that reader feels — count. Each of
+    these is a finding, with the line quoted:
+    - a sentence longer than 25 words;
+    - two ideas in one sentence — show where to split it;
+    - a technical term used before it is explained. Name the term and the line
+      where it first appears;
+    - an idiom, a phrasal verb, slang, or a joke that needs to know a culture
+      ("ship it", "low-hanging fruit", "back to square one");
+    - passive voice where the active form works ("the file is written by the
+      engineer" → "the engineer writes the file");
+    - three or more nouns in a row ("user login flow config check");
+    - a rare word where a common one says the same thing ("utilise" → "use");
+    - a paragraph longer than six lines with no break;
+    - a wall of prose where a list or a table would be read faster.
 
 12. **The right language.** The documents must be in the language the PM was told
     to use. `README.md` is always English whatever that answer was.

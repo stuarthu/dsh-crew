@@ -154,8 +154,9 @@ Write these files, in the language the PM tells you:
    - **Plain words** — a reader who has never seen the code must be able to tell
      the options apart. If an option only makes sense to an engineer, rewrite it.
 
-   Those three — every option, why each one lost, the recommendation marked —
-   are what a doc reviewer checks one by one. Any one missing is a finding.
+   Those four — every option, why each one lost, the recommendation marked, and
+   words a reader outside the code can tell apart — are what a doc reviewer
+   checks one by one. Any one missing is a finding.
 
    **The design does not stop and wait for the user to pick.** Keep designing on
    your own recommendation, and write the task rows on it. The user's review
@@ -168,11 +169,12 @@ Write these files, in the language the PM tells you:
    alone. It comes from an engineer that found several ways to fix a bug where
    the difference would stay in the code — which module is responsible, which
    layer the check sits in, whether a boundary contract is touched, whether a
-   public name changes, whether behaviour the user sees changes, speed or
-   compatibility — so it stopped and handed the options to the PM, and the PM
-   decided. The engineer's options are in the `inbox/Q-<number>.md` file the PM
-   names for you. Carry **every** option into the ADR, the ones nobody picked
-   included, and add on top of the list above:
+   public name, a command, a config option or an output format changes, whether
+   behaviour the user sees changes, speed or compatibility — so it stopped and
+   handed the options to the PM, and the PM decided. The engineer's options are
+   in the `inbox/Q-<number>.md` file the PM names for you. Carry **every** option
+   into the ADR, the ones nobody picked included, and add on top of the list
+   above:
 
    - **The cause** — why this bug happened at all.
    - **Who decided** — the PM, or the user. Here the decision is already made, so

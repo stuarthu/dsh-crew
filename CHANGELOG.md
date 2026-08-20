@@ -76,6 +76,47 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
   and raises no version until you answer.
 - **The state file tracks CRDs**, so a session that picks the job up after a crash
   knows which change requests are still undecided.
+- **A bug with more than one real fix now comes back as a question.** Before an
+  engineer fixes a bug, it must find at least two ways that would really work.
+  This covers a defect QA found, a blocking review finding, and a bug the
+  engineer hit while doing its task. If the ways only differ in wording, it picks
+  one and says in its report which ways it compared and why. If the difference
+  would stay in the code, it stops and hands the ways to the PM. Six things make
+  a difference stay:
+
+  - which module owns the behaviour;
+  - which layer holds the check;
+  - whether it touches a boundary contract in `docs/crew/api/`;
+  - whether a public name, command, config option or output format changes;
+  - whether behaviour you can see changes;
+  - whether speed or compatibility changes.
+
+  The engineer writes the cause of the bug and, for each way, the files it
+  changes, what it costs, and where it will hurt later. It also recommends one.
+  The PM then decides on the same line a CRD uses. If you can see the
+  difference, it asks you and waits for a clear answer. If the difference stays
+  inside the code, it decides itself and names the choice at the next milestone
+  review. The decision goes into a document before the engineer builds it. PRD
+  work gets an **architecture decision record (ADR)** under `docs/crew/adr/`.
+  Small work gets a new **Decisions** section in `docs/crew/dod.md`. That record
+  holds the cause, every way that was found with its cost and why it lost, the
+  way that was taken, who decided, and the reason. New features and refactors do
+  not go this way — there the design and the engineer's judgement decide, as
+  before.
+- **Every ADR is now written for you, and you can overturn one.** An ADR used to
+  need only "the options you weighed", which could be one sentence. Now it lists
+  **every** option, the ones dropped early included. Each option says what it
+  costs, where it will hurt later, and why it lost. One option is marked as the
+  recommended one, with a reason. The whole file has to be readable by someone
+  who has never seen the code. The design does not stop and wait for you — the
+  architect keeps designing on its own recommendation. At the milestone review
+  the PM puts every ADR from that milestone in front of you, options and all. You
+  may overturn any of them. That is a change request: the PM writes the CRD,
+  raises the versions of the documents it touches, and the tasks already built
+  the old way are built again. When one of the options is something you can see,
+  the PM does not wait for the review — it asks you when it comes up. The doc
+  reviewer has a new check for this: an ADR that hides an option, skips a "why it
+  lost", or does not mark its recommendation is a finding.
 - **The PM can merge your work branch and clean it up — when you ask, and in
   three steps.** A new step near the end of a job: the PM merges
   `crew/<job-slug>` into `main` itself, and asks you three separate times — once

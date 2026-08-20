@@ -372,6 +372,10 @@ bury the ones that matter and put the PM in a writing job instead of a deciding
 one. So an internal change that keeps the same behaviour and the same contract —
 an ADR, an HLD detail, splitting one task in two — is only a version bump on the
 document that owns it. A question the files can answer stays an inbox `Q-` file.
+The one exception is the user overturning an ADR at a milestone review
+(principle 17): the crew changing its own ADR is a version bump, but the user
+changing a choice the crew already built on costs rebuilt work, so that one gets
+a CRD.
 
 **Lives in** `roles/pm.md` ("Documents are the only channel", "Change requests"),
 `roles/architect.md` ("When the PM sends you a CRD"), `roles/engineer.md`,
@@ -499,6 +503,93 @@ guarantee. Say it that way; do not call it airtight.
 
 ---
 
+## 17. The one who finds the choice does not make it alone
+
+**Rule (ours).** An engineer fixing a bug — a defect QA reported, a blocking
+review finding, or one it hit while doing its own task — first finds at least
+two ways that would really work. If the ways differ only in wording (same files,
+same layer, same behaviour) it picks one, writes it, and says in its report
+which ways it compared and why. If the difference **stays in the code** it
+stops. Six things say the difference stays: which module owns the behaviour;
+which layer holds the check or the fix; whether a boundary contract in
+`docs/crew/api/` is touched; whether a public name, command, config option or
+output format changes; whether behaviour the user can see changes; whether speed
+or compatibility changes. When it stops it uses the channel that already exists
+— an `inbox/Q-<number>.md` file holding the cause of the bug, every way it found
+(which files each one changes, what it costs, where it will hurt later), and
+**the way it would pick, with the reason** — reports the task as blocked, and
+works on another task it was given, if it can finish that one alone. The PM
+decides by the same line a CRD uses: a difference the user can see goes to the
+user; a difference that stays inside the code is the PM's own call, named at the
+next milestone review — or, in small DoD work that has no milestone review, in
+the PM's finish summary; a way that would change a boundary contract gets a CRD.
+
+Every such decision is written into a document before the engineer starts again,
+and holds the same five things: the cause, **every** option with its cost and
+**why it lost**, which one was chosen, who chose it, and the reason. PRD work
+puts it in an ADR written by a fresh architect; small DoD work has no architect,
+so the PM writes it into a **Decisions** section of `docs/crew/dod.md`, in the
+same shape. And every ADR — bug fix or not — lists every option with its cost
+and why it lost, **marks** the one it recommends with a one sentence reason, and
+is written so a reader who has never seen the code can tell the options apart.
+The design does not stop and wait: the architect keeps designing on its own
+recommendation, the PM lays every choice of the milestone in front of the user
+at the milestone review, and the user may overturn one — which is a CRD.
+
+**Why options have to survive the choosing.** A choice that is made and not
+written down disappears at the moment it is made. Whoever reads the code next
+sees one road and no sign that there ever were others, so they cannot tell a
+decision from an accident, and they cannot see what it bought. Six months later
+the same question comes back and is answered the other way by somebody who never
+knew it had been asked once. This principle is ours in a different way from the
+rest: the user asked for it directly, after watching the crew choose in silence.
+There is no outside source behind it.
+
+**Why a bug fix counts.** A fix feels small while you are making it. Where the
+check sits, which module carries the rule — those read like a coin toss at the
+time, and then stay in the code for as long as the code lives. The choice is
+usually bigger than the bug.
+
+**Why not every fork.** Stopping at every fork would cost more than it saves: a
+meeting for every typo. Wording, a name, the order of two lines — nobody outside
+the file has to see those, so the engineer picks one and keeps moving. The test
+is whether the difference will still be there next year, and the six items above
+are that test written out so nobody has to guess.
+
+**Why the engineer recommends.** It has just read the failing code, so it knows
+which way will hurt. Asking it for a list and no opinion throws that knowledge
+away. Recommending is not deciding — the PM still decides, and can pick another
+way. This is the opposite of the researcher's rule on purpose: a researcher
+answers a question of fact for a PM that has not judged yet, so a recommendation
+there ends the judging before it starts. An engineer's recommendation arrives
+after the PM already owns the decision.
+
+**Why the PM's line is the CRD line.** A difference the user can see is a scope
+question, and scope belongs to the user (principle 14). Reusing that same line
+means there is one boundary to learn instead of two that can quietly drift
+apart.
+
+**Why the ADR shape got stricter.** An ADR used to be read by engineers, so "the
+options you weighed" could be honoured with half a sentence and nobody was worse
+off. Now the PM puts these files in front of the user at the milestone review,
+so an option left out is a decision the user never got to make. That is why the
+shape is strict: every option, why each one lost, and the recommended one
+marked.
+
+**Why the design does not wait.** One design can hold five ADRs. Stopping at
+each one would stop the job five times, and would hand the user five questions
+about the inside of the code. So the architect recommends and keeps going. The
+cost is real and known: the user's check happens later, at the milestone review,
+and overturning a recommendation then means redoing the tasks that were already
+built on it, through a CRD. Options the **user can see** are the exception — the
+PM asks about those on the spot and does not wait for the review.
+
+**Lives in** `roles/engineer.md` ("When you fix a bug: find at least two ways
+first"), `roles/architect.md` (**Your outputs**, decision records),
+`roles/doc-reviewer.md` (check 7), `roles/pm.md` (steps 10 and 12).
+
+---
+
 ## What we looked at and did not take
 
 | Idea | Why not |
@@ -525,6 +616,8 @@ guarantee. Say it that way; do not call it airtight.
 | Closing the gap between the last proof and the remote delete with a leased delete | It would make the delete safe against a commit that arrives while the user is thinking. Rejected: it is the `--force-with-lease` shape, and this step forbids every force form — that ban is what has kept a wrong push from happening. Re-running the proof in the same turn narrows the window, and the limit is written down instead of hidden. |
 | Checking the job slug's shape in the git guard instead of the prompt | Rejected: the slug is not input arriving from outside, it is a value the PM invents in step 6. The middleware reads command text and would only see the damage after the fact, while the guard trusts the root session anyway. The place to make a value safe is where it is made. |
 | The team writes its own Definition of Done (Scrum) | Ours is written by the PM and confirmed by the user. There is no self-organising team here to agree on anything, and the user is the only one who can say what "done" is worth. |
+| A new document type, `docs/crew/fix/<task-id>.md`, for bug-fix choices | Rejected: an ADR is already the file that records one open choice, so a second type would give the same thing two homes and split the place a reader has to look. And small DoD work writes no ADR at all — a **Decisions** section inside `docs/crew/dod.md` carries the same five things without a new folder to keep in step. |
+| Every ADR stops and waits for the user to pick | Rejected: one design often holds several ADRs, so the job would stop once per ADR and the user would be interrupted with choices about the inside of the code. The architect marks a recommendation and the design keeps moving; the user sees every option at the milestone review and may overturn one. Options the user can see are still asked on the spot. |
 
 ---
 

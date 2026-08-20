@@ -253,6 +253,43 @@ come back by themselves. After an upgrade, copy your changes into the new file.
     protection of its own. With `trustRootAgent: false` that remote delete is
     refused on purpose; the PM then hands you the command to run yourself
     instead of retrying. A work branch that simply stays is a normal ending too.
+16. **Fixing a bug can come back to you as a question, and every choice gets
+    written down.** This can happen at any time inside step 8. An engineer
+    fixing a bug — a defect QA found, a blocking review finding, or one it hit
+    itself — first finds at least two ways that would really work. If the ways
+    only differ in wording, it picks one and says in its report which ones it
+    compared. If the difference would stay in the code, it stops. The
+    difference stays in the code when any one of these six is different between
+    the ways:
+
+    - which module is responsible for this behaviour;
+    - which layer the check or the fix sits in;
+    - whether it touches a module boundary contract in `docs/crew/api/`;
+    - whether it changes a public name, a command, a config option, or an
+      output format;
+    - whether behaviour you can see changes;
+    - whether speed or compatibility changes.
+
+    When it stops, it hands the PM the cause of the bug and every way it found,
+    each with the files it would change, what it costs and where it would hurt
+    later, plus the one it recommends. Then the PM decides by the same line a
+    CRD uses: a difference you can see, it asks you about right away; a
+    difference that stays inside the code, it decides itself and names at the
+    next milestone review. New features and refactors do not go this way.
+
+    The decision is written down before any code is built, and it holds
+    **every** option. PRD work gets one ADR — a decision record in
+    `docs/crew/adr/` — written by the architect; small work gets an entry in a
+    **Decisions** section in `docs/crew/dod.md`. Either one holds the cause of
+    the bug, every option with what it costs, where it would hurt later and
+    **why it lost**, which one was taken, who decided, and the reason. **Every
+    ADR is written for you**: a reader who has never seen the code must be able
+    to tell the options apart, and the recommended one is marked. The design
+    does not stop and wait for you to pick — the architect keeps going on its
+    own recommendation, and at the milestone review the PM puts the options
+    from every ADR of that milestone in front of you. You may overturn any of
+    them; that is a CRD, and the tasks already built the old way are done
+    again.
 
 ## Nothing important lives in a chat message
 
