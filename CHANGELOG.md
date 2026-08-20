@@ -6,6 +6,56 @@ Every version bump rewrites `$DSH_HOME/.agent-presets/crew`. Files you edited
 there are kept as `<name>.bak` and named in the boot log, but your settings do
 **not** come back on their own. Copy them into the new file after an upgrade.
 
+## 0.6.0 — 2026-08-20
+
+### Added
+
+- **The architect designs the module boundaries.** It now splits the system into
+  modules in `docs/crew/hld.md`, saying where each line falls and why, and it
+  must look for a module or library the repository already has before it invents
+  a new one. Every new module needs a reason it had to be new.
+- **One contract file per boundary.** When two or more modules talk to each
+  other, the architect writes `docs/crew/api/<caller>-<callee>.md`: how the two
+  sides talk (in-process call, HTTP, gRPC, events, and so on), the data format,
+  every call with its inputs, output and named errors, who owns the data and
+  what the caller may believe about it, and — for events — the schema and the
+  delivery promise. It picks the style, never the library; the engineer uses
+  what the repository already uses. One-module work gets no contract files.
+- **A contract test on each side.** Each contract names one test per side. The
+  callee's test proves it answers exactly what the file says. The caller's test
+  runs against a stub built from the file, not against the real other side. The
+  engineer writes it first, like every other test, and the code reviewer blocks
+  a boundary task that arrives without it.
+- **The first task is a walking skeleton.** When there is a boundary, `T-01` is
+  the thinnest real path across the riskiest one, running for real. One engineer
+  owns it, it is the only task allowed to own files on both sides, and nothing
+  runs beside it. A contract that does not fit is cheapest to fix there.
+- **Milestones for big work.** A PRD is now cut into three to six milestones,
+  each one something you can look at and judge, written in your words. `M1` is
+  the proof of concept and holds the walking skeleton. You confirm the milestone
+  list on its own before any design starts.
+- **A milestone review, every cycle.** When a milestone's tasks are all checked
+  and committed, the PM stops and shows you what works now, the exact commands
+  to try it yourself, what is deliberately not there yet, and the test results.
+  Then you say go on, change something, or stop. A change that touches the PRD
+  goes back through the architect and the doc reviewer before code starts again.
+  No milestone begins until you have answered the one before it.
+- **A restart knows the milestone.** The unfinished-job notice now says which
+  milestone a job stopped in, and says plainly when a milestone is waiting for
+  your answer.
+- **`docs/principles.md`** — why the crew works this way, one entry per rule
+  with its source, plus the ideas we looked at and turned down. For people
+  changing the plugin; it is not published to npm.
+
+### Changed
+
+- A contract is frozen once either side's task starts. Only the architect edits
+  one. When it must change, an additive change (a new call, a new optional
+  field) costs one side; a rename or a removal costs both.
+- The doc reviewer checks the contracts and the milestones, and the code
+  reviewer checks the code against the contract it was built from.
+- Small DoD work is unchanged: no modules, no contracts, no milestones.
+
 ## 0.5.0 — 2026-08-19
 
 ### Changed

@@ -60,7 +60,37 @@ const withBroken = jobsNotice(root);
 if (!withBroken.includes("broken-job") || !withBroken.includes("Could not read")) fail("an unreadable state file must be reported");
 else ok("unreadable state file -> reported, not counted as finished");
 
-// 6. No silent cap: past five jobs it says how many were left out.
+// 6. A job with milestones says which one it is in — a restart must not guess.
+job("milestone-job", {
+  job: "milestone-job",
+  repo: "/repo/m",
+  milestones: [
+    { id: "M1", goal: "poc", state: "done" },
+    { id: "M2", goal: "the rest", state: "running" },
+    { id: "M3", goal: "later", state: "todo" },
+  ],
+  tasks: [{ id: "T-01", milestone: "M1", state: "done" }, { id: "T-02", milestone: "M2", state: "todo" }],
+});
+const withMilestone = jobsNotice(root);
+if (!withMilestone.includes("milestone M2 of 3")) fail("a job with milestones must say which milestone it is in");
+else ok("job with milestones -> names the milestone it stopped in");
+
+// 7. A milestone waiting for the user's answer blocks the whole job. Say so.
+job("waiting-job", {
+  job: "waiting-job",
+  repo: "/repo/w",
+  milestones: [{ id: "M1", goal: "poc", state: "review" }],
+  tasks: [{ id: "T-01", milestone: "M1", state: "todo" }],
+});
+const waiting = jobsNotice(root);
+if (!waiting.includes("waiting for the user's review")) fail("a milestone in review must be reported as waiting for the user");
+else ok("milestone in review -> notice says the user still owes an answer");
+
+// A job with no milestones must not grow a milestone line.
+if (/early-job[^\n]*milestone/.test(waiting)) fail("a job without milestones must not mention one");
+else ok("job without milestones -> no milestone line");
+
+// 8. No silent cap: past five jobs it says how many were left out.
 for (let index = 0; index < 6; index += 1) {
   job(`extra-${index}`, { job: `extra-${index}`, repo: "/repo/d", tasks: [{ id: "T-01", state: "todo" }] });
 }

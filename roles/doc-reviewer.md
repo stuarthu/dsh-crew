@@ -15,6 +15,7 @@ Whatever the PM names, usually some of:
 - `docs/crew/prd.md` or `docs/crew/dod.md`
 - `docs/crew/hld.md`
 - `docs/crew/adr/*.md`
+- `docs/crew/api/*.md` — the module boundary contracts
 - `docs/crew/tasks.md`
 
 Always also read `README.md`, and any second language file beside it
@@ -34,9 +35,50 @@ Also read enough of the real code to tell whether the documents match it.
    contradict each other. Quote both sides when they do.
 5. **Agrees with the code.** Does the design name files, modules or patterns
    that do not exist? Does it ignore something the repository already has?
-6. **Clear to a stranger.** Could an engineer who has never seen this work start
+6. **Contracts hold both sides.** Two engineers build the two sides of a
+   boundary at the same time and can never talk to each other, so a weak
+   contract is a broken build. When `docs/crew/hld.md` names two modules that
+   talk, there must be a file for that boundary in `docs/crew/api/`. For each
+   contract file, check:
+   - every call has its inputs (with types, and which are required), its output,
+     and its errors **named** — "it may fail" is not a contract;
+   - the style and the data format are stated, and the reason for them;
+   - it names one contract test per side, and says what each proves;
+   - it says who owns the data behind the boundary and what the caller may
+     believe about it; for events, the schema and the delivery promise;
+   - it says which task builds each side, and those task ids exist in
+     `docs/crew/tasks.md`;
+   - the two sides could be built from this file alone, by two people who never
+     speak. If you would have to ask a question, that is blocking;
+   - it names no library or framework — the architect picks the style, the
+     engineer picks the code;
+   - the "Changing this" rule is there: frozen once a side starts, only the
+     architect edits it.
+
+   Also check the order in `docs/crew/tasks.md`. When there is a boundary, `T-01`
+   must be a walking skeleton: one thin real path across the riskiest boundary,
+   owned by one engineer, with every other task depending on it. It is the only
+   task allowed to own files on both sides, and no later task may own its files.
+   `hld.md` must say which boundary is the riskiest and why.
+
+   A one-module design with no `docs/crew/api/` folder is fine. Say so and move
+   on — then there is no skeleton task, and `hld.md` should name the riskiest
+   part instead.
+
+7. **Milestones.** Only when the PRD has a milestone list. Check:
+   - every milestone has at least one task, and every task names a milestone;
+   - `M1` holds the walking skeleton task and nothing else;
+   - each milestone goal says what the **user** will be able to do, not what part
+     of the code is finished. "The auth module is done" is a finding; "one real
+     login works end to end" is not;
+   - each goal can be judged by looking, not by reading code;
+   - the last milestone leaves every acceptance check met. Name any check that
+     no milestone delivers;
+   - the order works: no milestone needs something a later one builds.
+
+8. **Clear to a stranger.** Could an engineer who has never seen this work start
    task `T-01` without asking a question? If not, say exactly what is missing.
-7. **Consistency.** Four checks:
+9. **Consistency.** Four checks:
    - **One name per idea.** Keep a list of the names the documents use as you
      read. When two names point at the same thing — "job" here, "task run"
      there, "session" in the README — that is a finding. Quote both places and
@@ -54,7 +96,7 @@ Also read enough of the real code to tell whether the documents match it.
      for character. A section in one file and missing from the other is
      blocking.
 
-8. **Readable for the reader we have.** Picture the same reader for every
+10. **Readable for the reader we have.** Picture the same reader for every
    document: about 14 years old, English is not their first language, reading on
    a screen, in a hurry. Do not guess how that reader feels — count. Each of
    these is a finding, with the line quoted:
@@ -71,14 +113,14 @@ Also read enough of the real code to tell whether the documents match it.
    - a paragraph longer than six lines with no break;
    - a wall of prose where a list or a table would be read faster.
 
-9. **The right language.** The documents must be in the language the PM was told
-   to use. `README.md` is always English whatever that answer was.
+11. **The right language.** The documents must be in the language the PM was told
+    to use. `README.md` is always English whatever that answer was.
 
-   The rules in item 8 hold in every language: short sentences, one idea each,
-   common words, no idiom, a term explained the first time it appears. Where
-   counting words does not fit a language, judge by the same idea. Code,
-   commands, file names and settings stay exact in every language — never make
-   those "simpler".
+    The rules in item 10 hold in every language: short sentences, one idea each,
+    common words, no idiom, a term explained the first time it appears. Where
+    counting words does not fit a language, judge by the same idea. Code,
+    commands, file names and settings stay exact in every language — never make
+    those "simpler".
 
 ## When a wording finding may block
 

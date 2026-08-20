@@ -9,7 +9,7 @@ starts an **architect** to design the work, **engineers** to write the code, and
 **reviewers** to judge both. The roles never talk to each other — they share work
 through files on disk, and the PM passes messages.
 
-> **Version 0.5.0.** PM, researcher, architect, engineer, QA, code reviewer,
+> **Version 0.6.0.** PM, researcher, architect, engineer, QA, code reviewer,
 > security reviewer, doc reviewer — plus pushing with your permission, CI
 > watching, and picking a job up after a crash.
 
@@ -113,11 +113,31 @@ come back by themselves. After an upgrade, copy your changes into the new file.
 4. It picks the document and writes it: a **DoD** (`docs/crew/dod.md`) for small
    work, a **PRD** (`docs/crew/prd.md`) for a real product. It says which it
    picked, and one word switches it. **You confirm before any work starts.**
+   A PRD is cut into **milestones** — three to six stops, each one something you
+   can look at and judge, written in your words rather than in code words. `M1`
+   is the proof of concept: the thinnest real path through the riskiest part,
+   running for real. You confirm the milestone list on its own, because it decides
+   when you get a say.
 5. For PRD work it starts `crew_architect`, which writes the high level design,
-   the decision records and the task breakdown — then `crew_doc_reviewer` must
-   pass those before a single line of code is written.
-6. It creates a `crew/<job>` branch and runs one `crew_engineer` per task. Two
-   engineers run together only when their file lists do not overlap. Every
+   the decision records and the task breakdown. It also splits the system into
+   modules — reusing what the repository already has before it invents anything
+   new — and when two or more modules talk to each other it writes one contract
+   file per boundary in `docs/crew/api/`: how the two sides talk (in-process
+   call, HTTP, gRPC, events, and so on), the data format, every call with its
+   inputs, output and errors, and how the shape stops a caller getting it wrong.
+   It picks the style, not the library. Those contracts are what let two
+   engineers build the two sides at the same time, because crew roles cannot talk
+   to each other, so each contract also names one **test per side** — the callee
+   proves it answers what the file says, the caller tests against a stub built
+   from the file. And when there is a boundary, the first task is a **walking
+   skeleton**: one engineer builds the thinnest real path across the riskiest
+   boundary, alone, before anything runs in parallel. A contract that does not fit
+   is cheapest to fix there. It also puts every task under one of your
+   milestones — it cannot add, rename or reorder them. Then `crew_doc_reviewer`
+   must pass all of it before a single line of code is written.
+6. It creates a `crew/<job>` branch and runs one `crew_engineer` per task, one
+   milestone at a time. Two engineers run together only when their file lists do
+   not overlap, and never across a milestone line. Every
    engineer works **test first**: it writes one unit test, runs it, checks that it
    fails for the right reason, then writes the smallest code that makes it pass.
    Its report has to show you the failing run and then the passing run. An
@@ -134,19 +154,27 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    disagreement to you.
 8. The PM commits — engineers never touch git. It stages only the files that task
    owns, never `git add -A`.
-9. The PM updates the repository README to match what was built. `README.md` is
+9. **Milestone review — the PM stops and asks you.** When every task in the
+   milestone has passed those checks and is committed, the PM reports what works
+   now, the exact commands to try it yourself, what is deliberately not there
+   yet, and the test results. Then you say: go on, change something, or stop.
+   A change that touches the PRD sends the plan back through the architect and
+   the doc reviewer before code starts again. No milestone begins until you have
+   answered the one before it. Small DoD work has no milestones — it is one
+   piece of work with one report at the end.
+10. The PM updates the repository README to match what was built. `README.md` is
    always English. If you chose another language for the job, it keeps a second
    file beside it — `README-zh.md`, `README-ja.md` — saying the same thing. If
    nothing a reader would notice changed, it leaves the README alone and tells
    you so.
-10. A last `crew_doc_reviewer` pass over every document the job produced, the
+11. A last `crew_doc_reviewer` pass over every document the job produced, the
     README included. It checks that the documents can be worked from, that they
     stay consistent (one name per idea, one shape, and the language files saying
     the same thing), and that they read easily for someone about 14 years old
     whose first language is not English — by counting things like sentence
     length, idioms and unexplained terms, not by taste. It may hold up the job on
     wording, but only if it writes the replacement sentence itself.
-11. **Push and CI, if you allow it.** The PM checks there is a remote, a
+12. **Push and CI, if you allow it.** The PM checks there is a remote, a
     workflow and a working `gh` first. Then it asks you — before **every** push,
     including a re-push after a fix. It pushes only what you said yes to — a
     `crew/*` branch, `main`, or a release tag — watches the run, and sends a red

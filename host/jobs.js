@@ -17,6 +17,9 @@ import { expandHome } from "./roles.js";
 /** Task states that still need work. Anything else counts as finished. */
 const OPEN_STATES = new Set(["todo", "running", "review", "blocked"]);
 
+/** Milestone states that still need work. Anything else counts as finished. */
+const OPEN_MILESTONES = new Set(["todo", "running", "review"]);
+
 /** How many jobs the notice names before it says how many it left out. */
 const MAX_LISTED = 5;
 
@@ -41,6 +44,9 @@ function readJob(dir) {
   const tasks = Array.isArray(state.tasks) ? state.tasks : [];
   const open = tasks.filter(task => OPEN_STATES.has(task?.state));
   const blocked = open.filter(task => task?.state === "blocked");
+  // Milestones are optional: only PRD-sized jobs have them.
+  const milestones = Array.isArray(state.milestones) ? state.milestones : [];
+  const current = milestones.find(one => OPEN_MILESTONES.has(one?.state));
   return {
     name: typeof state.job === "string" ? state.job : dir.split("/").pop(),
     repo: typeof state.repo === "string" ? state.repo : "(repository not recorded)",
@@ -48,6 +54,11 @@ function readJob(dir) {
     total: tasks.length,
     done: tasks.length - open.length,
     blocked: blocked.length,
+    milestones: milestones.length,
+    milestone: typeof current?.id === "string" ? current.id : undefined,
+    // A milestone in `review` is waiting for the user's answer, and nothing in
+    // the job may move until they give it. That has to be in the notice.
+    awaitingReview: current?.state === "review",
     // A job with no task list yet is unfinished too — it was interrupted while
     // the document was being written.
     unfinished: tasks.length === 0 || open.length > 0,
@@ -93,7 +104,10 @@ export function jobsNotice(jobsDir = DEFAULT_JOBS_DIR) {
     const progress = job.total === 0
       ? "no task list yet — it stopped while the document was being written"
       : `${job.done} of ${job.total} tasks done${job.blocked > 0 ? `, ${job.blocked} blocked` : ""}`;
-    lines.push(`- "${job.name}" in ${job.repo}${job.branch ? ` (branch ${job.branch})` : ""}: ${progress}. Last change ${job.touched}.`);
+    const stage = job.milestone === undefined
+      ? ""
+      : ` — milestone ${job.milestone} of ${job.milestones}${job.awaitingReview ? ", waiting for the user's review" : ""}`;
+    lines.push(`- "${job.name}" in ${job.repo}${job.branch ? ` (branch ${job.branch})` : ""}: ${progress}${stage}. Last change ${job.touched}.`);
   }
   // Never a silent cap: say what was left out.
   if (jobs.length > MAX_LISTED) lines.push(`- …and ${jobs.length - MAX_LISTED} more, not listed here.`);
@@ -101,7 +115,7 @@ export function jobsNotice(jobsDir = DEFAULT_JOBS_DIR) {
 
   lines.push(
     "",
-    "If one of these is in the folder this session is working in, tell the user about it BEFORE anything else, and ask one question: carry on, or start clean. Never carry on without asking, and never start clean without asking. Use `list_agents` to see which crew children can still be woken. Ignore jobs that belong to another folder.",
+    "If one of these is in the folder this session is working in, tell the user about it BEFORE anything else, and ask one question: carry on, or start clean. A job waiting for a milestone review is waiting for the user: ask that review question again before anything else moves. Never carry on without asking, and never start clean without asking. Use `list_agents` to see which crew children can still be woken. Ignore jobs that belong to another folder.",
   );
   return lines.join("\n");
 }

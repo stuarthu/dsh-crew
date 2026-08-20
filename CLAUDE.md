@@ -139,12 +139,23 @@ Note that this repository's own `.github/workflows/publish.yml` is tag-triggered
 ## State and documents
 
 Job state lives **outside** the repository, in `~/.dsh/crew/jobs/<job>/state.json`, so a user's
-`git status` stays clean. Crew documents (DoD, PRD, design) live **inside** it, in `docs/crew/`.
+`git status` stays clean. Crew documents (DoD, PRD, design, ADRs, and one module
+boundary contract per pair of modules that talk, in `docs/crew/api/<caller>-<callee>.md`)
+live **inside** it, in `docs/crew/`.
 `host/jobs.js` turns unfinished jobs into a dynamic prompt context that is re-read every turn — it
 must return `""` when there is nothing to say, and must never throw, because a prompt that fails to
 assemble breaks the session.
 
 ## Documentation
+
+`docs/principles.md` holds the **reasons** behind the crew's rules: one entry per
+principle, each with the rule, why it exists, the files that carry it, and the
+outside source it came from — plus a table of ideas that were looked at and
+rejected. Role prompts are written short and bossy on purpose, so the reasoning
+has to live somewhere else. When you change a rule in `roles/*.md`, update the
+principle that carries it; when you reject an idea, add it to the table so the
+next person does not re-run the same search. The file is for contributors and is
+not published to npm (`docs/` is not in the `files` list).
 
 `README.md` (English) and `README-zh.md` (Chinese) say the same thing and must be updated together
 whenever user-visible behaviour changes; write the English first, then match the Chinese. Keep the
