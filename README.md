@@ -1,5 +1,7 @@
 # dsh-crew
 
+English | [中文](README-zh.md)
+
 Run work in [DeepSeek Harness (dsh)](https://github.com/deepseek-ai/deepseek-harness)
 as a small crew of role agents.
 

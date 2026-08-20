@@ -1,5 +1,7 @@
 # dsh-crew
 
+[English](README.md) | 中文
+
 在 [DeepSeek Harness (dsh)](https://github.com/deepseek-ai/deepseek-harness) 里，
 用一个小团队（多个角色 agent）来完成工作。
 
