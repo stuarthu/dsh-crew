@@ -1,6 +1,6 @@
 # DoD：PM 的合并与清理步骤
 
-版本：19
+版本：22
 语言：中文（本文件和评审报告用中文；被改的仓库文件仍然写英文）
 仓库：/home/stuart/workspace/dsh-crew
 分支：main（用户决定直接在 main 上做，和前两次作业一样）
@@ -93,7 +93,10 @@
 | T-07 | CRD 0003：删掉 `agentsPerJob`，`liveAgents` 默认改 20，旧设置静默忽略并记一行启动日志 | `host/crew.js`、`cordis.patch.yml`、`tools/verify-mount.mjs` | 汇报里有先红后绿的真实输出；验收检查 48-52 |
 | T-08 | CRD 0003 的文档部分：两份 README 的配置表、CHANGELOG 一条 | `README.md`、`README-zh.md`、`CHANGELOG.md` | 验收检查 53；**必须排在 T-02 之后**，同三个文件 |
 | T-09 | CRD 0004：把「默认并行」写成规则 | `roles/pm.md` | 验收检查 54、55 |
-| T-10 | CRD 0004 的原则条目 | `docs/principles.md` | 验收检查 56；**等另一个会话放开这个文件** |
+| T-10 | CRD 0004 的原则条目 | `docs/principles.md` | 验收检查 56 |
+| T-13 | 让 guard 的自述和它的实际能力对齐：注释说实话、报错不给子 agent 配方、说清扫描范围只到 GitHub | `host/git-guard.js`、`tools/verify-guard.mjs`、`README.md`、`README-zh.md` | 验收检查 59-61 |
+| T-14 | 第 4 组第 3 条：`verify-preset-install.mjs` 的 fakeContext 也要捕获 `console.log`，否则双打印在那里数不出来 | `tools/verify-preset-install.mjs` | 验收检查 62 |
+| T-15 | 4.4（钉住并行规则）+ 5.2（数删除命令出现两次） | `roles/pm.md`、`tools/verify-mount.mjs` | 验收检查 63、64 |
 | T-11 | 修掉启动日志说两遍（QA 缺陷 1，是 T-07 自己写的新代码，按缺陷修） | `host/crew.js`、`tools/verify-mount.mjs` | 验收检查 57 |
 | T-12 | CRD 0005：检查脚本跑完不留临时目录 | `tools/verify-preset-install.mjs` | 验收检查 58 |
 
@@ -622,3 +625,84 @@ QA 明确说它**没有**验证的：验收检查 8、9、10、21、47、53（�
     `host/crew.js` 里同样写法的另一处（`.bak` 提示）一起修，否则 bug 只修了一半。
 58. `node tools/verify-preset-install.mjs` 跑完之后，它建的临时目录一个都不剩；脚本中途
     抛错时也不剩。有用例证明，并且把清理弄坏会红。
+
+## 用户对第 3 组四条的决定（版本 20 追加）
+
+安全评审报出、PM 交给用户的四条，用户的决定：
+
+- **3.1（guard 只包 `bash`/`pwsh`，注释里那句承诺不成立）→ 只改注释。**
+  不把中间件扩到写文件的工具上。所以 `host/git-guard.js:246` 那句
+  「No agent — not even the trusted PM — may write the approval file」要改成实话：
+  这条规则只作用于 shell 命令；一个有 `write` / `edit` 的角色（工程师就有）可以直接
+  写出那个文件，guard 看不见；真正的闸门是 dsh 自己的写文件核准提示。
+- **3.2（`howToApprove()` 把自我批准的配方印给子 agent 看）→ 做。**
+  完整配方只给 root/PM，子 agent 只得到一句「请用户自己批准」。它和 3.1 合起来才要紧：
+  agent 同时拿到配方和一条没被守住的路径。
+- **3.3（`publishingWorkflow()` 只看 `.github/workflows`）→ 扫哪些文件由 agent 自己
+  判断。** 中间件不扩，因为 `branchPushTriggers()` 那套判断是 GitHub 专用的，草率扩
+  一半会造出误挡，而误挡比不挡更糟。要补的是把分工说成实话：guard 的扫描是 GitHub 专用
+  的兜底，更宽的检查是 PM 自己的判断（已经写在 `roles/pm.md` 第 17 步里）。
+- **3.4（六条文档验收检查没有独立验证）→ 暂时不管。** 所以这六条在本次作业里只有 PM
+  自己 grep 过，没有第二个人看过。最终总结必须照实说。
+
+## T-13 的验收检查
+
+59. `host/git-guard.js` 的注释不再声称「没有 agent 能写审批文件」。它说清楚：这条规则
+    只读 `bash` 和 `pwsh` 的命令文本；有 `write` / `edit` 的角色可以绕过它；真正的闸门
+    是 dsh 的写文件核准提示。
+60. 子 agent 被拒绝时，报错里**没有**能直接照抄的自我批准命令；root/PM 仍然拿到完整
+    步骤。两种情况都有用例，把修法弄坏会红。
+61. `host/git-guard.js` 和两份 README 都说清楚：guard 的发布型 workflow 扫描只看
+    `.github/workflows`，别的 CI 系统不在它的覆盖范围内，更宽的检查由 PM 在第 17 步
+    自己做。两份 README 说的一样。
+
+## 用户对第 4、5 组的决定（版本 21 追加）
+
+**第 4 组（这一轮新发现）**：
+
+- **4.1（并行规则的漏洞：验证时读别人文件 → 假红）→ 做，但要等。** 指令要进
+  `roles/engineer.md`，那是另一个会话的文件。原则 18 已经把限制和「今天怎么办」写下来了
+  （最终验证由 PM 在树静下来之后做一次），但工程师的提示词里还没有这条指令。
+- **4.2（`verify-mount.mjs` 也漏临时目录？）→ 查过了，不成立，划掉。** `mkdtempSync`
+  全文只有第 433 行一处，`T-11` 已在 `finally` 里清理；PM 实测跑前 0 个、跑后 0 个。
+- **4.3 → 做**，见 T-14。
+- **4.4（并行规则完全没被钉住）→ 做**，见 T-15。这是本轮唯一的 test-first 缺口：现在把
+  整段并行规则从 `roles/pm.md` 删掉，`npm test` 照样四项全绿。
+- **4.5（两处折行不齐）→ 以后再说。**
+
+**第 5 组（原本刻意留着的两条）**：
+
+- **5.2（`git push origin --delete` 出现两次，删掉 PM 自己那条仍然是绿的）→ 做**，见
+  T-15。改成「至少出现两次」。PM 原来「计数会脆」的判断偏保守了：数**命令**字符串和钉
+  散文不是一回事，命令不会因为改措辞而变。副作用是将来有人刻意去掉兜底那条会红一次，
+  而那时候红是对的。
+- **5.1（删分支前还剩几秒的时间窗）→ 不关，维持「永远不 force」。** 用户的原话：
+  「5.1 never force」。
+
+  **所以这个窗口是刻意留着的，总结里必须照实说。** 事实是：git 删分支没有 lease，唯一
+  能做到原子的写法是 `--force-with-lease=<ref>:<sha> :<ref>`；要用它，第 17 步那条
+  「`--force` 和 `--force-with-lease` 永远不属于这一步，不管 guard 允不允许」的平规则就得
+  变成「除了这一处」。用户听完这个取舍，选了保住平规则。
+
+  代价说清楚：拿到删除的 yes 之后、真正删除之前，仍然有几秒钟；如果那几秒里有人往远端
+  分支推了一个提交，`git push origin --delete` 会把它变成服务器上取不回的对象，而三条
+  证明全都「通过」。这是这个功能**唯一还能毁掉工作**的路径，它现在被缩到一轮之内，
+  没有被消除。
+
+  PM 的看法（记下来，供以后重新考虑）：lease 式删除是这件事技术上正确的答案；不用它的
+  理由是提示词卫生——一条平规则比一条带例外的规则好守，而带例外的规则会被侵蚀。这是一次
+  明说的取舍，不是遗漏。
+
+  T-15 因此被掐停并重开，只做 4.4 和 5.2。掐停时它还在读文件，`roles/pm.md` 和
+  `tools/verify-mount.mjs` 一个字都没被改，`npm test` 仍然 exit=0。
+
+## T-14、T-15 的验收检查
+
+62. `tools/verify-preset-install.mjs` 的 fakeContext 会捕获 `console.log`，所以同一句
+    启动信息被打两遍时，那里也有用例数得出来。把 `host/crew.js` 的 `bootLog` 改回旧的
+    `?? console.log` 写法，这个文件里会红。
+63. `tools/verify-mount.mjs` 钉住并行规则：把第 9 步那段并行规则从 `roles/pm.md` 删掉会红，
+    失败信息点名 `roles/pm.md`。
+64. `git push origin --delete` 在 PM 提示词里**至少出现两次**，删掉任何一条都会红。
+65. ~~lease 式删除~~ **取消**：用户选了维持「永远不 force」。第 17 步的远端删除保持
+    `git push origin --delete crew/<job-slug>`，那条平规则一个字不动。
