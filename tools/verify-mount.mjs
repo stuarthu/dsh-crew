@@ -138,6 +138,26 @@ for (const fileName of ["engineer.md", "architect.md", "doc-reviewer.md"]) {
   else ok("roles/qa.md keeps the plan in the job folder and the cases, the runner and the gap list in docs/qa/");
 }
 
+// CRD 0010, in the four role files that act on it. `DoD` is the name of a
+// SECTION and never a file name: every milestone and every task row carries one,
+// and a check now lives as an item inside it. So each of these files must name
+// `docs/design/tasks.md` — the one task table, in both lanes, whoever types it —
+// and must say `DoD section`, and must NOT name a file called `dod.md`.
+//
+// The absent string is the pin that matters. A DoD written as its own file lives
+// in the job folder, is dropped with the job, and takes every check inside it
+// along: this crew lost 75 acceptance checks that way in one hour, which is the
+// evidence in the CRD. An absent string cannot go red from a rewording — it
+// takes somebody writing the old rule back, which is exactly what it is here to
+// catch. Two paths and one section name, so no prose is pinned.
+for (const fileName of ["architect.md", "engineer.md", "qa.md", "doc-reviewer.md"]) {
+  const text = readRoleText(fileName, undefined);
+  if (text.includes("dod.md")) fail(`roles/${fileName} names a file called \`dod.md\` (at index ${text.indexOf("dod.md")}) — CRD 0010 forbids that file name anywhere, because a DoD file lives in the job folder and is dropped with it. \`DoD\` is a section of docs/design/prd.md or of a task row in docs/design/tasks.md. Point the role at those two files instead`);
+  else if (!text.includes("docs/design/tasks.md")) fail(`roles/${fileName} does not name \`docs/design/tasks.md\` — CRD 0010 gives both lanes one task table in one place, with one shape; only the typist changes (the architect on big work, the PM on small work). Every task row and its DoD section live there, so a role that does not know the path cannot read its own task. Put it back`);
+  else if (!text.includes("DoD section")) fail(`roles/${fileName} never says \`DoD section\` — that is the thing CRD 0010 creates: what "done" means and how somebody else checks it, written into the task row or the milestone. With the name gone the role no longer knows the section exists. Put it back`);
+  else ok(`roles/${fileName} points at docs/design/tasks.md and knows the DoD section, and names no dod.md`);
+}
+
 // The false-red rule, in the two files that carry it. A red that names a file
 // another live task is writing is not a defect, and the role has to say so in a
 // phrase the PM can recognise: `the tree was moving`. Both files put that phrase
@@ -397,6 +417,33 @@ function applyCapturingLogs(config, { logger = true } = {}) {
     // can come back by a reword: it takes someone writing the old rule again.
     else if (section.text.includes("**Decisions** section")) fail("PM section still sends a decision to a **Decisions** section of the DoD — the DoD lives in the job folder and is dropped with it, so CRD 0006 moved every decision about HOW to an ADR in docs/decisions/adr/. Remove that instruction from roles/pm.md");
     else if (section.text.includes("Only the architect writes an ADR")) fail("PM section still says `Only the architect writes an ADR` — CRD 0006 makes the PM write it when the job has no architect, so that line contradicts the rule around it. Remove it from roles/pm.md");
+    // CRD 0010. Both lanes now open with the same document, `docs/design/prd.md`
+    // — a short one for small work, the same file with milestones for big work —
+    // and both keep the task table in `docs/design/tasks.md`. Two paths, pinned
+    // present.
+    else if (!section.text.includes("docs/design/prd.md")
+      || !section.text.includes("docs/design/tasks.md")) fail("PM section is missing `docs/design/prd.md` or `docs/design/tasks.md` — CRD 0010 gives both lanes the same opening document and the same task table, so the PM briefs a role for small work with the same two paths as for big work. Put the missing path back in roles/pm.md");
+    // The same section name the four role files carry, so the PM and the crew
+    // mean one thing by it. This is a NAME, not prose — like `publishCheck`
+    // above — but it proves only that the name is somewhere in the prompt, not
+    // that step 4 still tells the PM to write one per task and per milestone.
+    // The known limit of ADR 0004 applies: a second copy of the string anywhere
+    // would let step 4's rule be deleted with this pin still green.
+    else if (!section.text.includes("DoD section")) fail("PM section never says `DoD section` — CRD 0010 makes every milestone and every task row carry one, and that section is the only place a check lives now: what \"done\" means, and how somebody else checks it. With the name gone the PM has nowhere to write it. Put it back in roles/pm.md");
+    // Two ABSENT strings for the two shapes CRD 0010 removed. Neither can come
+    // back by a rewording; it takes somebody writing the old rule again.
+    //
+    // `dod.md`: a DoD written as its own file lived in the job folder, was
+    // dropped with the job, and took every check inside it along — 75 of them in
+    // one hour, which is the evidence that forced the CRD. The pin is the bare
+    // file name, so it catches every path it could be written as.
+    else if (section.text.includes("dod.md")) fail(`PM section names a file called \`dod.md\` (at index ${section.text.indexOf("dod.md")}) — CRD 0010 forbids that file name anywhere, whichever path it is written as (~/.dsh/crew/jobs/<job-slug>/dod.md, docs/design/dod.md, docs/crew/dod.md). \`DoD\` is a section of docs/design/prd.md or of a task row in docs/design/tasks.md, never a file: a file in the job folder is dropped with the job, and this crew lost 75 acceptance checks that way in one hour. Take the path out of roles/pm.md`);
+    // The flat numbered acceptance-check list. A check is now an item in the DoD
+    // section of the task or the milestone it belongs to, so a CRD records "4
+    // items added to T-05's DoD" and never "acceptance checks 18-21" — a number
+    // that points into a flat table nobody keeps. That table is what made three
+    // of this job's own checks go stale or contradict each other.
+    else if (section.text.includes("Acceptance checks — a numbered list")) fail("PM section still tells the PM to write `Acceptance checks — a numbered list` — CRD 0010 removed the flat numbered list. A check is an item inside the DoD section of the task or milestone it belongs to, and it is named that way (\"item 2 of T-05's DoD\"), because a global number points into a table that goes stale. Remove that line from roles/pm.md");
     else ok(`PM prompt section registered (order ${section.order}, ${section.text.length} chars)`);
   }
 

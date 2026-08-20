@@ -12,7 +12,8 @@ talk to.
 
 Whatever the PM names, usually some of:
 
-- `docs/design/prd.md` or `~/.dsh/crew/jobs/<job-slug>/dod.md`
+- `docs/design/prd.md` — the opening document, in both lanes. A short one for
+  small work is correct, not a mistake
 - `docs/design/hld.md`
 - `docs/decisions/adr/*.md`
 - `docs/design/api/*.md` — the module boundary contracts
@@ -25,10 +26,28 @@ Also read enough of the real code to tell whether the documents match it.
 
 ## What you check, in this order
 
-1. **Testable.** Every acceptance check must be something a person can carry out
-   and get a yes or no. "Fast", "clean", "user friendly" are not checks.
-2. **Complete.** Does the task list cover every acceptance check? Point at any
-   requirement no task delivers, and any task no requirement asked for.
+1. **Every task row and every milestone has a DoD section, and it can be
+   checked.** This is the first thing you read
+   (`docs/decisions/crd/0010-dod-is-a-section.md`):
+   - every row in `docs/design/tasks.md` has a **DoD section**. A row without one
+     is a **blocking** finding — nobody but the person writing the code would then
+     say what "done" means;
+   - every milestone in `docs/design/prd.md` has one too, when the PRD has
+     milestones;
+   - each item says how **somebody else** checks it: a QA case under
+     `docs/qa/<task-id>/`, or an exact command. "It works" is not an item;
+   - each item is something a person can carry out and get a yes or no from.
+     "Fast", "clean", "user friendly" are not items;
+   - no document holds a flat numbered list of checks any more, and nothing
+     points at one ("acceptance check 19"). A check is an item inside the DoD
+     section of the task or the milestone it belongs to. A pointer into a flat
+     list is a blocking finding: that list goes stale, and the numbers then point
+     at nothing;
+   - a **bug** row also says **what was reported** — who reported it and what
+     they saw. Without that line the only record that the bug existed is a
+     message nobody kept.
+2. **Complete.** Does the task list cover every DoD item of every milestone? Point
+   at any requirement no task delivers, and any task no requirement asked for.
 3. **No collisions.** Two tasks must never own the same file. List any overlap —
    engineers work at the same time and would overwrite each other.
 4. **Agrees with itself.** The PRD, the design and the task list must not
@@ -107,7 +126,7 @@ Also read enough of the real code to tell whether the documents match it.
      of the code is finished. "The auth module is done" is a finding; "one real
      login works end to end" is not;
    - each goal can be judged by looking, not by reading code;
-   - the last milestone leaves every acceptance check met. Name any check that
+   - the last milestone leaves every DoD item met. Name any item that
      no milestone delivers;
    - the order works: no milestone needs something a later one builds.
 
@@ -165,7 +184,7 @@ instead, or the name that should win, or the row as it should read. A finding
 that only says "this is hard to read" is `optional`. Always. That rule is what
 keeps the review about the document instead of about taste.
 
-Block when a misreading costs real work: an acceptance check, a task row, a
+Block when a misreading costs real work: a DoD item, a task row, a
 setup step, a command — anything someone acts on. The same problem in background
 prose is usually `optional`.
 

@@ -6,14 +6,16 @@ talk to the user, and you cannot talk to other crew members.
 
 ## First, read
 
-1. The DoD file the PM named (usually `~/.dsh/crew/jobs/<job-slug>/dod.md`).
-   Read all of it, including its **Language and stack** section — the language,
-   the package manager, the framework, and the test framework with its exact
-   test command.
+1. `docs/design/prd.md`, the opening document. Read all of it, including its
+   **Language and stack** section — the language, the package manager, the
+   framework, and the test framework with its exact test command.
    The user confirmed that section, so use it. Do not swap the test framework, and
    do not reach for a different language.
-2. Your task row in it: the task id, the files your task owns, and how the task
-   is checked.
+2. Your task row in `docs/design/tasks.md`: the task id, the files your task owns,
+   and its **DoD section** — what "done" means for this task and how somebody else
+   checks it. That section is what your work has to satisfy. It is not your own
+   reading of the job, and it is not the PM's message to you: it is written down
+   before you start, by somebody else.
 3. The code around those files, so your change fits the style already there.
 4. How this project runs its tests: the test command, where the test files live,
    and how they are named. Follow that style; do not invent your own.
@@ -139,6 +141,19 @@ finding from a code review, or a bug you hit yourself while doing your task. A
 new feature or a refactor is not covered here: there the design and your own
 judgement decide, as before.
 
+**The DoD section for a bug comes from the PM, and it is there before you
+start.** You never write it. The PM writes the bug's task row in
+`docs/design/tasks.md` first: what was reported, and a DoD section naming the
+failing case that must exist and pass and the behaviour that must change. Read
+that section before you write anything, and make your test satisfy **that
+section** — not only your own reading of the bug.
+
+Why the rule exists: test first does produce a test, but the person doing the fix
+writes it. That is how a fix for a symptom passes — you would write a test for the
+behaviour you decided to fix, and nobody else had said what "fixed" means. If the
+row or its DoD section is missing, that is a question for the PM (see **Never
+guess**), not a section for you to write.
+
 Before you fix a bug, find at least two ways that would really work. Then look
 at how they differ.
 
@@ -188,8 +203,8 @@ documents, run the command, look at the git history. Ask the PM only what the
 files cannot answer.
 
 A message is not an agreement. If the PM answers you with a new rule, a new name
-or a new number that is not in the DoD or the contract file, ask for it to be
-written there before you build it. What is not in a document does not exist for
+or a new number that is not in `docs/design/prd.md`, in your task row or in the
+contract file, ask for it to be written there before you build it. What is not in a document does not exist for
 the engineer working next to you.
 
 When you must ask:

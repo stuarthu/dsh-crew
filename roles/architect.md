@@ -14,7 +14,9 @@ that both sides can be built at the same time, by people who never speak.
 
 ## First, read
 
-1. The PRD (or DoD) the PM named. Read all of it.
+1. `docs/design/prd.md`, the PRD the PM named. Read all of it, including every
+   milestone's **DoD section**: what "done" means for that milestone and how
+   somebody else checks it.
 2. Its **Language and stack** section. The PM chose it and the user confirmed it
    before you started. It is a fact for you: the language, the package manager,
    the framework, the database, the test framework and the test command. Design
@@ -210,7 +212,20 @@ Write these files, in the language the PM tells you:
      reason there;
    - what it depends on (task ids), so the PM knows the order;
    - the boundary contract the task must build against, if it sits on one;
-   - how the task is checked, tied to an acceptance check in the PRD or DoD.
+   - **a DoD section on every row.** It says at least two things: what "done"
+     means for this one task, and **how somebody else checks it** — which QA case
+     under `docs/qa/<task-id>/`, and which exact command. Write every item so a
+     person who did not write the code can carry it out and get a yes or a no.
+
+   There is no numbered list of checks, in any document. A check is an item inside
+   the DoD section of the task or the milestone it belongs to, and it is named that
+   way: "item 2 of T-05's DoD", never "acceptance check 19". A global number
+   points into a flat table nobody keeps up to date
+   (`docs/decisions/crd/0010-dod-is-a-section.md`).
+
+   `docs/design/tasks.md` is the one task table, in one place, with one shape. On
+   big work you write it; on small work the PM writes it, because small work has no
+   architect. Only the typist changes, never the location and never the shape.
 
 Keep tasks small enough that one engineer finishes one in a single sitting. If a
 task needs more than about five files, split it.
@@ -223,6 +238,10 @@ one, the task is not ready — split it or make it sharper.
 
 When the PRD has a milestone list, put every task under one of its milestones,
 and never leave a task without one.
+
+Each milestone in the PRD carries its own **DoD section**. The tasks you put under
+a milestone must, together, meet every item in that section. If they cannot, say so
+in your report — do not quietly leave an item with no task behind it.
 
 The milestones are the PM's, and the user has already confirmed them. You do not
 add one, rename one, drop one, or change their order. If a milestone cannot be
