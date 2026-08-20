@@ -9,9 +9,10 @@ starts an **architect** to design the work, **engineers** to write the code, and
 **reviewers** to judge both. The roles never talk to each other — they share work
 through files on disk, and the PM passes messages.
 
-> **Version 0.6.0.** PM, researcher, architect, engineer, QA, code reviewer,
-> security reviewer, doc reviewer — plus pushing with your permission, CI
-> watching, and picking a job up after a crash.
+> **Version 0.7.0.** PM, researcher, architect, engineer, QA, code reviewer,
+> security reviewer, doc reviewer — plus a QA suite that stays on disk and runs
+> again, a written change request for every scope or contract change, pushing with
+> your permission, CI watching, and picking a job up after a crash.
 
 ## Two planes
 
@@ -140,8 +141,10 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    not overlap, and never across a milestone line. Every
    engineer works **test first**: it writes one unit test, runs it, checks that it
    fails for the right reason, then writes the smallest code that makes it pass.
-   Its report has to show you the failing run and then the passing run. An
-   engineer that believes a test cannot come first must ask the PM before it
+   Its report has to show you the failing run and then the passing run. Every one
+   of those tests is a real file in your project's test suite, named in the task
+   row and committed with the code — never a command someone ran once in a shell.
+   An engineer that believes a test cannot come first must ask the PM before it
    writes any code.
 7. Each finished task is checked in order: **code review** (correctness, then the
    tests that drove the change, then reuse, simpler code, readability and this
@@ -149,7 +152,13 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    it shows the exact replacement it wants; otherwise the finding is optional) → **security review**, only when the change touches
    the network, login, secrets, files outside the project, the shell, user input,
    customer data or a new dependency → **QA**, which writes its test plan from
-   the document *before* reading the code, then runs it. Round two of any review
+   the document *before* reading the code, then turns every case into a real test
+   file under `docs/crew/qa/<task-id>/`, in your project's own test framework,
+   with a `run.sh` beside it. `docs/crew/qa/run-all.sh` runs every task's cases,
+   and QA runs it on every task it checks — so a case written in an earlier task
+   guards the new one. An old case that starts failing is a blocking regression,
+   and nobody is allowed to edit it green. Your QA suite grows with the project
+   and outlives the job. Round two of any review
    only re-checks the blocking findings; after the round limit the PM brings the
    disagreement to you.
 8. The PM commits — engineers never touch git. It stages only the files that task
@@ -180,8 +189,41 @@ come back by themselves. After an upgrade, copy your changes into the new file.
     `crew/*` branch, `main`, or a release tag — watches the run, and sends a red
     CI's real error text back to the engineer that owns those files.
 
-Documents live in the repository (`docs/crew/`). The job state lives outside it,
-in `~/.dsh/crew/jobs/<job>/state.json`, so your `git status` stays clean.
+## Nothing important lives in a chat message
+
+The crew is flat: the PM talks to each role, and two roles can never talk to each
+other. So a message reaches one role and dies there. That is why the crew talks
+**through documents** — a role's report points at the file it wrote, and the PM's
+answer points at the document it changed and that document's new version. Two
+engineers building two sides of the same boundary read the same file, and a role
+started tomorrow reads what a role started an hour ago read.
+
+On top of that, every **change request** gets its own file. If anyone — you, a
+role, or the PM itself — asks for something that changes what you get (the scope,
+an acceptance check, the milestone list) or how two modules talk (a boundary
+contract), the PM writes `docs/crew/crd/NNNN-<short-name>.md` first: who asked,
+what they want, why, which documents and tasks it touches, what it costs, and the
+decision with its reason. Nothing is built from an undecided one, and a rejected
+one is kept as the record of a road not taken.
+
+Who decides which:
+
+- **A contract fix that changes nothing you see** is the PM's call. It writes the
+  CRD, sends the architect to change the contract file, and tells you at the next
+  milestone review.
+- **Anything that changes scope, an acceptance check or the milestone list needs
+  your yes.** The PM writes the CRD, then stops and asks. No version is raised and
+  no task starts until you answer.
+
+Small questions do not become CRDs — a role's question that the files can answer
+is just a note in the job folder, and a review finding about code is a review
+finding. Only scope and contracts, the two things that cost real work to redo.
+
+Documents live in the repository, under `docs/crew/`: the PRD or DoD, the design
+and its decision records, one contract file per module boundary in `api/`, the
+change requests in `crd/`, and QA's plans and runnable cases in `qa/`. The job
+state lives outside it, in `~/.dsh/crew/jobs/<job>/state.json`, so your
+`git status` stays clean.
 
 ## After a crash
 

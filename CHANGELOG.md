@@ -6,6 +6,56 @@ Every version bump rewrites `$DSH_HOME/.agent-presets/crew`. Files you edited
 there are kept as `<name>.bak` and named in the boot log, but your settings do
 **not** come back on their own. Copy them into the new file after an upgrade.
 
+## 0.7.0 — 2026-08-20
+
+### Added
+
+- **QA's test cases are files you keep.** QA still writes its plan from the
+  document before it reads the code, but now every case becomes a real test file
+  in your project's own test framework, under `docs/crew/qa/<task-id>/`, with a
+  `run.sh` beside it. They are committed with the task, so they outlive the job.
+- **One command runs every QA case ever written.** `docs/crew/qa/run-all.sh`
+  finds each task's `run.sh` by itself and runs them all. QA runs it on every
+  task it checks, so a case from an earlier task guards the new work. A case that
+  used to pass and now fails is a blocking regression, and nobody may edit it
+  green — it goes back to the engineer that owns those files.
+- **Change request documents (CRDs).** When anyone — you, a crew role, or the PM
+  itself — asks for something that changes what you get (the scope, an acceptance
+  check, the milestone list) or how two modules talk (a boundary contract), the PM
+  writes `docs/crew/crd/NNNN-<short-name>.md` first: who asked, what they want,
+  why, which documents and tasks it touches, the cost, and the decision with its
+  reason. Nothing is built from an undecided CRD, and a rejected one is kept.
+  Small questions and code review findings deliberately do **not** get a CRD.
+- **Who decides a CRD.** A contract fix that changes nothing you can see is the
+  PM's call — it writes the CRD, sends the architect to change the contract file,
+  and names it in the next milestone report. Anything that changes scope, an
+  acceptance check or the milestone list needs your yes: the PM stops and asks,
+  and raises no version until you answer.
+- **The state file tracks CRDs**, so a session that picks the job up after a crash
+  knows which change requests are still undecided.
+
+### Changed
+
+- **An engineer's test must be a file that stays.** It goes in your project's test
+  suite, in the naming that project already uses, is named in the task row, and is
+  committed with the code. No proving a behaviour with a throwaway command, no
+  deleting or weakening a test once it passes, and every test has to pass twice in
+  a row.
+- **Documents are the only channel between the PM and its roles.** A role's report
+  points at the file it wrote; the PM's answer points at the document it changed
+  and that document's new version. Nothing that matters may live only inside a
+  message — if the PM's answer is a new rule, name or number, it goes into a
+  document first. The engineer and QA are told to ask for that in writing before
+  they build or test it.
+- The PM's milestone report now lists every CRD since the last review, and its
+  final report gives the numbers from both the project's test command and
+  `docs/crew/qa/run-all.sh`.
+- If your test runner cannot see `docs/crew/qa/` (many only look inside folders
+  their config names), QA reports it with the exact command, the message, and the
+  one config line that would fix it. The PM either adds that line or says plainly
+  that those cases cannot run yet. QA never edits your project's config and never
+  moves its files into your test folder.
+
 ## 0.6.0 — 2026-08-20
 
 ### Added

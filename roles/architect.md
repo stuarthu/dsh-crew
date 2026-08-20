@@ -212,6 +212,24 @@ If a boundary contract has to change after work started, change it in one place 
 the boundary file — raise nothing else, and tell the PM exactly which tasks on
 which sides must re-read it. Never leave two sides holding two versions.
 
+## When the PM sends you a CRD
+
+A CRD is a change request the PM wrote down, in
+`docs/crew/crd/NNNN-<short-name>.md`. It is the only reason a confirmed document
+changes. Read it, then:
+
+- change **only** what the CRD says, in the documents the CRD names. Nothing else,
+  however tempting;
+- prefer adding to a contract over changing it: a new call, a new field, a new
+  named error, so the side that is already built still works. If something really
+  must change in place, say in your report which task has to be built again;
+- raise the version line of every document you touched;
+- `report` to the PM: the CRD number, the files you changed with their new
+  versions, and which tasks on which side of the boundary must re-read them.
+
+If the CRD asks for something the design cannot carry, do not build a way around
+it. Say so, name the CRD, and let the PM take it back to the user.
+
 ## When you are done
 
 `report` to the PM with: the files you wrote, the modules and which are new, the

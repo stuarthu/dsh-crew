@@ -156,7 +156,8 @@ evidence that the test could ever have failed. Scrum says the same thing another
 way: developers build quality in "by adhering to a Definition of Done". Quality
 is built in, not checked afterwards.
 
-**Lives in** `roles/engineer.md`, `roles/pm.md`, `roles/code-reviewer.md`.
+**Lives in** `roles/engineer.md`, `roles/pm.md`, `roles/code-reviewer.md`. Where
+that test file lives, and how it is run again later, is principle 13.
 
 **Source.** [The 2020 Scrum Guide](https://scrumguides.org/scrum-guide.html)
 
@@ -279,6 +280,76 @@ has not installed yet. An allow list does not have to.
 
 ---
 
+## 13. Every test lands on disk and runs again
+
+**Rule.** An engineer's unit test is a file in the project's own test suite, named
+in its task row and committed with the code. QA's cases are files too, in the
+project's test framework, under `docs/crew/qa/<task-id>/`, with a `run.sh` per
+task and one `docs/crew/qa/run-all.sh` that finds and runs them all. QA runs all
+of them — including cases written for tasks that finished long ago — on every
+task it checks, and an old case that now fails is a blocking regression.
+
+**Why (ours).** A crew job ends; the project does not. A case that only ever ran
+inside an agent's shell proves something for ten minutes and then protects
+nothing, so the next change breaks a promise nobody is watching. Written down,
+the same cases become the project's regression suite, and each job leaves the
+next one better guarded. This is the plain reading of the Scrum idea that quality
+is built in: the Definition of Done has to survive the sprint that produced it.
+
+**How the split is drawn.** QA writes only inside `docs/crew/qa/`, never into the
+product's own test folder. That keeps the existing file-ownership rule intact —
+one task owns its files — and keeps a reviewer's question ("who wrote this test?")
+answerable by the path alone. The cost is real and known: a runner that only
+looks inside configured folders will not see `docs/crew/qa/`, so QA reports that
+to the PM and the PM either adds the one config line or records the cases as not
+runnable. QA never edits project config, and never moves its files to dodge the
+problem.
+
+**Lives in** `roles/qa.md`, `roles/engineer.md` ("Your test is a file that
+stays"), `roles/pm.md` (steps 3, 9c, 10, 11, 15).
+
+**Source.** [The 2020 Scrum Guide](https://scrumguides.org/scrum-guide.html)
+
+---
+
+## 14. Documents are the only channel, and a change gets a CRD
+
+**Rule.** Nothing that matters lives only in a message. A child's `report` points
+at the file it wrote; the PM's answer points at the document it changed and that
+document's new version. And any request that would change **what the user gets**
+(scope, an acceptance check, the milestone list) or **how two modules talk** (a
+boundary contract) becomes a change request document — `docs/crew/crd/NNNN-<short-name>.md` —
+written by the PM before anything moves, whoever asked: the user, a role, or the
+PM itself. A CRD is never deleted, and a rejected one stays.
+
+Who decides: a contract fix that changes nothing the user sees is the PM's call,
+reported at the next milestone review. Anything touching scope, an acceptance
+check or the milestone list needs the user's yes first.
+
+**Why (ours).** The crew is flat, so a message reaches exactly one role and dies
+there (principle 1). Two engineers building two sides of a boundary cannot
+compare notes; if one of them was told something in a message, the other is
+building against a different truth and nobody finds out until the halves are
+joined. A document is the only thing every role, and every role started
+tomorrow, reads the same way. The CRD adds the missing half of that: the record
+of *why* a confirmed document changed, and who agreed to it. Without it a design
+can drift a whole milestone and leave no trace of who asked.
+
+**Why the scope is narrow.** A CRD for every question or review finding would
+bury the ones that matter and put the PM in a writing job instead of a deciding
+one. So an internal change that keeps the same behaviour and the same contract —
+an ADR, an HLD detail, splitting one task in two — is only a version bump on the
+document that owns it. A question the files can answer stays an inbox `Q-` file.
+
+**Lives in** `roles/pm.md` ("Documents are the only channel", "Change requests"),
+`roles/architect.md` ("When the PM sends you a CRD"), `roles/engineer.md`,
+`roles/qa.md`.
+
+**Source.** [The 2020 Scrum Guide](https://scrumguides.org/scrum-guide.html) ·
+[Change control in ISO 9001 / configuration management](https://en.wikipedia.org/wiki/Change_control)
+
+---
+
 ## What we looked at and did not take
 
 | Idea | Why not |
@@ -289,6 +360,10 @@ has not installed yet. An allow list does not have to.
 | A named Definition of Ready, with INVEST | Our task rules already require independence (no shared files), small size, and a named test. A separate checklist would mostly repeat them. Worth revisiting if task rows start arriving unfinished. |
 | arc42's quality requirements, crosscutting concepts and glossary sections | Real value for a large system, but `hld.md` is written fresh for every job, including small ones. The cost is empty sections; the benefit needs a project big enough to have crosscutting concerns. Worth revisiting. |
 | Consumer-driven contracts, where the calling side owns the contract | Assumes two teams that negotiate. We have one architect writing both sides of the contract, so the architect owns every contract file and the caller/callee split is only about who builds what. |
+| QA writing its cases straight into the project's test folder | One test command for everything, and CI would run the QA cases too. Rejected: QA would then own files inside the product, which breaks the rule that one task owns its files, and makes an engineer's and a reviewer's job harder to tell apart. `docs/crew/qa/` plus `run-all.sh` buys the same protection without moving that line. |
+| QA cases as plain shell scripts, one exit code each | Portable and needs no framework. Rejected: a shell can only test what a shell can reach, so a library's return value or a browser app has to be squeezed through a command, and the assertions end up weaker than the ones the project already has. The project's own framework is used instead, with the runner-cannot-see-the-folder problem handled by asking the PM. |
+| A CRD for every request, question and review finding | A complete audit trail, and nothing lost. Rejected: most of those are answered from the files in one turn, and the PM would spend the job writing records instead of deciding. Scope and contract changes are the ones that cost real work, so those are the ones that get a file. |
+| The PM deciding scope changes on its own, and telling the user later | Faster, and the CRD folder would still hold the history. Rejected: it defeats the milestone stop (principle 5). The whole reason milestones exist is that the user judges direction while changing it is cheap. |
 | The team writes its own Definition of Done (Scrum) | Ours is written by the PM and confirmed by the user. There is no self-organising team here to agree on anything, and the user is the only one who can say what "done" is worth. |
 
 ---

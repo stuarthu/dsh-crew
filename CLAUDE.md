@@ -139,9 +139,23 @@ Note that this repository's own `.github/workflows/publish.yml` is tag-triggered
 ## State and documents
 
 Job state lives **outside** the repository, in `~/.dsh/crew/jobs/<job>/state.json`, so a user's
-`git status` stays clean. Crew documents (DoD, PRD, design, ADRs, and one module
-boundary contract per pair of modules that talk, in `docs/crew/api/<caller>-<callee>.md`)
-live **inside** it, in `docs/crew/`.
+`git status` stays clean. Crew documents live **inside** it, in `docs/crew/`: DoD, PRD, design,
+ADRs, one module boundary contract per pair of modules that talk
+(`docs/crew/api/<caller>-<callee>.md`), one change request per scope-or-contract change
+(`docs/crew/crd/NNNN-<short-name>.md`), and QA's plan plus its **runnable** cases
+(`docs/crew/qa/<task-id>-plan.md`, `docs/crew/qa/<task-id>/case-*`, a `run.sh` per task and one
+`docs/crew/qa/run-all.sh` that finds them all).
+
+Two rules there are load-bearing, and `docs/principles.md` 13 and 14 carry the reasons:
+
+- **QA writes only under `docs/crew/qa/`**, in the project's own test framework, never into the
+  product's test folder and never into project config. If a runner cannot see that folder, QA asks
+  the PM and the PM edits the config — that keeps "one task owns its files" true.
+- **A CRD is written by the PM for scope or contract changes only**, whoever asked. Scope needs the
+  user's yes; a contract fix the user cannot see is the PM's call, reported at the milestone review.
+  Questions, review findings and internal design changes are deliberately *not* CRDs — widening
+  that scope turns the PM into a clerk.
+
 `host/jobs.js` turns unfinished jobs into a dynamic prompt context that is re-read every turn — it
 must return `""` when there is nothing to say, and must never throw, because a prompt that fails to
 assemble breaks the session.

@@ -71,6 +71,21 @@ Save the output of every Red step as you go — the test name, the exact command
 and the first lines of the failure. Your report has to show them, and you cannot
 get them back once the code passes.
 
+### Your test is a file that stays
+
+A test you ran once in a shell protects nothing tomorrow. Every test you write is
+a real file in the project's own test suite, in the folder and the naming this
+project already uses, and it is part of your task's files. The PM commits it with
+the code.
+
+- Never prove a behaviour with a throwaway command — `node -e`, a script in a
+  temp folder, a snippet you paste into the shell. Write the test file instead.
+- Never delete a test, and never make it weaker, once it passes. If the document
+  changed and a test has to change with it, say which test and why in your report.
+- Every test must run from the project's own test command with no extra setup,
+  and pass twice in a row: no leftover files, no order between tests, no case
+  that needs another one to have run first.
+
 ### If you think a test cannot come first
 
 That is not your decision. Stop before you write **any** code and ask the PM the
@@ -94,6 +109,11 @@ Never write the code first and add a test afterwards.
 If something is unclear, first try to answer it yourself: read the code, read the
 documents, run the command, look at the git history. Ask the PM only what the
 files cannot answer.
+
+A message is not an agreement. If the PM answers you with a new rule, a new name
+or a new number that is not in the DoD or the contract file, ask for it to be
+written there before you build it. What is not in a document does not exist for
+the engineer working next to you.
 
 When you must ask:
 
