@@ -119,6 +119,40 @@ for (const fileName of ["engineer.md", "architect.md", "doc-reviewer.md"]) {
   else ok(`roles/${fileName} sends a decision about HOW to docs/decisions/adr/`);
 }
 
+// `roles/qa.md` had no content pin at all: it went through the generic loop
+// above, which only checks the length and `{{`, so the four rules CRD 0006 put
+// in it could be deleted and every check stayed green. That CRD splits QA's
+// files by how long they live — the plan is single-use and belongs in the job
+// folder, the cases and the gap list stay in the repository — so each half gets
+// its own pin. Paths and one phrase of a command only; no prose, so a rewording
+// cannot turn this red. The two ABSENT strings can only come back by somebody
+// writing the old rule again, which is exactly what they are here to catch.
+{
+  const text = readRoleText("qa.md", undefined);
+  if (text.includes("docs/qa/<task-id>-plan.md")) fail("roles/qa.md sends QA's test plan to `docs/qa/<task-id>-plan.md`, inside the repository — that is the defect CRD 0006 fixed: the plan is single-use, so it lives in the job folder beside `state.json` and is dropped with it. Point it at `<job folder>/<task-id>-plan.md` instead");
+  else if (!text.includes("<job folder>/<task-id>-plan.md")) fail("roles/qa.md does not name `<job folder>/<task-id>-plan.md` — QA's plan is single-use and lives beside `state.json` in the job folder, and with that path gone QA is told nowhere to write it. Put it back");
+  else if (text.includes("commits your plan")) fail("roles/qa.md still says the PM `commits your plan` — the plan never enters the repository (CRD 0006); the PM commits QA's case files and nothing else. Remove that from roles/qa.md");
+  else if (!text.includes("docs/qa/gaps.md")) fail("roles/qa.md does not name `docs/qa/gaps.md` — that is the one part of the plan that outlives the plan, and QA is the only role that knows why a thing could not be tested. Put the path back");
+  else if (!text.includes("docs/qa/<task-id>/")) fail("roles/qa.md is missing `docs/qa/<task-id>/` — QA's cases stay in the repository whatever happens to the plan, one folder per task, so tidying the plan out must not take the cases with it. Put the path back");
+  else if (!text.includes("docs/qa/run-all.sh")) fail("roles/qa.md is missing `docs/qa/run-all.sh` — the runner that finds every task's cases stays in the repository too; without it a case file is written and never run again. Put the path back");
+  else ok("roles/qa.md keeps the plan in the job folder and the cases, the runner and the gap list in docs/qa/");
+}
+
+// The false-red rule, in the two files that carry it. A red that names a file
+// another live task is writing is not a defect, and the role has to say so in a
+// phrase the PM can recognise: `the tree was moving`. Both files put that phrase
+// on a line of its own so it could be pinned, and neither was pinned — delete
+// the whole section and every check stayed green, while the crew starts chasing
+// other tasks' half-saved files as defects. Unlike the paths above this IS
+// prose, and the pin is brittle on purpose, the same trade as ADR 0004: the
+// failure message says out loud that a legitimate reword edits the prompt and
+// this string in the same commit.
+for (const fileName of ["engineer.md", "qa.md"]) {
+  const text = readRoleText(fileName, undefined);
+  if (!text.includes("the tree was moving")) fail(`roles/${fileName} is missing the string \`the tree was moving\` — that is the exact phrase the role must say when a red names a file another live task owns, and it is what keeps a moving tree from being reported as a defect. The section has been dropped, or the phrase was reworded. This one is prose and this pin is brittle on purpose (see docs/decisions/adr/0004-parallel-anchor-string.md): put the rule back, or update this string in tools/verify-mount.mjs in the same commit`);
+  else ok(`roles/${fileName} tells the role to say "the tree was moving" instead of reporting a false red`);
+}
+
 const toolNames = ROLES.map(role => role.toolName);
 if (new Set(toolNames).size !== toolNames.length) fail(`duplicate role tool names: ${toolNames.join(", ")}`);
 else ok(`role tool names are unique: ${toolNames.join(", ")}`);
@@ -325,10 +359,13 @@ function applyCapturingLogs(config, { logger = true } = {}) {
     // the job folder: `docs/decisions/adr/` holds a decision about HOW (now
     // whatever the size of the job, so the PM writes it when there is no
     // architect), `principles.md` holds a rule the crew must keep, and
-    // `docs/qa/gaps.md` holds QA's "what I could not test here". The last two
-    // appear in roles/pm.md only in the closing migration step, so this check is
-    // also the guard on that step: delete it and the paths go with it. That step
-    // is the one that stops "not needed any more" from meaning "lost".
+    // `docs/qa/gaps.md` holds QA's "what I could not test here". This check only
+    // proves the three paths are SOMEWHERE in the prompt. It is not a guard on
+    // the closing migration step, and never was: the **Hard rules** section
+    // repeats `principles.md` and `docs/qa/gaps.md`, and step 11 now names
+    // `docs/qa/gaps.md` as well because the PM has to stage it — so the
+    // migration step could be deleted with all three paths still present. If
+    // that step ever needs its own pin, it needs its own assertion.
     else if (!section.text.includes("docs/decisions/adr/") || !section.text.includes("principles.md")
       || !section.text.includes("docs/qa/gaps.md")) fail("PM section is missing one of the three decision homes `docs/decisions/adr/`, `principles.md` and `docs/qa/gaps.md` — CRD 0006 puts every decision about HOW in an ADR whatever the size of the job, and makes the PM move a rule to principles.md and QA's untestable gaps to docs/qa/gaps.md before a single-use document is dropped. Put the missing path back in roles/pm.md");
     // The two strings CRD 0006 replaced, pinned as ABSENT. A how-decision on a

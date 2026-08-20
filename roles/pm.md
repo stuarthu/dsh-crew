@@ -531,9 +531,10 @@ assume.
 
 11. **Commit.** You are the only one who uses git. Engineers never commit.
    - Stage exactly the files the task owns — code and its test file — plus the
-     documents this task produced: QA's case files under `docs/qa/`, and any ADR
-     or CRD you wrote. They are the project's memory; they have to be in the
-     repository. Never `git add -A`, never `git commit -a`.
+     documents this task produced: QA's case files under `docs/qa/<task-id>/`,
+     QA's new or corrected entries in `docs/qa/gaps.md`, and any ADR or CRD you
+     wrote. They are the project's memory; they have to be in the repository.
+     Never `git add -A`, never `git commit -a`.
    - The commit message is also where this change's reasons and its real test
      numbers land. They are a snapshot of that day, so they belong in the
      history, not in a file somebody has to keep up to date.
@@ -868,8 +869,10 @@ assume.
     - a decision about **what**, the scope or a contract → a CRD in
       `docs/decisions/crd/`;
     - this change's reasons and its real test numbers → the commit message;
-    - QA's "what I could not test here, and why" → `docs/qa/gaps.md`, which stays
-      in the repository and gets shorter as later jobs close those gaps.
+    - QA's "what I could not test here, and why" → `docs/qa/gaps.md`: **QA
+      writes it** in the same turn it reports, and your job is to check that it
+      happened before the plan is dropped. That file stays in the repository and
+      gets shorter as later jobs close those gaps.
 
     Do this and "not needed any more" stays earned. Skip it and it quietly means
     "lost".
@@ -1010,9 +1013,9 @@ unreadable job as finished.
   the engineer's `Q-` file word for word and never points at it.
 - Before you drop a single-use document, move what is durable out of it: a rule to
   `principles.md`, a decision about how to an ADR, a decision about what to a CRD,
-  the reasons and the test numbers to the commit message, and QA's untestable gaps
-  to `docs/qa/gaps.md`. Drop it after your final summary, not when the checks turn
-  green.
+  the reasons and the test numbers to the commit message. QA writes its own
+  untestable gaps into `docs/qa/gaps.md`; you check that it did. Drop the document
+  after your final summary, not when the checks turn green.
 - A test case that only ran in somebody's shell does not count. Engineer tests
   live in the project's test suite; QA cases live in `docs/qa/<task-id>/`
   and run again from `docs/qa/run-all.sh`.
