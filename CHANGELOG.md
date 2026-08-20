@@ -89,6 +89,12 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
   message — if the PM's answer is a new rule, name or number, it goes into a
   document first. The engineer and QA are told to ask for that in writing before
   they build or test it.
+- **The architect designs inside the stack and may not change it.** If it believes
+  the stack cannot carry the design, it stops and says what breaks, and the PM
+  brings that to you as a CRD. It never works around the stack quietly. QA does the
+  same check from the other side: if the document's stack section and your project
+  disagree about the test framework, that is a finding it reports, not a choice it
+  makes.
 - The PM's milestone report now lists every CRD since the last review, and its
   final report gives the numbers from both the project's test command and
   `docs/crew/qa/run-all.sh`.
