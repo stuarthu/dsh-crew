@@ -295,9 +295,18 @@ function applyCapturingLogs(config, { logger = true } = {}) {
     // the user waits four times as long. Unlike the eight strings above this is
     // prose, and it IS brittle on purpose: reword the bold heading of that
     // paragraph and this check goes red, so whoever rewords it edits this
-    // string in the same commit. `Parallel is the default` would not do — that
-    // is step 10's own rule, and it would stay green with step 9 deleted.
+    // string in the same commit. `Parallel is the default` would not do for
+    // step 9 — that is step 10's own rule, which the next check pins on its own.
     else if (!section.text.includes("Parallel by default")) fail("PM section is missing the string `Parallel by default` — step 9's parallel rule (one crew_engineer per task, all the calls in one message) has been dropped from roles/pm.md, or its heading was reworded. Put the rule back, or update this string in tools/verify-mount.mjs in the same commit");
+    // Step 10's parallel rule is the same hole one step later, and it was left
+    // open when step 9's was closed: delete the paragraph that starts the code
+    // review, the security review and QA in one message, and all four checks
+    // stayed green. So it gets its own pin. `Parallel is the default` is the
+    // anchor because it appears exactly once in roles/pm.md, in step 10. This
+    // is prose as well, and brittle on purpose for the same reason as the check
+    // above: reword that sentence and this check goes red, so a legitimate
+    // reword edits the prompt and this string in one commit.
+    else if (!section.text.includes("Parallel is the default")) fail("PM section is missing the string `Parallel is the default` — step 10's parallel rule (the code review, the security review and QA started in one message, with running them in order named in the summary as the exception) has been dropped from roles/pm.md, or that sentence was reworded. Put the rule back, or update this string in tools/verify-mount.mjs in the same commit");
     else ok(`PM prompt section registered (order ${section.order}, ${section.text.length} chars)`);
   }
 

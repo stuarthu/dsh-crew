@@ -683,8 +683,10 @@ assume.
       moved, say so — you bring your local `main` up to date inside the merge
       below, after the user's yes.
     - Read `.github/workflows/` and decide whether a push of `main` would
-      publish. Use the same rule the crew's git guard uses, and say which files
-      you read: a workflow counts only when a BRANCH push can start it
+      publish. Use the same rule the crew's git guard uses, applied more widely
+      than the guard applies it — the guard reads `.github/workflows/` only, and
+      the rest of the CI files below are yours — and say which files you read:
+      a workflow counts only when a BRANCH push can start it
       (`on: push:` with `branches:` under it, or `on: push` with nothing under
       it) AND it publishes or releases. A `tags:`-only trigger cannot be started
       by a branch push, so it does not count — say that in one line instead of
