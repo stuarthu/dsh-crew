@@ -11,7 +11,7 @@ Who "the user" means in this file: whoever installed the plugin and is running
 the session. Not the person who wrote the plugin.
 
 Short names used below: **PRD** (product requirements document), **DoD** (definition of done),
-**HLD** (high level design, the file `docs/crew/hld.md`), **ADR** (architecture decision record),
+**HLD** (high level design, the file `docs/design/hld.md`), **ADR** (architecture decision record),
 **CRD** (change request document), **QA** (the role that tests the result).
 
 Each principle below has:
@@ -52,7 +52,7 @@ never an option anywhere in the crew.
 ## 2. Between two modules there is a written contract, and nothing else
 
 **Rule.** When two or more modules talk, the architect writes one file per
-boundary in `docs/crew/api/<caller>-<callee>.md`. It holds the style, the format,
+boundary in `docs/design/api/<caller>-<callee>.md`. It holds the style, the format,
 and every call with its inputs, output and named errors. It also holds the rules
 each side keeps, who owns the data, and what the caller may believe about it.
 
@@ -315,8 +315,8 @@ has not installed yet. An allow list does not have to.
 
 **Rule.** An engineer's unit test is a file in the project's own test suite, named
 in its task row and committed with the code. QA's cases are files too, in the
-project's test framework, under `docs/crew/qa/<task-id>/`, with a `run.sh` per
-task and one `docs/crew/qa/run-all.sh` that finds and runs them all. QA runs all
+project's test framework, under `docs/qa/<task-id>/`, with a `run.sh` per
+task and one `docs/qa/run-all.sh` that finds and runs them all. QA runs all
 of them — including cases written for tasks that finished long ago — on every
 task it checks, and an old case that now fails is a blocking regression.
 
@@ -327,11 +327,11 @@ the same cases become the project's regression suite, and each job leaves the
 next one better guarded. This is the plain reading of the Scrum idea that quality
 is built in: the Definition of Done has to survive the sprint that produced it.
 
-**How the split is drawn.** QA writes only inside `docs/crew/qa/`, never into the
+**How the split is drawn.** QA writes only inside `docs/qa/`, never into the
 product's own test folder. That keeps the existing file-ownership rule intact —
 one task owns its files — and keeps a reviewer's question ("who wrote this test?")
 answerable by the path alone. The cost is real and known: a runner that only
-looks inside configured folders will not see `docs/crew/qa/`, so QA reports that
+looks inside configured folders will not see `docs/qa/`, so QA reports that
 to the PM and the PM either adds the one config line or records the cases as not
 runnable. QA never edits project config, and never moves its files to dodge the
 problem.
@@ -350,7 +350,7 @@ stays"), `roles/architect.md` (the test-file column in a task row),
 at the file it wrote; the PM's answer points at the document it changed and that
 document's new version. And any request that would change **what the user gets**
 (scope, an acceptance check, the milestone list) or **how two modules talk** (a
-boundary contract) becomes a change request document — `docs/crew/crd/NNNN-<short-name>.md` —
+boundary contract) becomes a change request document — `docs/decisions/crd/NNNN-<short-name>.md` —
 written by the PM before anything moves, whoever asked: the user, a role, or the
 PM itself. A CRD is never deleted, and a rejected one stays.
 
@@ -389,9 +389,9 @@ a CRD.
 ## 15. A milestone that ships needs two written plans, and their shape is researched
 
 **Rule.** When the user says a milestone ships, the PM writes two files before
-anything is pushed: `docs/crew/release/<milestone>-release.md` (version, release
+anything is pushed: `docs/release/<milestone>-release.md` (version, release
 notes, exact steps, who approves, how to check, how to undo) and
-`docs/crew/release/<milestone>-upgrade.md` (breaking changes, migration, skipped
+`docs/release/<milestone>-upgrade.md` (breaking changes, migration, skipped
 versions, rollback, downtime). Their **shape is researched, not remembered**: the
 PM asks a `crew_researcher` what those plans contain for this project type, with a
 source and a date per claim, and reads what the repository already does first. A
@@ -512,7 +512,7 @@ same layer, same behaviour) it picks one, writes it, and says in its report
 which ways it compared and why. If the difference **stays in the code** it
 stops. Six things say the difference stays: which module owns the behaviour;
 which layer holds the check or the fix; whether a boundary contract in
-`docs/crew/api/` is touched; whether a public name, command, config option or
+`docs/design/api/` is touched; whether a public name, command, config option or
 output format changes; whether behaviour the user can see changes; whether speed
 or compatibility changes. When it stops it uses the channel that already exists
 — an `inbox/Q-<number>.md` file holding the cause of the bug, every way it found
@@ -528,9 +528,10 @@ Every such decision is written into a document before the engineer starts again,
 and holds the same five things: the cause, **every** option with its cost and
 **why it lost**, which one was chosen, who chose it, and the reason. PRD work
 puts it in an ADR written by a fresh architect; small DoD work has no architect,
-so the PM writes it into a **Decisions** section of `docs/crew/dod.md`, in the
-same shape. And every ADR — bug fix or not — lists every option with its cost
-and why it lost, **marks** the one it recommends with a one sentence reason, and
+so the PM writes it into a **Decisions** section of
+`~/.dsh/crew/jobs/<job-slug>/dod.md`, in the same shape. And every ADR — bug fix
+or not — lists every option with its cost and why it lost, **marks** the one it
+recommends with a one sentence reason, and
 is written so a reader who has never seen the code can tell the options apart.
 The design does not stop and wait: the architect keeps designing on its own
 recommendation, the PM lays every choice of the milestone in front of the user
@@ -625,7 +626,7 @@ engineer is also asked to prove its work by running the project's own suite, and
 that suite reads *everyone's* files. So three tasks with no file in common can
 still collide through their own verification. It happened twice in this job.
 `roles/pm.md` and `tools/verify-mount.mjs` were being rewritten by one task
-while another task's QA cases read them, and `docs/crew/qa/run-all.sh` gave
+while another task's QA cases read them, and `docs/qa/run-all.sh` gave
 three different answers in three minutes. The danger is not that a bad change
 gets in; nothing landed that should not have. The danger is a **false red**,
 which can send an engineer to fix something that was never broken, and a **false
@@ -649,7 +650,7 @@ engineer's or QA's green is evidence, not the verdict.
 | A named Definition of Ready, with INVEST | Our task rules already require independence (no shared files), small size, and a named test. A separate checklist would mostly repeat them. Worth revisiting if task rows start arriving unfinished. |
 | arc42's quality requirements, crosscutting concepts and glossary sections | Real value for a large system, but `hld.md` is written fresh for every job, including small ones. The cost is empty sections; the benefit needs a project big enough to have crosscutting concerns. Worth revisiting. |
 | Consumer-driven contracts, where the calling side owns the contract | Assumes two teams that negotiate. We have one architect writing both sides of the contract, so the architect owns every contract file and the caller/callee split is only about who builds what. |
-| QA writing its cases straight into the project's test folder | One test command for everything, and CI would run the QA cases too. Rejected: QA would then own files inside the product, which breaks the rule that one task owns its files, and makes an engineer's and a reviewer's job harder to tell apart. `docs/crew/qa/` plus `run-all.sh` buys the same protection without moving that line. |
+| QA writing its cases straight into the project's test folder | One test command for everything, and CI would run the QA cases too. Rejected: QA would then own files inside the product, which breaks the rule that one task owns its files, and makes an engineer's and a reviewer's job harder to tell apart. `docs/qa/` plus `run-all.sh` buys the same protection without moving that line. |
 | QA cases as plain shell scripts, one exit code each | Portable and needs no framework. Rejected: a shell can only test what a shell can reach, so a library's return value or a browser app has to be squeezed through a command, and the assertions end up weaker than the ones the project already has. The project's own framework is used instead, with the runner-cannot-see-the-folder problem handled by asking the PM. |
 | A CRD for every request, question and review finding | A complete audit trail, and nothing lost. Rejected: most of those are answered from the files in one turn, and the PM would spend the job writing records instead of deciding. Scope and contract changes are the ones that cost real work, so those are the ones that get a file. |
 | The PM deciding scope changes on its own, and telling the user later | Faster, and the CRD folder would still hold the history. Rejected: it defeats the milestone stop (principle 5). The whole reason milestones exist is that the user judges direction while changing it is cheap. |
@@ -665,7 +666,7 @@ engineer's or QA's green is evidence, not the verdict.
 | Closing the gap between the last proof and the remote delete with a leased delete | It would make the delete safe against a commit that arrives while the user is thinking. Rejected: it is the `--force-with-lease` shape, and this step forbids every force form — that ban is what has kept a wrong push from happening. Re-running the proof in the same turn narrows the window, and the limit is written down instead of hidden. |
 | Checking the job slug's shape in the git guard instead of the prompt | Rejected: the slug is not input arriving from outside, it is a value the PM invents in step 6. The middleware reads command text and would only see the damage after the fact, while the guard trusts the root session anyway. The place to make a value safe is where it is made. |
 | The team writes its own Definition of Done (Scrum) | Ours is written by the PM and confirmed by the user. There is no self-organising team here to agree on anything, and the user is the only one who can say what "done" is worth. |
-| A new document type, `docs/crew/fix/<task-id>.md`, for bug-fix choices | Rejected: an ADR is already the file that records one open choice, so a second type would give the same thing two homes and split the place a reader has to look. And small DoD work writes no ADR at all — a **Decisions** section inside `docs/crew/dod.md` carries the same five things without a new folder to keep in step. |
+| A new document type, `docs/decisions/fix/<task-id>.md`, for bug-fix choices | Rejected: an ADR is already the file that records one open choice, so a second type would give the same thing two homes and split the place a reader has to look. And small DoD work writes no ADR at all — a **Decisions** section inside `~/.dsh/crew/jobs/<job-slug>/dod.md` carries the same five things without a new folder to keep in step. |
 | Every ADR stops and waits for the user to pick | Rejected: one design often holds several ADRs, so the job would stop once per ADR and the user would be interrupted with choices about the inside of the code. The architect marks a recommendation and the design keeps moving; the user sees every option at the milestone review and may overturn one. Options the user can see are still asked on the spot. |
 
 ---

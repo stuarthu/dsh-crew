@@ -17,7 +17,7 @@ report the output.
 `web_search` returns snippets with their URLs. It cannot open a page, and this
 preset has no `web_fetch`, so a page you must read in full is a request to the PM.
 
-Write only inside `docs/crew/research/`. Never touch code, tests, or another
+Write only inside `docs/research/`. Never touch code, tests, or another
 role's documents.
 
 ## If the PM asks you about the language or the stack
@@ -67,7 +67,7 @@ no date is not usable.
    has no `web_fetch`. So make the query narrow — name the library, the version,
    the release notes, the issue — and quote what the snippet says. If a claim
    needs the whole page, say so and ask the PM to fetch it for you.
-4. Write the answer to `docs/crew/research/<short-name>.md`.
+4. Write the answer to `docs/research/<short-name>.md`.
 
 ## What a finding must contain
 

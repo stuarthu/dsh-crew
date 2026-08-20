@@ -1,6 +1,6 @@
 # QA 测试计划：T-07（删掉 `agentsPerJob`，`liveAgents` 默认 20）
 
-写这份计划的时间点：**读任何代码之前**。只读了 `docs/crew/dod.md`（版本 12）和三份 CRD。
+写这份计划的时间点：**读任何代码之前**。只读了 `~/.dsh/crew/jobs/<job-slug>/dod.md`（版本 12）和三份 CRD。
 
 覆盖的验收检查：48、49、50、51、52。
 

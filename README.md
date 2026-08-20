@@ -135,9 +135,10 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    engineer may pick freely among the libraries the project
    already has; adding a brand-new dependency goes back to the PM.
 5. It picks the document and writes it: a **DoD** (definition of done,
-   `docs/crew/dod.md`) for small work, a **PRD** (product requirements document,
-   `docs/crew/prd.md`) for a real product. It says which it picked, and one word
-   switches it. **You confirm before any work starts.**
+   `~/.dsh/crew/jobs/<job-slug>/dod.md`) for small work, a **PRD** (product
+   requirements document, `docs/design/prd.md`) for a real product. It says
+   which it picked, and one word switches it. **You confirm before any work
+   starts.**
    A PRD is cut into **milestones** — three to six stops, each one something you
    can look at and judge, written in your words rather than in code words. `M1`
    is the proof of concept: the thinnest real path through the riskiest part,
@@ -150,7 +151,7 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    splits the system into
    modules — reusing what the repository already has before it invents anything
    new — and when two or more modules talk to each other it writes one contract
-   file per boundary in `docs/crew/api/`: how the two sides talk (in-process
+   file per boundary in `docs/design/api/`: how the two sides talk (in-process
    call, HTTP, gRPC, events, and so on), the data format, every call with its
    inputs, output and errors, and how the shape stops a caller getting it wrong.
    It picks the style, not the library. Those contracts are what let two
@@ -180,8 +181,8 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    the network, login, secrets, files outside the project, the shell, user input,
    customer data or a new dependency → **QA**, which writes its test plan from
    the document *before* reading the code, then turns every case into a real test
-   file under `docs/crew/qa/<task-id>/`, in your project's own test framework,
-   with a `run.sh` beside it. `bash docs/crew/qa/run-all.sh` runs every task's cases,
+   file under `docs/qa/<task-id>/`, in your project's own test framework,
+   with a `run.sh` beside it. `bash docs/qa/run-all.sh` runs every task's cases,
    and QA runs it on every task it checks — so a case written in an earlier task
    guards the new one. An old case that starts failing is a blocking regression,
    and nobody is allowed to edit it green. Your QA suite grows with the project
@@ -209,11 +210,11 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    your repository already does first: the workflows, the changelog, the tags, any
    release script. Then it writes two files:
 
-   - `docs/crew/release/<milestone>-release.md` — the version and the rule behind
+   - `docs/release/<milestone>-release.md` — the version and the rule behind
      it, the release notes, the exact steps and who approves each one, what must be
      true before you start, how you check afterwards that it worked, and how to
      undo it. If it cannot be undone, the plan says so in those words.
-   - `docs/crew/release/<milestone>-upgrade.md` — who is upgrading and from which
+   - `docs/release/<milestone>-upgrade.md` — who is upgrading and from which
      versions, every breaking change and what the user must do about it, the
      migration steps and whether they are safe to run twice, what happens to
      someone who skips a version, how to go back and what data that loses, how long
@@ -264,7 +265,7 @@ come back by themselves. After an upgrade, copy your changes into the new file.
 
     - which module is responsible for this behaviour;
     - which layer the check or the fix sits in;
-    - whether it touches a module boundary contract in `docs/crew/api/`;
+    - whether it touches a module boundary contract in `docs/design/api/`;
     - whether it changes a public name, a command, a config option, or an
       output format;
     - whether behaviour you can see changes;
@@ -279,10 +280,11 @@ come back by themselves. After an upgrade, copy your changes into the new file.
 
     The decision is written down before any code is built, and it holds
     **every** option. PRD work gets one ADR — a decision record in
-    `docs/crew/adr/` — written by the architect; small work gets an entry in a
-    **Decisions** section in `docs/crew/dod.md`. Either one holds the cause of
-    the bug, every option with what it costs, where it would hurt later and
-    **why it lost**, which one was taken, who decided, and the reason. **Every
+    `docs/decisions/adr/` — written by the architect; small work gets an entry
+    in a **Decisions** section in `~/.dsh/crew/jobs/<job-slug>/dod.md`. Either
+    one holds the cause of the bug, every option with what it costs, where it
+    would hurt later and **why it lost**, which one was taken, who decided, and
+    the reason. **Every
     ADR is written for you**: a reader who has never seen the code must be able
     to tell the options apart, and the recommended one is marked. The design
     does not stop and wait for you to pick — the architect keeps going on its
@@ -303,7 +305,7 @@ started tomorrow reads what a role started an hour ago read.
 On top of that, every **change request** gets its own file. If anyone — you, a
 role, or the PM itself — asks for something that changes what you get (the scope,
 an acceptance check, the milestone list) or how two modules talk (a boundary
-contract), the PM writes `docs/crew/crd/NNNN-<short-name>.md` first: who asked,
+contract), the PM writes `docs/decisions/crd/NNNN-<short-name>.md` first: who asked,
 what they want, why, which documents and tasks it touches, what it costs, and the
 decision with its reason. Nothing is built from an undecided one, and a rejected
 one is kept, so you can see later what was asked for and refused.
@@ -321,11 +323,14 @@ Small questions do not become CRDs — a role's question that the files can answ
 is just a note in the job folder, and a review finding about code is a review
 finding. Only scope and contracts, the two things that cost real work to redo.
 
-Documents live in the repository, under `docs/crew/`: the release and upgrade
-plans for each milestone you ship (in `release/`), the PRD or DoD, the design
-and its decision records, one contract file per module boundary in `api/`, the
-change requests in `crd/`, and QA's plans and runnable cases in `qa/`. The job
-state lives outside it, in `~/.dsh/crew/jobs/<job>/state.json`, so your
+Documents live in the repository, under `docs/`, and each folder name says what
+it holds: the PRD and the design in `docs/design/` (with one contract file per
+module boundary in `docs/design/api/`), the decision records and the change
+requests in `docs/decisions/` (`adr/` and `crd/`), QA's plans and runnable cases
+in `docs/qa/`, the release and upgrade plans for each milestone you ship in
+`docs/release/`, and the researcher's answers in `docs/research/`. The DoD and
+the job state live outside the repository, in
+`~/.dsh/crew/jobs/<job-slug>/` (`dod.md` and `state.json`), so your
 `git status` stays clean.
 
 ## After a crash

@@ -12,11 +12,11 @@ talk to.
 
 Whatever the PM names, usually some of:
 
-- `docs/crew/prd.md` or `docs/crew/dod.md`
-- `docs/crew/hld.md`
-- `docs/crew/adr/*.md`
-- `docs/crew/api/*.md` — the module boundary contracts
-- `docs/crew/tasks.md`
+- `docs/design/prd.md` or `~/.dsh/crew/jobs/<job-slug>/dod.md`
+- `docs/design/hld.md`
+- `docs/decisions/adr/*.md`
+- `docs/design/api/*.md` — the module boundary contracts
+- `docs/design/tasks.md`
 
 Always also read `README.md`, and any second language file beside it
 (`README-zh.md`, `README-ja.md`). They are documents this job can break too.
@@ -37,8 +37,8 @@ Also read enough of the real code to tell whether the documents match it.
    that do not exist? Does it ignore something the repository already has?
 6. **Contracts hold both sides.** Two engineers build the two sides of a
    boundary at the same time and can never talk to each other, so a weak
-   contract is a broken build. When `docs/crew/hld.md` names two modules that
-   talk, there must be a file for that boundary in `docs/crew/api/`. For each
+   contract is a broken build. When `docs/design/hld.md` names two modules that
+   talk, there must be a file for that boundary in `docs/design/api/`. For each
    contract file, check:
    - every call has its inputs (with types, and which are required), its output,
      and its errors **named** — "it may fail" is not a contract;
@@ -47,7 +47,7 @@ Also read enough of the real code to tell whether the documents match it.
    - it says who owns the data behind the boundary and what the caller may
      believe about it; for events, the schema and the delivery promise;
    - it says which task builds each side, and those task ids exist in
-     `docs/crew/tasks.md`;
+     `docs/design/tasks.md`;
    - the two sides could be built from this file alone, by two people who never
      speak. If you would have to ask a question, that is blocking;
    - it names no library or framework — the architect picks the style, the
@@ -55,19 +55,19 @@ Also read enough of the real code to tell whether the documents match it.
    - the "Changing this" rule is there: frozen once a side starts, only the
      architect edits it.
 
-   Also check the order in `docs/crew/tasks.md`. When there is a boundary, `T-01`
+   Also check the order in `docs/design/tasks.md`. When there is a boundary, `T-01`
    must be a walking skeleton: one thin real path across the riskiest boundary,
    owned by one engineer, with every other task depending on it. It is the only
    task allowed to own files on both sides, and no later task may own its files.
    `hld.md` must say which boundary is the riskiest and why.
 
-   A one-module design with no `docs/crew/api/` folder is fine. Say so and move
+   A one-module design with no `docs/design/api/` folder is fine. Say so and move
    on — then there is no skeleton task, and `hld.md` should name the riskiest
    part instead.
 
 7. **ADR options are all on the table.** The PM shows these files to the user at
    the milestone review, and the user may overturn a choice. So an ADR that hides
-   the options costs the user the decision. For each `docs/crew/adr/*.md`, check:
+   the options costs the user the decision. For each `docs/decisions/adr/*.md`, check:
    - it lists **every** option that was considered, not only the chosen one. An
      ADR with one option is a finding;
    - each option that was not chosen says what it is, what it costs, and **why it
@@ -81,8 +81,8 @@ Also read enough of the real code to tell whether the documents match it.
      finding.
 
    Small work (DoD work) has no architect, so the same record lives in a
-   **Decisions** section of `docs/crew/dod.md`. Every check above applies to it
-   there, word for word.
+   **Decisions** section of `~/.dsh/crew/jobs/<job-slug>/dod.md`. Every check
+   above applies to it there, word for word.
 
    A design with no ADR is fine — an ADR is written only when there was a real
    open choice. Say "no ADR" and move on. Never report a finding just because you

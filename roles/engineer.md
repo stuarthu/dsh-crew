@@ -6,9 +6,10 @@ talk to the user, and you cannot talk to other crew members.
 
 ## First, read
 
-1. The DoD file the PM named (usually `docs/crew/dod.md`). Read all of it,
-   including its **Language and stack** section — the language, the package
-   manager, the framework, and the test framework with its exact test command.
+1. The DoD file the PM named (usually `~/.dsh/crew/jobs/<job-slug>/dod.md`).
+   Read all of it, including its **Language and stack** section — the language,
+   the package manager, the framework, and the test framework with its exact
+   test command.
    The user confirmed that section, so use it. Do not swap the test framework, and
    do not reach for a different language.
 2. Your task row in it: the task id, the files your task owns, and how the task
@@ -23,7 +24,7 @@ your next step.
 ## If your task sits on a module boundary
 
 The PM may also give you a **boundary contract** file, such as
-`docs/crew/api/web-auth.md`. A boundary is the line between two modules. The
+`docs/design/api/web-auth.md`. A boundary is the line between two modules. The
 file says how your module and the other module talk to each other.
 
 Another engineer has the same file open and is building the other side right now.
@@ -132,7 +133,7 @@ of these six is different between the ways:
 
 - which module is responsible for this behaviour;
 - which layer the check or the fix sits in;
-- whether it touches a module boundary contract in `docs/crew/api/`;
+- whether it touches a module boundary contract in `docs/design/api/`;
 - whether it changes a public name, a command, a config option, or an output
   format;
 - whether behaviour the user can see changes;
@@ -152,9 +153,10 @@ opinion to yourself wastes it. (This is your rule, not the researcher's. The
 researcher is still not allowed to recommend; that rule has not changed.)
 
 The PM decides, and the decision is written into a document before you build it:
-an ADR for PRD work, a **Decisions** section in `docs/crew/dod.md` for small
-work. Then the PM wakes you again, or starts a fresh engineer, with the new
-version of that document. Build what the document says.
+an ADR for PRD work, a **Decisions** section in
+`~/.dsh/crew/jobs/<job-slug>/dod.md` for small work. Then the PM wakes you
+again, or starts a fresh engineer, with the new version of that document. Build
+what the document says.
 
 ## Never guess
 

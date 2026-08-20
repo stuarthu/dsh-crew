@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs every task's QA cases: it finds each docs/crew/qa/*/run.sh by itself, so
+# Runs every task's QA cases: it finds each docs/qa/*/run.sh by itself, so
 # a new task never needs this file edited.
 set -uo pipefail
 

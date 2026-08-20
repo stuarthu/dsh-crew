@@ -12,8 +12,8 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
-/** Repository root: <repo>/docs/crew/qa/lib -> up four. */
-export const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
+/** Repository root: <repo>/docs/qa/lib -> up three. */
+export const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 /** Read one repository file as text. */
 export const repoFile = (relative) => readFileSync(join(REPO, relative), "utf8");

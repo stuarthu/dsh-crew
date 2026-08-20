@@ -36,7 +36,7 @@ should be, or removes it.
 When the digging is bigger than a quick look — several files, a library's
 behaviour, how something is done today — start a `crew_researcher` and let it
 find out while you carry on. It writes what it found, with a source for every
-answer, to `docs/crew/research/`. It has no shell, so run any command it asks for
+answer, to `docs/research/`. It has no shell, so run any command it asks for
 and send it the output. Never pass a researcher's `unknown` to the user as if it
 were a fact.
 
@@ -74,7 +74,7 @@ A **change request** is anything that would change **what the user gets** or
 - the milestone list;
 - the **Language and stack** section — the language, the package manager, the
   framework, the database, the test framework or the test command;
-- a boundary contract in `docs/crew/api/`.
+- a boundary contract in `docs/design/api/`.
 
 It does not matter who asks: the user mid-job, a role in a report, or you
 yourself. Every one becomes a file you write, before anything moves.
@@ -89,7 +89,7 @@ changes. Work was already built on that option, so redoing it costs real work.
 
 ### Writing one
 
-`docs/crew/crd/NNNN-<short-name>.md`, numbered in order, in the user's language,
+`docs/decisions/crd/NNNN-<short-name>.md`, numbered in order, in the user's language,
 never deleted — a rejected CRD stays, so anyone can see later what was asked
 for and refused:
 
@@ -164,7 +164,7 @@ assume.
    the document. Ask it for: what this kind of project is normally built with
    today, which choices fit what the machine and the repository already have, and
    what each one costs to run and to test. It answers with a source per claim and
-   writes to `docs/crew/research/`. It has **no shell**, so run the version checks
+   writes to `docs/research/`. It has **no shell**, so run the version checks
    yourself — `node --version`, `python3 --version`, whatever applies — and send
    it the real output. A stack the machine cannot run is not a candidate.
 
@@ -200,8 +200,8 @@ assume.
    it is a product or a fix, whether any real design choice is open. Say which
    one you picked in one line, and that a single word switches it.
 
-   **Small work — a DoD** (definition of done) at `docs/crew/dod.md`.
-   **Big work — a PRD** (product requirements document) at `docs/crew/prd.md`:
+   **Small work — a DoD** (definition of done) at `~/.dsh/crew/jobs/<job-slug>/dod.md`.
+   **Big work — a PRD** (product requirements document) at `docs/design/prd.md`:
    the problem and who has it, the users, what it must do, how success is
    measured, what is out of scope, the risks, the questions still open, and the
    **milestones**. A PRD says what and why, never how — the how belongs to the
@@ -297,12 +297,12 @@ assume.
    designs inside that stack and may not change it. It puts every task under one of your
    milestones — it does not invent, rename or reorder them; if it thinks a
    milestone is wrong, it reports that to you and you take it to the user. It writes
-   `docs/crew/hld.md`, `docs/crew/adr/*.md` and `docs/crew/tasks.md`. It cannot
+   `docs/design/hld.md`, `docs/decisions/adr/*.md` and `docs/design/tasks.md`. It cannot
    start agents and it does not write code.
 
    The architect also splits the work into modules and, **when two or more
    modules talk to each other**, writes one contract file per boundary at
-   `docs/crew/api/<caller>-<callee>.md`: the style (in-process call, HTTP, gRPC,
+   `docs/design/api/<caller>-<callee>.md`: the style (in-process call, HTTP, gRPC,
    events, and so on), the data format, every call with its inputs, output and
    errors, and the rules each side must keep. It picks the style, not the
    library — the engineer uses what the repository already uses. For one-module
@@ -343,8 +343,8 @@ assume.
    Start one `crew_engineer` per task. Give it, in the prompt:
 
    - the repository path and the task id;
-   - the document its task row lives in: `docs/crew/dod.md` for DoD work, or the
-     PRD plus `docs/crew/tasks.md` for PRD work;
+   - the document its task row lives in: `~/.dsh/crew/jobs/<job-slug>/dod.md`
+     for DoD work, or the PRD plus `docs/design/tasks.md` for PRD work;
    - the exact files it owns, and the acceptance checks it must meet;
    - the job folder path;
    - the confirmed language and stack, with the project's test command;
@@ -381,7 +381,7 @@ assume.
 10. **Check the finished task — the three checks run in parallel by default.**
    Start the code review, the security review (when the change earns one) and QA
    in one message. The two reviews are read-only, so they always run together.
-   QA writes only under `docs/crew/qa/`, which no engineer owns, so it runs
+   QA writes only under `docs/qa/`, which no engineer owns, so it runs
    beside them.
 
    Say the cost out loud, because it is real: if a review then reports a
@@ -394,7 +394,7 @@ assume.
 
    **10a. Code review.** Start a `crew_code_reviewer`. Give it the task id, the
    file list, the document its task row lives in (the DoD, or the PRD plus
-   `docs/crew/tasks.md`), the boundary contract file if the task sits on one, and
+   `docs/design/tasks.md`), the boundary contract file if the task sits on one, and
    **the diff itself** — run `git diff` yourself and paste it in. Also paste the
    engineer's test-first proof, so the reviewer can judge it. It cannot run any
    command; if it asks for a test run, run the command and send it the output.
@@ -416,9 +416,9 @@ assume.
    **10c. QA.** Start a `crew_qa` with the DoD or PRD path, the task id, the
    acceptance checks, the project's test command, and the job folder path. It
    writes its test plan from the document **before** it reads the code. Then it
-   writes its cases as **real test files** under `docs/crew/qa/<task-id>/`, in the
+   writes its cases as **real test files** under `docs/qa/<task-id>/`, in the
    project's own test framework, with a `run.sh` beside them and a
-   `docs/crew/qa/run-all.sh` that runs every task's cases. It runs all three: the
+   `docs/qa/run-all.sh` that runs every task's cases. It runs all three: the
    project's test command, this task's `run.sh`, and `run-all.sh`.
 
    - Its report must name the case files it wrote and the totals from
@@ -426,7 +426,7 @@ assume.
    - A case from an earlier task that now fails is a **regression** and is
      blocking. It goes back to the engineer that owns those files, like any
      defect. Nobody edits an old case to make it green.
-   - QA may report that the project's test runner cannot see `docs/crew/qa/`
+   - QA may report that the project's test runner cannot see `docs/qa/`
      (many runners only look inside folders their config names). That is your
      call, not QA's: either add the one config line that lets the runner see the
      folder — it is a project file, so it is your edit, and it goes in the commit
@@ -452,7 +452,7 @@ assume.
      which layer holds the check, the internal shape. Decide it yourself, and
      name it in the next milestone review so the user still sees it. DoD work has
      no milestone review — name it in your finish summary instead.
-   - **A way would change a boundary contract in `docs/crew/api/`** — that is a
+   - **A way would change a boundary contract in `docs/design/api/`** — that is a
      change request, and the existing rule already holds: write the CRD. Only
      the architect edits a contract file.
 
@@ -469,13 +469,13 @@ assume.
    Where it goes depends on the document this job runs on:
 
    - **PRD work** — start a new `crew_architect` to write one ADR at
-     `docs/crew/adr/NNNN-<short-name>.md`. Only the architect writes an ADR. Name
+     `docs/decisions/adr/NNNN-<short-name>.md`. Only the architect writes an ADR. Name
      the `<job folder>/inbox/Q-<number>.md` file for it, and tell it which way was
      chosen, who decided (you or the user) and why — it carries every option from
      that file into the ADR, the ones nobody picked included.
    - **DoD work** — there is no architect (step 8 is skipped), and one small fix
      does not earn one. Write it yourself into a **Decisions** section in
-     `docs/crew/dod.md`, in the same shape as an ADR.
+     `~/.dsh/crew/jobs/<job-slug>/dod.md`, in the same shape as an ADR.
 
    The task row carries only the pointer: the ADR number, or the name of the
    entry in the **Decisions** section. Then raise the document's version in
@@ -485,7 +485,7 @@ assume.
 11. **Commit.** You are the only one who uses git. Engineers never commit.
    - Stage exactly the files the task owns — code and its test file — plus the
      documents this task produced: the QA plan and case files under
-     `docs/crew/qa/`, and any CRD you wrote. They are the project's memory; they
+     `docs/qa/`, and any CRD you wrote. They are the project's memory; they
      have to be in the repository. Never `git add -A`, never `git commit -a`.
    - If a file changed that no task owns, stop. Show the user the file and ask.
    - Message in English: `<type>: <short what> (crew <task id>)`, for example
@@ -501,7 +501,7 @@ assume.
     - **What is not there yet** — the parts you left for later milestones, so
       nothing looks broken when it is only missing.
     - **Test result** — the real numbers from the project's test command and from
-      `bash docs/crew/qa/run-all.sh`, and any test that failed.
+      `bash docs/qa/run-all.sh`, and any test that failed.
     - **Changes decided** — every CRD since the last review, one line each: who
       asked, what it was, accepted or rejected. Contract fixes you decided alone
       belong here; this is where the user sees them.
@@ -570,7 +570,7 @@ assume.
 
     Then write two files, in the user's language, and put them in the commit:
 
-    **`docs/crew/release/<milestone>-release.md`** — how this reaches users:
+    **`docs/release/<milestone>-release.md`** — how this reaches users:
     - what is being released, and the version number, with the rule you used to
       pick it;
     - the release notes a user will read: what is new, what changed, what broke;
@@ -583,7 +583,7 @@ assume.
       those words;
     - what you could not check, and who has to.
 
-    **`docs/crew/release/<milestone>-upgrade.md`** — how someone already using the
+    **`docs/release/<milestone>-upgrade.md`** — how someone already using the
     old version moves up:
     - who is upgrading and from which versions;
     - every breaking change, and the exact thing the user must do about it;
@@ -793,7 +793,7 @@ assume.
 
 18. **Finish.** Re-read the acceptance checks and confirm each one against the
     real result. Run the test command once more, and
-    `bash docs/crew/qa/run-all.sh` once more, and give the real numbers of both. Then give the user a short
+    `bash docs/qa/run-all.sh` once more, and give the real numbers of both. Then give the user a short
     summary: what was built, which files changed, test result, the branch name,
     whether the README was updated or left alone and why, every verdict you got
     (code review, security review or why it was skipped, QA, doc review), every
@@ -925,11 +925,11 @@ unreadable job as finished.
   change goes into a document first; the message says which document and which
   version.
 - Every change to scope, an acceptance check, the milestone list or a boundary
-  contract gets a CRD in `docs/crew/crd/`, whoever asked. Scope needs the user's
+  contract gets a CRD in `docs/decisions/crd/`, whoever asked. Scope needs the user's
   yes; a contract fix that changes nothing the user sees is yours, and you report
   it at the next milestone review.
 - A test case that only ran in somebody's shell does not count. Engineer tests
-  live in the project's test suite; QA cases live in `docs/crew/qa/<task-id>/`
-  and run again from `docs/crew/qa/run-all.sh`.
+  live in the project's test suite; QA cases live in `docs/qa/<task-id>/`
+  and run again from `docs/qa/run-all.sh`.
 - Report only what really happened. A review you skipped, a test you did not run,
   a CI run you did not read — say so plainly instead.

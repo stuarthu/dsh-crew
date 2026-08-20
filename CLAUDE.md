@@ -141,20 +141,24 @@ Note that this repository's own `.github/workflows/publish.yml` is tag-triggered
 
 ## State and documents
 
-Job state lives **outside** the repository, in `~/.dsh/crew/jobs/<job>/state.json`, so a user's
-`git status` stays clean. Crew documents live **inside** it, in `docs/crew/`: DoD, PRD, design,
-ADRs, one module boundary contract per pair of modules that talk
-(`docs/crew/api/<caller>-<callee>.md`), one change request per scope-or-contract change
-(`docs/crew/crd/NNNN-<short-name>.md`), a release and an upgrade plan for each
-milestone the user ships (`docs/crew/release/<milestone>-release.md` and
-`-upgrade.md`), one research answer per question the PM sent to a researcher
-(`docs/crew/research/<short-name>.md`), and QA's plan plus its **runnable** cases
-(`docs/crew/qa/<task-id>-plan.md`, `docs/crew/qa/<task-id>/case-*`, a `run.sh` per task and one
-`docs/crew/qa/run-all.sh` that finds them all).
+Job state and the DoD live **outside** the repository, in `~/.dsh/crew/jobs/<job-slug>/`
+(`state.json` and `dod.md`), so a user's `git status` stays clean. Crew documents live **inside**
+it, under `docs/`, and every folder name says **what the thing is**, never who made it:
+
+| Folder | What it holds |
+| --- | --- |
+| `docs/design/` | `prd.md`, `hld.md`, `tasks.md`, and one module boundary contract per pair of modules that talk (`docs/design/api/<caller>-<callee>.md`) |
+| `docs/decisions/` | `adr/NNNN-<short-name>.md` (how it was done) and `crd/NNNN-<short-name>.md` (one change request per scope-or-contract change) |
+| `docs/qa/` | QA's plan plus its **runnable** cases: `<task-id>-plan.md`, `<task-id>/case-*`, a `run.sh` per task and one `docs/qa/run-all.sh` that finds them all |
+| `docs/release/` | a release and an upgrade plan for each milestone the user ships: `<milestone>-release.md` and `<milestone>-upgrade.md` |
+| `docs/research/` | one answer per question the PM sent to a researcher: `<short-name>.md` |
+
+Only `docs/decisions/` and `docs/qa/` exist in this repository today. The other three appear the
+first time a job writes into them.
 
 Four rules there are load-bearing, and `principles.md` 8, 13, 14 and 15 carry the reasons:
 
-- **QA writes only under `docs/crew/qa/`**, in the project's own test framework, never into the
+- **QA writes only under `docs/qa/`**, in the project's own test framework, never into the
   product's test folder and never into project config. If a runner cannot see that folder, QA asks
   the PM and the PM edits the config — that keeps "one task owns its files" true.
 - **The PM settles the language and stack in step 3, the user confirms it, and it

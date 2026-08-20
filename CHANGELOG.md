@@ -12,10 +12,10 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
 
 - **QA's test cases are files you keep.** QA still writes its plan from the
   document before it reads the code, but now every case becomes a real test file
-  in your project's own test framework, under `docs/crew/qa/<task-id>/`, with a
+  in your project's own test framework, under `docs/qa/<task-id>/`, with a
   `run.sh` beside it. They are committed with the task, so they outlive the job.
 - **One command runs every QA case ever written.** Run
-  `bash docs/crew/qa/run-all.sh`. It finds each task's `run.sh` by itself and
+  `bash docs/qa/run-all.sh`. It finds each task's `run.sh` by itself and
   runs them all. QA runs it on every task it checks, so a case from an earlier
   task guards the new work. A case that used to pass and now fails is a blocking
   regression, and nobody may edit it green — it goes back to the engineer that
@@ -41,11 +41,11 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
 - **A release plan and an upgrade plan for every milestone you ship.** At the
   milestone review the PM now asks one question with four answers: ship this
   milestone, go on without shipping, change something, or stop. If you ship, it
-  writes `docs/crew/release/<milestone>-release.md` (the version and the rule
+  writes `docs/release/<milestone>-release.md` (the version and the rule
   behind it, the release notes, the exact steps and who approves each one, what
   must be true before starting, how it is checked afterwards, and how to undo it —
   or the plain words that it cannot be undone) and
-  `docs/crew/release/<milestone>-upgrade.md` (who upgrades from what, every
+  `docs/release/<milestone>-upgrade.md` (who upgrades from what, every
   breaking change and what the user must do, migration steps and whether they are
   safe to run twice, skipping a version, going back and what data is lost, how
   long it takes, what goes offline).
@@ -65,7 +65,7 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
 - **Change request documents (CRDs).** When anyone — you, a crew role, or the PM
   itself — asks for something that changes what you get (the scope, an acceptance
   check, the milestone list) or how two modules talk (a boundary contract), the PM
-  writes `docs/crew/crd/NNNN-<short-name>.md` first: who asked, what they want,
+  writes `docs/decisions/crd/NNNN-<short-name>.md` first: who asked, what they want,
   why, which documents and tasks it touches, the cost, and the decision with its
   reason. Nothing is built from an undecided CRD, and a rejected one is kept.
   Small questions and code review findings deliberately do **not** get a CRD.
@@ -86,7 +86,7 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
 
   - which module owns the behaviour;
   - which layer holds the check;
-  - whether it touches a boundary contract in `docs/crew/api/`;
+  - whether it touches a boundary contract in `docs/design/api/`;
   - whether a public name, command, config option or output format changes;
   - whether behaviour you can see changes;
   - whether speed or compatibility changes.
@@ -97,11 +97,12 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
   difference, it asks you and waits for a clear answer. If the difference stays
   inside the code, it decides itself and names the choice at the next milestone
   review. The decision goes into a document before the engineer builds it. PRD
-  work gets an **architecture decision record (ADR)** under `docs/crew/adr/`.
-  Small work gets a new **Decisions** section in `docs/crew/dod.md`. That record
-  holds the cause, every way that was found with its cost and why it lost, the
-  way that was taken, who decided, and the reason. New features and refactors do
-  not go this way — there the design and the engineer's judgement decide, as
+  work gets an **architecture decision record (ADR)** under `docs/decisions/adr/`.
+  Small work gets a new **Decisions** section in
+  `~/.dsh/crew/jobs/<job-slug>/dod.md`. That record holds the cause, every way
+  that was found with its cost and why it lost, the way that was taken, who
+  decided, and the reason. New features and refactors do not go this way —
+  there the design and the engineer's judgement decide, as
   before.
 - **Every ADR is now written for you, and you can overturn one.** An ADR used to
   need only "the options you weighed", which could be one sentence. Now it lists
@@ -188,8 +189,8 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
   makes.
 - The PM's milestone report now lists every CRD since the last review, and its
   final report gives the numbers from both the project's test command and
-  `bash docs/crew/qa/run-all.sh`.
-- If your test runner cannot see `docs/crew/qa/` (many only look inside folders
+  `bash docs/qa/run-all.sh`.
+- If your test runner cannot see `docs/qa/` (many only look inside folders
   their config names), QA reports it with the exact command, the message, and the
   one config line that would fix it. The PM either adds that line or says plainly
   that those cases cannot run yet. QA never edits your project's config and never
@@ -211,11 +212,11 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
 ### Added
 
 - **The architect designs the module boundaries.** It now splits the system into
-  modules in `docs/crew/hld.md`, saying where each line falls and why, and it
+  modules in `docs/design/hld.md`, saying where each line falls and why, and it
   must look for a module or library the repository already has before it invents
   a new one. Every new module needs a reason it had to be new.
 - **One contract file per boundary.** When two or more modules talk to each
-  other, the architect writes `docs/crew/api/<caller>-<callee>.md`: how the two
+  other, the architect writes `docs/design/api/<caller>-<callee>.md`: how the two
   sides talk (in-process call, HTTP, gRPC, events, and so on), the data format,
   every call with its inputs, output and named errors, who owns the data and
   what the caller may believe about it, and — for events — the schema and the

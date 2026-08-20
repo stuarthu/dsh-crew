@@ -62,3 +62,20 @@ accepted。用户决定，形状也是他给的（push 上跑测试，tag 上才
 ## Applied
 
 作业文件夹里的 `dod.md` 版本 26。
+
+---
+
+## 编者注（2026-08-20，CRD 0008 执行之后加）
+
+本文件里写着 `docs/crew/...` 的地方分两类，请这样读：
+
+- **记录**——「当时那个文件在哪」、「当时争论用的是哪个路径」。原样保留，不改。改了就是
+  声称这个文件一直在它现在的位置。
+- **还没执行的指令**——下面这几处指的是**将来要做的事**，路径已经被 CRD 0008 改掉了，
+  照原文做会失败。执行时用新路径：
+
+- 「`package.json` 的 `test` 脚本末尾加上 `bash docs/crew/qa/run-all.sh`」→ 现在是
+  **`bash docs/qa/run-all.sh`**。照原文写会直接失败。
+- 「`docs/crew/qa/T-01/case-26-repo-diff-scope.mjs` 会去读本次作业的提交」→ 现在是
+  **`docs/qa/T-01/case-26-repo-diff-scope.mjs`**。浅克隆那个坑不变，仍然要查。
+- 「`principles.md` 第 13 条」→ 现在在根目录（CRD 0007）。

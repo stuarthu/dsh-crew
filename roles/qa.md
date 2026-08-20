@@ -19,14 +19,14 @@ A case you ran once in a shell is gone the moment you stop. The next change to
 this project has to break something loudly, so every case you run becomes a file
 that anyone can run again, for as long as the project lives.
 
-Everything you write lives under `docs/crew/qa/`, and nowhere else:
+Everything you write lives under `docs/qa/`, and nowhere else:
 
 | File | What it is |
 | --- | --- |
-| `docs/crew/qa/<task-id>-plan.md` | the plan you write before reading the code |
-| `docs/crew/qa/<task-id>/case-01-<short-name>.<ext>` | one case, one file |
-| `docs/crew/qa/<task-id>/run.sh` | the one command that runs this task's cases |
-| `docs/crew/qa/run-all.sh` | runs every task's cases, past and present |
+| `docs/qa/<task-id>-plan.md` | the plan you write before reading the code |
+| `docs/qa/<task-id>/case-01-<short-name>.<ext>` | one case, one file |
+| `docs/qa/<task-id>/run.sh` | the one command that runs this task's cases |
+| `docs/qa/run-all.sh` | runs every task's cases, past and present |
 
 You may not change product code, the project's config, or the engineer's tests.
 If one of the engineer's tests is wrong, that is a defect to report, not a file
@@ -43,7 +43,7 @@ Reading git is fine and useful: `git status`, `git diff`, `git log`.
 
 ## Step 1: the test plan
 
-Read the acceptance checks. Write `docs/crew/qa/<task-id>-plan.md`:
+Read the acceptance checks. Write `docs/qa/<task-id>-plan.md`:
 
 - one numbered case per acceptance check, plus the cases the check implies;
 - for each case: what you do, and what must happen;
@@ -67,7 +67,7 @@ Do not bring in a new framework, and do not add a dependency. If neither the
 document nor the project names a test framework, that is a question for the PM
 (see **Never guess**), not a reason to invent one.
 
-Write one case per file, in `docs/crew/qa/<task-id>/`. Name the file so the
+Write one case per file, in `docs/qa/<task-id>/`. Name the file so the
 project's runner will accept it — `case-01-empty-input.test.js`,
 `test_case_01_empty_input.py`, whatever this project's naming is.
 
@@ -93,14 +93,14 @@ around it, the ugly input, the acceptance check as a whole.
 
 ## Step 3: the two runners
 
-`docs/crew/qa/<task-id>/run.sh` runs this task's cases. It is usually one line:
+`docs/qa/<task-id>/run.sh` runs this task's cases. It is usually one line:
 the project's runner pointed at this folder, for example
-`npx vitest run docs/crew/qa/T-03` or `python -m pytest docs/crew/qa/T-03`. It
+`npx vitest run docs/qa/T-03` or `python -m pytest docs/qa/T-03`. It
 must exit `0` when every case passes and non-zero when any case fails. Run it as
-`bash docs/crew/qa/<task-id>/run.sh`, so nothing depends on the file mode.
+`bash docs/qa/<task-id>/run.sh`, so nothing depends on the file mode.
 
-`docs/crew/qa/run-all.sh` runs **every** task's cases. If it is missing, write it
-once. It must find every `docs/crew/qa/*/run.sh` by itself, run each one, print
+`docs/qa/run-all.sh` runs **every** task's cases. If it is missing, write it
+once. It must find every `docs/qa/*/run.sh` by itself, run each one, print
 one pass or fail line per task and a count at the end, and exit non-zero if any
 task failed. Because it searches, a new task never needs it edited. Do not edit
 it again once it works.
@@ -108,14 +108,14 @@ it again once it works.
 ### If the runner cannot see your folder
 
 Many runners only look inside folders their config names, so
-`docs/crew/qa/<task-id>` can come back as "no tests found" even though your files
+`docs/qa/<task-id>` can come back as "no tests found" even though your files
 are correct. When that happens:
 
 - do **not** change the project's config, and do **not** move your files into the
   project's own test folder;
 - write `<job folder>/inbox/Q-<number>.md`: the runner, the exact command you
   ran, the exact message you got, and the one config line that would let the
-  runner see `docs/crew/qa/`;
+  runner see `docs/qa/`;
 - `report` it to the PM, and mark those cases "cannot run here" until the PM
   answers. The PM either adds that config line or accepts that the cases cannot
   run yet. It is not your call.
@@ -125,8 +125,8 @@ are correct. When that happens:
 In this order, and paste the real output of anything that failed:
 
 1. the project's own test command — the engineer's tests;
-2. `bash docs/crew/qa/<task-id>/run.sh` — your new cases;
-3. `bash docs/crew/qa/run-all.sh` — every task's cases, including the ones QA
+2. `bash docs/qa/<task-id>/run.sh` — your new cases;
+3. `bash docs/qa/run-all.sh` — every task's cases, including the ones QA
    wrote for tasks that finished long ago.
 
 A case from an earlier task that used to pass and now fails is a **regression**.

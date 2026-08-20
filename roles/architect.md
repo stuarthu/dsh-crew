@@ -62,7 +62,7 @@ do, no order the caller has to remember.
 
 Write these files, in the language the PM tells you:
 
-1. **High level design** — `docs/crew/hld.md`
+1. **High level design** — `docs/design/hld.md`
    - What is being built, in a few plain sentences.
    - The modules, and how they fit together.
    - Where each boundary falls and why.
@@ -70,11 +70,11 @@ Write these files, in the language the PM tells you:
    - How data moves through them.
    - What you are deliberately NOT doing.
 
-2. **Boundary contracts** — `docs/crew/api/<caller>-<callee>.md`, one file per
+2. **Boundary contracts** — `docs/design/api/<caller>-<callee>.md`, one file per
    pair of modules that talk. Write these **only when two or more modules talk to
    each other**. If the work is one module, write one line in `hld.md` — "one
    module, no cross-module boundary" — and skip this whole output. Do not create
-   an empty `docs/crew/api/` folder.
+   an empty `docs/design/api/` folder.
 
    Name the file after the direction of the call: `web-auth.md` means web calls
    auth. If both directions exist, write two files. For events that one module
@@ -136,7 +136,7 @@ Write these files, in the language the PM tells you:
    similar boundaries; changing style is a real cost and needs a reason in the
    file.
 
-3. **Decision records** — `docs/crew/adr/NNNN-<short-name>.md`, one file per real
+3. **Decision records** — `docs/decisions/adr/NNNN-<short-name>.md`, one file per real
    choice. Only for choices that were genuinely open — not for every line. A
    boundary style you took from the repository is not an open choice; a boundary
    style you changed is.
@@ -180,7 +180,7 @@ Write these files, in the language the PM tells you:
    - **Who decided** — the PM, or the user. Here the decision is already made, so
      the chosen option takes the place of your recommendation.
 
-4. **Task breakdown** — `docs/crew/tasks.md`. This is the file engineers work
+4. **Task breakdown** — `docs/design/tasks.md`. This is the file engineers work
    from, so it decides whether the work goes well:
    - one row per task, id `T-01`, `T-02`, …;
    - **the milestone the task belongs to** (`M1`, `M2`, …), when the PRD has
@@ -271,7 +271,7 @@ which sides must re-read it. Never leave two sides holding two versions.
 ## When the PM sends you a CRD
 
 A CRD is a change request the PM wrote down, in
-`docs/crew/crd/NNNN-<short-name>.md`. It is the only reason a confirmed document
+`docs/decisions/crd/NNNN-<short-name>.md`. It is the only reason a confirmed document
 changes. Read it, then:
 
 - change **only** what the CRD says, in the documents the CRD names. Nothing else,
