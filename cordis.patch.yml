@@ -25,8 +25,7 @@
       #
       #   # Limits the PM must respect. It asks you before going over any of them.
       #   limits:
-      #     liveAgents: 4       # crew agents awake at the same time
-      #     agentsPerJob: 20    # crew agents one job may use in total
+      #     liveAgents: 20      # crew agents awake at the same time
       #     reviewRounds: 3     # review rounds before the PM asks you to decide
       #
       #   # Set false to stop the plugin writing the `crew` preset into

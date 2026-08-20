@@ -41,7 +41,11 @@ const JOBS_CONTEXT_ORDER = 130;
 
 const PACKAGE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-const DEFAULT_LIMITS = { liveAgents: 4, agentsPerJob: 20, reviewRounds: 3 };
+// `agentsPerJob` used to sit here. CRD 0003 dropped it: a job may use as many
+// crew agents as the work needs, and 4 awake at once left tasks with no shared
+// files queueing for no reason. See legacyLimitNote for the profiles that still
+// carry the old setting.
+const DEFAULT_LIMITS = { liveAgents: 20, reviewRounds: 3 };
 
 /** Read a positive whole number from config, falling back to the default. */
 function limitOf(configured, fallback, field) {
@@ -50,6 +54,25 @@ function limitOf(configured, fallback, field) {
     throw new Error(`dsh-crew: limits.${field} must be a whole number of 1 or more (got ${JSON.stringify(configured)})`);
   }
   return configured;
+}
+
+/**
+ * A boot-log line for a setting this version removed, or `undefined` when the
+ * profile names none.
+ *
+ * `limits.agentsPerJob` went away with CRD 0003. A profile written before that
+ * still carries it, and the value is not WRONG the way `liveAgents: 0` is wrong
+ * — `limitOf` throws for a value written wrong, but here the setting itself is
+ * gone. Stopping somebody's dsh session from starting over a line that used to
+ * be legal costs far more than it is worth, so the mount goes on and only says
+ * this once.
+ *
+ * @param limits - the `limits` object from the plugin config, if any
+ */
+function legacyLimitNote(limits) {
+  if (limits?.agentsPerJob === undefined) return undefined;
+  return "dsh-crew: limits.agentsPerJob is no longer used — there is no cap any more on how many crew agents one job may use."
+    + " Ignoring it; you can delete that line from your profile.";
 }
 
 /** Stamp file recording which version of this package wrote the preset folder. */
@@ -183,7 +206,6 @@ function runtimeFactsSection(limits) {
     "",
     "Limits you must respect. Stop and ask the user before going over any of them:",
     `- crew agents awake at the same time: ${limits.liveAgents}`,
-    `- crew agents for one job in total: ${limits.agentsPerJob}`,
     `- review rounds before you bring the disagreement to the user: ${limits.reviewRounds}`,
     "",
     "If the user says \"stop\", kill every crew agent you started (`interrupt_agent`, then `job_kill` for anything still running) and say what was left unfinished.",
@@ -203,7 +225,6 @@ export function apply(ctx, config) {
   const rolesDir = config?.rolesDir;
   const limits = {
     liveAgents: limitOf(config?.limits?.liveAgents, DEFAULT_LIMITS.liveAgents, "liveAgents"),
-    agentsPerJob: limitOf(config?.limits?.agentsPerJob, DEFAULT_LIMITS.agentsPerJob, "agentsPerJob"),
     reviewRounds: limitOf(config?.limits?.reviewRounds, DEFAULT_LIMITS.reviewRounds, "reviewRounds"),
   };
 
@@ -212,6 +233,11 @@ export function apply(ctx, config) {
   // when someone finally starts that role.
   const pmText = readRoleText(PM_PERSONA_FILE, rolesDir);
   for (const role of ROLES) readRoleText(role.personaFile, rolesDir);
+
+  // Same boot-log path as the preset installer below. Said whether or not the
+  // preset is installed, so an upgraded profile hears about the setting once.
+  const legacyNote = legacyLimitNote(config?.limits);
+  if (legacyNote !== undefined) ctx.logger?.("dsh-crew")?.info?.(legacyNote) ?? console.log(legacyNote);
 
   if (config?.installPreset !== false) {
     const { version } = JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "utf8"));
