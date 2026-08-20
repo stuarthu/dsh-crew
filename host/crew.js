@@ -75,6 +75,29 @@ function legacyLimitNote(limits) {
     + " Ignoring it; you can delete that line from your profile.";
 }
 
+/**
+ * Say one line in the boot log, exactly once.
+ *
+ * Every boot-log line in this file goes through here, and that is the point.
+ * The call sites used to hand the note to the logger and then add a fallback to
+ * the console after a `??`, which said each note TWICE on a real host: a
+ * logger's `info()` returns nothing, and `??` reads "nothing" as "that did not
+ * happen". A user mounting the plugin saw the same sentence in the boot log two
+ * times. One helper, so a new call site cannot bring that idiom back.
+ *
+ * A deployment may give us no logger at all, something that is not a function,
+ * a logger that hands back nothing, or one with no `info` — all four end up on
+ * `console.log`, once.
+ *
+ * @param ctx - the Cordis context
+ * @param note - the line to say
+ */
+function bootLog(ctx, note) {
+  const logger = typeof ctx?.logger === "function" ? ctx.logger("dsh-crew") : undefined;
+  if (typeof logger?.info === "function") logger.info(note);
+  else console.log(note);
+}
+
 /** Stamp file recording which version of this package wrote the preset folder. */
 const STAMP_FILE = ".installed-by-dsh-crew";
 
@@ -237,12 +260,12 @@ export function apply(ctx, config) {
   // Same boot-log path as the preset installer below. Said whether or not the
   // preset is installed, so an upgraded profile hears about the setting once.
   const legacyNote = legacyLimitNote(config?.limits);
-  if (legacyNote !== undefined) ctx.logger?.("dsh-crew")?.info?.(legacyNote) ?? console.log(legacyNote);
+  if (legacyNote !== undefined) bootLog(ctx, legacyNote);
 
   if (config?.installPreset !== false) {
     const { version } = JSON.parse(readFileSync(join(PACKAGE_ROOT, "package.json"), "utf8"));
     const note = installPreset(version);
-    if (note !== undefined) ctx.logger?.("dsh-crew")?.info?.(note) ?? console.log(note);
+    if (note !== undefined) bootLog(ctx, note);
   }
 
   ctx.effect(() => ctx.systemPrompt.section({

@@ -13,7 +13,8 @@
 //   ln -s ~/.dsh/profiles/node_modules/@deepseek-ai/dsh-tool-subagent \
 //         node_modules/@deepseek-ai/dsh-tool-subagent
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -185,23 +186,34 @@ function fakeContext() {
   const contexts = [];
   const mounts = [];
   const logs = [];
+  const loggerLogs = [];
+  const consoleLogs = [];
   return {
     sections,
     contexts,
     mounts,
+    // `logs` is every boot-log line, whichever path wrote it. The two lists
+    // beside it record WHICH path took each line, which is how a line said
+    // twice — once through the logger and once through the console — is caught.
     logs,
+    loggerLogs,
+    consoleLogs,
     effect: (fn) => fn(),
     systemPrompt: {
       section: (section) => sections.push(section),
       context: (context) => contexts.push(context),
     },
     plugin: (plugin, config) => mounts.push({ plugin, config }),
-    // The plugin writes boot-log lines as
-    //   ctx.logger?.("dsh-crew")?.info?.(note) ?? console.log(note)
-    // so a real deployment may take either path. This covers the logger half;
-    // applyCapturingLogs below covers the console.log fallback, so a case that
-    // reads `logs` passes because the code really logged, not by accident.
-    logger: () => ({ info: (line) => logs.push(String(line)) }),
+    // A deployment may hand the plugin a logger or none at all, so a boot-log
+    // line has two paths out. This is the logger half; applyCapturingLogs below
+    // catches the console.log half, so a case that reads `logs` passes because
+    // the code really logged, not by accident.
+    logger: () => ({
+      info: (line) => {
+        loggerLogs.push(String(line));
+        logs.push(String(line));
+      },
+    }),
   };
 }
 
@@ -210,14 +222,22 @@ function fakeContext() {
  * `ctx.logger` or through the `console.log` fallback.
  *
  * @param config - plugin config for this mount
- * @param logger - false to mount on a host that registers no `ctx.logger`
- * @returns the fake context, with `logs` holding both paths' lines
+ * @param logger - `true` for the recording logger, `false` for a host that
+ *   registers none, or any other value to put in `ctx.logger`: a logger that is
+ *   not a function, or one that hands back nothing, or one with no `info`
+ * @returns the fake context, with `logs` holding both paths' lines and
+ *   `loggerLogs` / `consoleLogs` saying which path each line took
  */
 function applyCapturingLogs(config, { logger = true } = {}) {
   const ctx = fakeContext();
-  if (!logger) delete ctx.logger;
+  if (logger === false) delete ctx.logger;
+  else if (logger !== true) ctx.logger = logger;
   const realLog = console.log;
-  console.log = (...args) => ctx.logs.push(args.map(String).join(" "));
+  console.log = (...args) => {
+    const line = args.map(String).join(" ");
+    ctx.consoleLogs.push(line);
+    ctx.logs.push(line);
+  };
   try {
     crew.apply(ctx, config);
   } finally {
@@ -311,6 +331,53 @@ function applyCapturingLogs(config, { logger = true } = {}) {
   if (!noLogger.logs.some(line => line.includes("agentsPerJob"))) fail("on a host with no ctx.logger the removed-setting note never reached the boot log");
   else ok("removed-setting note also reaches a host with no ctx.logger");
 
+  // ONE note, ONE line. QA found the boot log saying every note twice: the old
+  // call site handed the note to the logger and then fell back to the console
+  // as well, because a real logger's `info()` returns undefined and `??` reads
+  // that as "nothing happened". Counted here, not eyeballed, on every shape of
+  // host a deployment may hand the plugin.
+  const timesSaid = (ctx, marker) => (ctx?.logs ?? []).filter(line => line.includes(marker)).length;
+
+  const saidWithLogger = timesSaid(legacy, "agentsPerJob");
+  if (saidWithLogger !== 1) {
+    fail(`with a logger the removed-setting note was written ${saidWithLogger} time(s), expected exactly 1 (logged: ${JSON.stringify(legacy?.logs ?? [])})`);
+  } else if (legacy.loggerLogs.length !== 1 || legacy.consoleLogs.length !== 0) {
+    fail(`with a logger the note must go through the logger only (logger: ${JSON.stringify(legacy.loggerLogs)}, console: ${JSON.stringify(legacy.consoleLogs)})`);
+  } else ok("with a logger the removed-setting note is said exactly once, through the logger");
+
+  const saidWithoutLogger = timesSaid(noLogger, "agentsPerJob");
+  if (saidWithoutLogger !== 1) {
+    fail(`on a host with no ctx.logger the removed-setting note was written ${saidWithoutLogger} time(s), expected exactly 1 (logged: ${JSON.stringify(noLogger.logs)})`);
+  } else ok("with no ctx.logger the removed-setting note is said exactly once, through console.log");
+
+  // A host may also register something that is not a function, or a logger that
+  // hands back nothing usable. Each of those must still say the note once — not
+  // zero times, and not twice, and never by throwing the mount away.
+  for (const [label, logger] of [
+    ["a ctx.logger that is not a function", {}],
+    ["a ctx.logger that hands back nothing", () => undefined],
+    ["a ctx.logger with no info()", () => ({})],
+  ]) {
+    let odd;
+    try {
+      odd = applyCapturingLogs({ installPreset: false, limits: { agentsPerJob: 30 } }, { logger });
+    } catch (error) {
+      fail(`${label}: the mount threw instead of saying the note once — ${error.message}`);
+      continue;
+    }
+    const said = timesSaid(odd, "agentsPerJob");
+    if (said !== 1) fail(`${label}: the removed-setting note was written ${said} time(s), expected exactly 1 (logged: ${JSON.stringify(odd.logs)})`);
+    else ok(`${label}: the note still comes out once, through console.log`);
+  }
+
+  // The idiom must not come back by copy-paste. Every boot-log line goes
+  // through one helper now, so no call site in host/crew.js may end in a
+  // fallback to the console after the logger already had the line.
+  const crewSource = readFileSync(join(packageRoot, "host", "crew.js"), "utf8");
+  if (/\?\?\s*console\.log/.test(crewSource)) {
+    fail("host/crew.js still writes a boot-log line as logger-then-`?? console.log`, which says it twice on a host with a logger");
+  } else ok("no boot-log call site in host/crew.js falls through to console.log after the logger");
+
   // The PM prompt is built from the limits, so it is where a limit that no
   // longer exists would keep being promised to the PM. Defaults after CRD 0003:
   // 20 agents awake at the same time, review rounds unchanged at 3.
@@ -351,6 +418,58 @@ if (roles) {
   const engineer = custom.mounts.find(mount => mount.config.toolName === "crew_engineer");
   if (engineer?.config.toolFilter?.deny?.length !== 1) fail("roleDeny did not replace the shipped deny list");
   else ok("roleDeny replaces the shipped deny list");
+}
+
+// -------------------------------------------- the .bak note, said once
+
+// The plugin's other boot-log line: the one naming the files an upgrade kept as
+// `.bak`. It only happens on a real install, so this runs against a throwaway
+// DSH_HOME and never reads or writes the user's own ~/.dsh.
+{
+  const homes = [];
+
+  /** A harness home holding a crew preset dsh-crew wrote one version ago, with a file the user edited. */
+  const upgradeHome = () => {
+    const home = mkdtempSync(join(tmpdir(), "crew-mount-home-"));
+    homes.push(home);
+    const target = join(home, ".agent-presets", "crew");
+    mkdirSync(target, { recursive: true });
+    writeFileSync(join(target, ".installed-by-dsh-crew"), "0.0.1\n");
+    // Different from the shipped file, so the upgrade has something to keep.
+    writeFileSync(join(target, "agent.cordis.yml"), "# my own roleAllow edit\n");
+    return home;
+  };
+
+  /** Mount with the preset installer on, pointed at `home`. */
+  const upgradeIn = (home, options) => {
+    const previous = process.env.DSH_HOME;
+    process.env.DSH_HOME = home;
+    try {
+      return applyCapturingLogs({}, options);
+    } finally {
+      if (previous === undefined) delete process.env.DSH_HOME;
+      else process.env.DSH_HOME = previous;
+    }
+  };
+
+  try {
+    const withLogger = upgradeIn(upgradeHome());
+    const saidWith = withLogger.logs.filter(line => line.includes(".bak")).length;
+    if (saidWith !== 1) {
+      fail(`with a logger the upgrade's .bak note was written ${saidWith} time(s), expected exactly 1 (logged: ${JSON.stringify(withLogger.logs)})`);
+    } else if (withLogger.consoleLogs.length !== 0) {
+      fail(`with a logger the .bak note must not also go to console.log (console: ${JSON.stringify(withLogger.consoleLogs)})`);
+    } else ok("with a logger the upgrade's .bak note is said exactly once, through the logger");
+
+    const withoutLogger = upgradeIn(upgradeHome(), { logger: false });
+    const saidWithout = withoutLogger.logs.filter(line => line.includes(".bak")).length;
+    if (saidWithout !== 1) {
+      fail(`on a host with no ctx.logger the upgrade's .bak note was written ${saidWithout} time(s), expected exactly 1 (logged: ${JSON.stringify(withoutLogger.logs)})`);
+    } else ok("with no ctx.logger the upgrade's .bak note is said exactly once, through console.log");
+  } finally {
+    // A check that leaves folders in /tmp behind is a check nobody wants twice.
+    for (const home of homes) rmSync(home, { recursive: true, force: true });
+  }
 }
 
 console.log(failures === 0 ? "\nall mount checks passed" : `\n${failures} mount check(s) failed`);
