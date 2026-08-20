@@ -14,11 +14,12 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
   document before it reads the code, but now every case becomes a real test file
   in your project's own test framework, under `docs/crew/qa/<task-id>/`, with a
   `run.sh` beside it. They are committed with the task, so they outlive the job.
-- **One command runs every QA case ever written.** `docs/crew/qa/run-all.sh`
-  finds each task's `run.sh` by itself and runs them all. QA runs it on every
-  task it checks, so a case from an earlier task guards the new work. A case that
-  used to pass and now fails is a blocking regression, and nobody may edit it
-  green — it goes back to the engineer that owns those files.
+- **One command runs every QA case ever written.** Run
+  `bash docs/crew/qa/run-all.sh`. It finds each task's `run.sh` by itself and
+  runs them all. QA runs it on every task it checks, so a case from an earlier
+  task guards the new work. A case that used to pass and now fails is a blocking
+  regression, and nobody may edit it green — it goes back to the engineer that
+  owns those files.
 - **The language and stack are settled before anything is designed, and you
   approve them.** If your repository already has a stack, that is the stack: the PM
   reads the manifest, the lock file, the test folder and the CI workflow, states
@@ -97,12 +98,23 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
   makes.
 - The PM's milestone report now lists every CRD since the last review, and its
   final report gives the numbers from both the project's test command and
-  `docs/crew/qa/run-all.sh`.
+  `bash docs/crew/qa/run-all.sh`.
 - If your test runner cannot see `docs/crew/qa/` (many only look inside folders
   their config names), QA reports it with the exact command, the message, and the
   one config line that would fix it. The PM either adds that line or says plainly
   that those cases cannot run yet. QA never edits your project's config and never
   moves its files into your test folder.
+- **The `roleDeny` example in `preset/crew/agent.cordis.yml` was wrong, and the
+  comment above these settings now says what they really do.** Both settings
+  **replace** the shipped list for that role; they are not added to it. So the
+  old example `roleDeny: { engineer: ['crew_engineer'] }` cut the engineer's
+  seven `crew_*` deny names down to one. If you copied it, write all seven names
+  out (`crew_researcher`, `crew_architect`, `crew_engineer`, `crew_qa`,
+  `crew_code_reviewer`, `crew_security_reviewer`, `crew_doc_reviewer`), or delete
+  your own `roleDeny` line and keep the shipped list. This was not a hole in the
+  crew's safety: `maxDepth: 1` has always stopped a role from starting a role,
+  whatever the filter says. But a short list gives up one of the guards that keep
+  the crew flat, and your deny list was not what you thought it was.
 
 ## 0.6.0 — 2026-08-20
 

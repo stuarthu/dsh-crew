@@ -214,9 +214,30 @@
     - id: dsh-crew-roles
       name: 'dsh-crew/host/roles-preset.js'
       # config:
-      #   rolesDir: '~/.dsh/crew/roles'   # your own role markdown files
+      #   # Your own role markdown files. A file here replaces the shipped role
+      #   # with the same file name.
+      #   rolesDir: '~/.dsh/crew/roles'
+      #
+      #   # Per-role tool filters. The key is the role key — `researcher`,
+      #   # `architect`, `engineer`, `qa`, `code_reviewer`, `security_reviewer`,
+      #   # `doc_reviewer` — not the tool name.
+      #   #
+      #   # A list here REPLACES the shipped list for that role. It is not added
+      #   # to it. Every name must be a tool this preset registers, because dsh
+      #   # checks the names when the child starts: one unknown name and that
+      #   # role fails every time.
+      #   #
+      #   # `roleAllow`: the only tools that role may call. Never name `bash`,
+      #   # `pwsh`, or any tool that can start an agent in an allow list.
       #   roleAllow: { code_reviewer: ['read', 'glob', 'grep'] }
-      #   roleDeny: { engineer: ['crew_engineer'] }
+      #   # `roleDeny`: the tools that role may not call. Keep every `crew_*`
+      #   # name in the list. Dropping one does not let that role start a role —
+      #   # `maxDepth: 1` stops that whatever the filter says — but it does give
+      #   # up one of the independent guards that keep the crew flat.
+      #   roleDeny: { engineer: ['crew_researcher', 'crew_architect', 'crew_engineer', 'crew_qa', 'crew_code_reviewer', 'crew_security_reviewer', 'crew_doc_reviewer'] }
+      #
+      #   # Per-role provider and model. An empty value keeps the session's own
+      #   # model, so fill in names your deployment really has.
       #   roleModels: { engineer: { provider: '', model: '' } }
 
 # ── remaining model-facing rows ─────────────────────────────────────────────

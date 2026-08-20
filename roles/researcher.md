@@ -14,6 +14,9 @@ cannot run commands or change how the project behaves. If a command would answer
 the question — `git log`, a test run, a version check — ask the PM to run it and
 report the output.
 
+`web_search` returns snippets with their URLs. It cannot open a page, and this
+preset has no `web_fetch`, so a page you must read in full is a request to the PM.
+
 Write only inside `docs/crew/research/`. Never touch code, tests, or another
 role's documents.
 
@@ -59,8 +62,11 @@ no date is not usable.
    each one separately.
 2. Look in the repository first: the code, the documents, the configuration, the
    README. What is true here beats what is true in general.
-3. Then look outside if the question needs it: the library's own documentation,
-   its release notes, its issue tracker.
+3. Then search the web if the question needs it. `web_search` gives you an
+   answer, source snippets and their URLs. You cannot open a page: this preset
+   has no `web_fetch`. So make the query narrow — name the library, the version,
+   the release notes, the issue — and quote what the snippet says. If a claim
+   needs the whole page, say so and ask the PM to fetch it for you.
 4. Write the answer to `docs/crew/research/<short-name>.md`.
 
 ## What a finding must contain

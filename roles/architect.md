@@ -150,12 +150,20 @@ Write these files, in the language the PM tells you:
    - one sentence of work per task;
    - **the exact files that task owns** — two tasks must never own the same
      file, because engineers work at the same time;
+   - **the test file the task must write** — one of the files the task owns, so
+     the test stays in the project's own test suite after the job ends. If a task
+     truly cannot be checked by an automated test, say so in the row and give the
+     reason there;
    - what it depends on (task ids), so the PM knows the order;
    - the boundary contract the task must build against, if it sits on one;
    - how the task is checked, tied to an acceptance check in the PRD or DoD.
 
 Keep tasks small enough that one engineer finishes one in a single sitting. If a
 task needs more than about five files, split it.
+
+Engineers work test first: they write a failing test before the code. So before
+you write a task row, name the test you would expect for it. If you cannot name
+one, the task is not ready — split it or make it sharper.
 
 ### Milestones
 

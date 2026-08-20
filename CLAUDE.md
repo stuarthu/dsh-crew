@@ -88,7 +88,9 @@ because a live test showed the weaker version failing.
    name when the child starts, so a stale name is a total outage for that role, not a warning.
    `verify-mount.mjs` keeps a `PROVIDERS` map from tool name to the dsh package that registers it —
    extend that map when you allow a new tool.
-4. **The engineer and QA keep `bash`.** They have to run the code and the tests.
+4. **The engineer and QA keep `bash`.** They have to run the code and the tests. `verify-mount.mjs`
+   checks the engineer's half only, so a change that takes `bash` from QA fails no check — read
+   `host/roles.js` before you touch QA's deny list.
 5. **Role markdown may not contain `{{`.** dsh interpolates `{{name}}` in prompt text and an unknown
    variable fails the whole prompt assembly. `readRoleText` throws at startup with the file name
    instead.
@@ -121,14 +123,15 @@ options are documented.
 ## The git guard
 
 `host/git-guard.js` is middleware on `tools/execute`. It reads the command text of `bash` and `pwsh`
-calls. The **root agent** — your own session, the PM — is trusted and passes straight through (any
-push, tag, force, delete, publish, release). Every **child** (a crew role, which carries a parent
-execution token) is refused: pushes of protected branches, bare pushes with no branch, tag pushes,
-force pushes, remote deletes, package publishing, releases, any push into a repo whose CI publishes
-on a branch push, and any command that touches the approval file. A child's other push needs the
-one-shot approval file that the **user** creates; the guard deletes it before the push runs, so a
-crash cannot leave a second push approved. `trustRootAgent: false` guards the PM exactly like a
-child.
+calls. The **root agent** — your own session, the PM — is trusted and passes straight through: any
+push, tag, force push, remote delete, publish or release. One rule holds for **every** agent, root
+included: a command that names the approval file is always refused, because only the user's own
+hand may create it. Every **child** (a crew role, which carries a parent execution token) is also
+refused: pushes of protected branches, bare pushes with no branch, tag pushes, force pushes,
+remote deletes, package publishing, releases, and any push into a repo whose CI publishes on a
+branch push. A child's other push needs the one-shot approval file that the **user** creates; the
+guard deletes it before the push runs, so a crash cannot leave a second push approved.
+`trustRootAgent: false` guards the PM exactly like a child.
 
 It reads command text, so it is a seat belt, not a locked door — a push hidden in a script file gets
 through. Say so plainly in docs; do not describe it as airtight.
@@ -144,11 +147,12 @@ ADRs, one module boundary contract per pair of modules that talk
 (`docs/crew/api/<caller>-<callee>.md`), one change request per scope-or-contract change
 (`docs/crew/crd/NNNN-<short-name>.md`), a release and an upgrade plan for each
 milestone the user ships (`docs/crew/release/<milestone>-release.md` and
-`-upgrade.md`), and QA's plan plus its **runnable** cases
+`-upgrade.md`), one research answer per question the PM sent to a researcher
+(`docs/crew/research/<short-name>.md`), and QA's plan plus its **runnable** cases
 (`docs/crew/qa/<task-id>-plan.md`, `docs/crew/qa/<task-id>/case-*`, a `run.sh` per task and one
 `docs/crew/qa/run-all.sh` that finds them all).
 
-Two rules there are load-bearing, and `docs/principles.md` 13 and 14 carry the reasons:
+Four rules there are load-bearing, and `docs/principles.md` 8, 13, 14 and 15 carry the reasons:
 
 - **QA writes only under `docs/crew/qa/`**, in the project's own test framework, never into the
   product's test folder and never into project config. If a runner cannot see that folder, QA asks

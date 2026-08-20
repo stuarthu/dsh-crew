@@ -25,10 +25,11 @@ follows that, and splits itself in two:
 | PM rules | host plane (your profile) | They need no tools, so they work in every session, on any preset |
 | Role tools | the `crew` agent preset | A role's allow/deny list is checked against the preset when a child starts, so the names must be defined in the same place |
 
-Installing the plugin writes the preset into `$DSH_HOME/.agent-presets/crew`.
-Start a session on the **crew** preset to get the roles. In a session on another
-preset the PM still behaves like a PM, notices it has no role tools, and offers
-to either move to the crew preset or do the job itself.
+The first dsh start after installing writes the preset into
+`$DSH_HOME/.agent-presets/crew`. Start a session on the **crew** preset to get
+the roles. In a session on another preset the PM still behaves like a PM,
+notices it has no role tools, and offers to either move to the crew preset or do
+the job itself.
 
 The crew preset is dsh's own `standard` preset with one change: `subagent`,
 `subagent_fork`, `workflow`, `ralph` and the product subagents are gone, and the
@@ -133,15 +134,17 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    through a **CRD** — a change request document, explained further down. An
    engineer may pick freely among the libraries the project
    already has; adding a brand-new dependency goes back to the PM.
-5. It picks the document and writes it: a **DoD** (`docs/crew/dod.md`) for small
-   work, a **PRD** (`docs/crew/prd.md`) for a real product. It says which it
-   picked, and one word switches it. **You confirm before any work starts.**
+5. It picks the document and writes it: a **DoD** (definition of done,
+   `docs/crew/dod.md`) for small work, a **PRD** (product requirements document,
+   `docs/crew/prd.md`) for a real product. It says which it picked, and one word
+   switches it. **You confirm before any work starts.**
    A PRD is cut into **milestones** — three to six stops, each one something you
    can look at and judge, written in your words rather than in code words. `M1`
    is the proof of concept: the thinnest real path through the riskiest part,
    running for real. You confirm the milestone list on its own, because it decides
    when you get a say.
-6. For PRD work it starts `crew_architect`, which writes the high level design,
+6. It creates a `crew/<job-slug>` branch and tells you the name. Then, for PRD
+   work, it starts `crew_architect`, which writes the high level design,
    the decision records and the task breakdown. It also splits the system into
    modules — reusing what the repository already has before it invents anything
    new — and when two or more modules talk to each other it writes one contract
@@ -158,9 +161,9 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    is cheapest to fix there. It also puts every task under one of your
    milestones — it cannot add, rename or reorder them. Then `crew_doc_reviewer`
    must pass all of it before a single line of code is written.
-7. It creates a `crew/<job>` branch and runs one `crew_engineer` per task, one
-   milestone at a time. Two engineers run together only when their file lists do
-   not overlap, and never across a milestone line. Every
+7. It runs one `crew_engineer` per task, one milestone at a time. Two engineers
+   run together only when their file lists do not overlap, and never across a
+   milestone line. Every
    engineer works **test first**: it writes one unit test, runs it, checks that it
    fails for the right reason, then writes the smallest code that makes it pass.
    Its report has to show you the failing run and then the passing run. Every one
@@ -176,7 +179,7 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    customer data or a new dependency → **QA**, which writes its test plan from
    the document *before* reading the code, then turns every case into a real test
    file under `docs/crew/qa/<task-id>/`, in your project's own test framework,
-   with a `run.sh` beside it. `docs/crew/qa/run-all.sh` runs every task's cases,
+   with a `run.sh` beside it. `bash docs/crew/qa/run-all.sh` runs every task's cases,
    and QA runs it on every task it checks — so a case written in an earlier task
    guards the new one. An old case that starts failing is a blocking regression,
    and nobody is allowed to edit it green. Your QA suite grows with the project
@@ -361,8 +364,8 @@ profile's `cordis.patch.yml`:
 | Setting | Default | What it does |
 | --- | --- | --- |
 | `rolesDir` | `~/.dsh/crew/roles` | Same override folder, for the role personas |
-| `roleAllow` | reviewers: `read, glob, grep` | Only these tools for that role; everything else is closed |
-| `roleDeny` | makers: the crew tools | Everything except these for that role |
+| `roleAllow` | reviewers: `read, glob, grep`; researcher: `read, glob, grep, write, web_search` | Only these tools for that role; everything else is closed |
+| `roleDeny` | architect, engineer, QA: the crew tools | Everything except these for that role |
 | `roleModels` | session model | Per-role provider and model |
 
 ## License

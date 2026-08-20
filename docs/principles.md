@@ -10,6 +10,10 @@ was paying for.
 Who "the user" means in this file: whoever installed the plugin and is running
 the session. Not the person who wrote the plugin.
 
+Short names used below: **PRD** (product requirements document), **DoD** (definition of done),
+**HLD** (high level design, the file `docs/crew/hld.md`), **ADR** (architecture decision record),
+**CRD** (change request document), **QA** (the role that tests the result).
+
 Each principle below has:
 
 - **Rule** — what the crew actually does.
@@ -156,8 +160,9 @@ evidence that the test could ever have failed. Scrum says the same thing another
 way: developers build quality in "by adhering to a Definition of Done". Quality
 is built in, not checked afterwards.
 
-**Lives in** `roles/engineer.md`, `roles/pm.md`, `roles/code-reviewer.md`. Where
-that test file lives, and how it is run again later, is principle 13.
+**Lives in** `roles/engineer.md`, `roles/architect.md`, `roles/pm.md`,
+`roles/code-reviewer.md`. Where that test file lives, and how it is run again
+later, is principle 13.
 
 **Source.** [The 2020 Scrum Guide](https://scrumguides.org/scrum-guide.html)
 
@@ -332,7 +337,8 @@ runnable. QA never edits project config, and never moves its files to dodge the
 problem.
 
 **Lives in** `roles/qa.md`, `roles/engineer.md` ("Your test is a file that
-stays"), `roles/pm.md` (steps 4, 10c, 11, 12, 17).
+stays"), `roles/architect.md` (the test-file column in a task row),
+`roles/pm.md` (steps 4, 10c, 11, 12, 17).
 
 **Source.** [The 2020 Scrum Guide](https://scrumguides.org/scrum-guide.html)
 

@@ -314,14 +314,20 @@ assume.
    whole point is to stop and ask.
 
    Start one `crew_engineer` per task. Give it, in the prompt:
-   the repository path, the task id, the DoD path, the exact files it owns, the
-   acceptance checks it must meet, the job folder path, the confirmed language and
-   stack with the project's test command, the current document version, and — if
-   the task sits on a module boundary — the boundary contract file it must build
-   against. Its own rules
-   make it work test first, and its report must show the failing test before the
-   code and the passing test after. If a report is missing that proof, send it
-   back and ask for it; do not accept the task without it.
+
+   - the repository path and the task id;
+   - the document its task row lives in: `docs/crew/dod.md` for DoD work, or the
+     PRD plus `docs/crew/tasks.md` for PRD work;
+   - the exact files it owns, and the acceptance checks it must meet;
+   - the job folder path;
+   - the confirmed language and stack, with the project's test command;
+   - the current document version;
+   - the boundary contract file it must build against, if the task sits on a
+     module boundary.
+
+   Its own rules make it work test first, and its report must show the failing
+   test before the code and the passing test after. If a report is missing that
+   proof, send it back and ask for it; do not accept the task without it.
 
    Run the walking skeleton task on its own, first, and wait for it to pass every
    check in step 10 before you start anything else.
@@ -333,31 +339,34 @@ assume.
 10. **Check the finished task, in this order.** Each step runs on code that has
    stopped moving, so nobody wastes work on a version that is about to change.
 
-   **9a. Code review.** Start a `crew_code_reviewer`. Give it the task id, the
-   file list, the DoD path, the boundary contract file if the task sits on one,
-   and **the diff itself** — run `git diff` yourself and paste it in. Also paste the engineer's test-first proof, so the reviewer can
-   judge it. It cannot run any command; if it asks for a test run, run the
-   command and send it the output.
+   **10a. Code review.** Start a `crew_code_reviewer`. Give it the task id, the
+   file list, the document its task row lives in (the DoD, or the PRD plus
+   `docs/crew/tasks.md`), the boundary contract file if the task sits on one, and
+   **the diff itself** — run `git diff` yourself and paste it in. Also paste the
+   engineer's test-first proof, so the reviewer can judge it. It cannot run any
+   command; if it asks for a test run, run the command and send it the output.
    - Round 1: findings, each marked blocking or optional, with file and line.
    - Round 2 and later: only re-check the blocking items, plus any new bug the
      fixes caused. No new topics.
    - After the review-round limit, stop the loop. Tell the user both sides in a
      few plain sentences and ask them to decide.
 
-   **9b. Security review — only when the change is risky.** Start a
+   **10b. Security review — only when the change is risky.** Start a
    `crew_security_reviewer` when the task touches any of these: the network, a
    login or permission check, secrets or keys, files outside the project, shell
    commands, input that comes from a user, customer data, or a new dependency.
+   Give it the task id, the file list, the document its task row lives in, and
+   the diff itself — run `git diff` yourself and paste it in, the same as 10a.
    If you are not sure whether it counts, ask the user. Skip it for a change that
    touches none of them, and say in your summary that you skipped it and why.
 
-   **9c. QA.** Start a `crew_qa` with the DoD or PRD path, the task id, the
-   acceptance checks and the project's test command. It writes its test plan from
-   the document **before** it reads the code. Then it writes its cases as **real
-   test files** under `docs/crew/qa/<task-id>/`, in the project's own test
-   framework, with a `run.sh` beside them and a `docs/crew/qa/run-all.sh` that
-   runs every task's cases. It runs all three: the project's test command, this
-   task's `run.sh`, and `run-all.sh`.
+   **10c. QA.** Start a `crew_qa` with the DoD or PRD path, the task id, the
+   acceptance checks, the project's test command, and the job folder path. It
+   writes its test plan from the document **before** it reads the code. Then it
+   writes its cases as **real test files** under `docs/crew/qa/<task-id>/`, in the
+   project's own test framework, with a `run.sh` beside them and a
+   `docs/crew/qa/run-all.sh` that runs every task's cases. It runs all three: the
+   project's test command, this task's `run.sh`, and `run-all.sh`.
 
    - Its report must name the case files it wrote and the totals from
      `run-all.sh`. A report with no case files is not done — send it back.

@@ -32,6 +32,15 @@ You may not change product code, the project's config, or the engineer's tests.
 If one of the engineer's tests is wrong, that is a defect to report, not a file
 for you to fix.
 
+## Git
+
+You never use git for writing. No `commit`, no `add`, no branch, no push, no
+`git stash`, no tag, no publish. The PM commits your plan and your case files
+with the task. The guard refuses a child's push anyway, so trying one only
+wastes a turn.
+
+Reading git is fine and useful: `git status`, `git diff`, `git log`.
+
 ## Step 1: the test plan
 
 Read the acceptance checks. Write `docs/crew/qa/<task-id>-plan.md`:
