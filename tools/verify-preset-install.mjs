@@ -23,22 +23,72 @@ const ok = (message) => console.log(`ok    ${message}`);
 
 const crew = await import("../host/crew.js");
 
-/** Fake Cordis context that captures the boot log. */
-function fakeContext(logs) {
+/**
+ * Fake Cordis context that captures the boot log.
+ *
+ * `logs` is every boot-log line, whichever path wrote it. The two lists beside
+ * it record WHICH path took each line, which is how a line said twice — once
+ * through the logger and once through the console — is caught. Same shape as the
+ * fake context in tools/verify-mount.mjs, on purpose: two check scripts solving
+ * the same problem two ways is how they drift apart.
+ */
+function fakeContext() {
+  const logs = [];
+  const loggerLogs = [];
+  const consoleLogs = [];
   return {
+    logs,
+    loggerLogs,
+    consoleLogs,
     effect: (fn) => fn(),
     systemPrompt: { section: () => {}, context: () => {} },
     plugin: () => {},
-    logger: () => ({ info: (line) => logs.push(line) }),
+    logger: () => ({
+      info: (line) => {
+        loggerLogs.push(String(line));
+        logs.push(String(line));
+      },
+    }),
   };
+}
+
+/**
+ * Run the plugin against a throwaway harness home and collect every boot-log
+ * line it wrote, through `ctx.logger` or through the `console.log` fallback.
+ *
+ * Capturing the console half matters here: a deployment hands the plugin a
+ * logger, so a note said twice would send its second copy to the real terminal,
+ * where no case in this file could count it.
+ *
+ * @param home - the throwaway DSH_HOME to install into
+ * @param config - plugin config for this mount
+ * @param logger - `true` for the recording logger, `false` for a host that
+ *   registers none, or any other value to put in `ctx.logger`
+ * @returns the fake context, with `logs` holding both paths' lines and
+ *   `loggerLogs` / `consoleLogs` saying which path each line took
+ */
+function installCapturingLogs(home, config = {}, { logger = true } = {}) {
+  const ctx = fakeContext();
+  if (logger === false) delete ctx.logger;
+  else if (logger !== true) ctx.logger = logger;
+  const realLog = console.log;
+  console.log = (...args) => {
+    const line = args.map(String).join(" ");
+    ctx.consoleLogs.push(line);
+    ctx.logs.push(line);
+  };
+  process.env.DSH_HOME = home;
+  try {
+    crew.apply(ctx, config);
+  } finally {
+    console.log = realLog;
+  }
+  return ctx;
 }
 
 /** Run the plugin against a fresh throwaway harness home. */
 function install(home, config = {}) {
-  const logs = [];
-  process.env.DSH_HOME = home;
-  crew.apply(fakeContext(logs), config);
-  return logs.join("\n");
+  return installCapturingLogs(home, config).logs.join("\n");
 }
 
 /**
@@ -143,11 +193,64 @@ try {
   else if (existsSync(doomed)) fail("a case that threw left its throwaway DSH_HOME behind");
   else ok("a case that throws still has its temporary folder removed");
 
+  // 8. ONE note, ONE line. QA found the boot log saying every note twice: the
+  //    old call site handed the note to the logger and then fell back to the
+  //    console as well, because a real logger's `info()` returns undefined and
+  //    `??` reads that as "nothing happened". The install and .bak notes are
+  //    written on this file's code path, so the count has to be taken here —
+  //    with a logger in place, the second copy goes to the real terminal, and a
+  //    case that only reads the logger's lines would never see it.
+  const timesSaid = (ctx, marker) => ctx.logs.filter(line => line.includes(marker)).length;
+  const INSTALL_NOTE = `installed the "crew" agent preset`;
+
+  const freshLogged = installCapturingLogs(makeHome());
+  const freshSaid = timesSaid(freshLogged, INSTALL_NOTE);
+  if (freshSaid !== 1) {
+    fail(`with a logger the install note was written ${freshSaid} time(s), expected exactly 1 (logged: ${JSON.stringify(freshLogged.logs)})`);
+  } else if (freshLogged.consoleLogs.length !== 0) {
+    fail(`with a logger the install note must go through the logger only (logger: ${JSON.stringify(freshLogged.loggerLogs)}, console: ${JSON.stringify(freshLogged.consoleLogs)})`);
+  } else ok("with a logger the install note is said exactly once, through the logger");
+
+  // Not every host registers a logger, so the same note has a second path out,
+  // and it must be said once there too — not zero times, and not twice.
+  const freshQuiet = installCapturingLogs(makeHome(), {}, { logger: false });
+  const freshQuietSaid = timesSaid(freshQuiet, INSTALL_NOTE);
+  if (freshQuietSaid !== 1) {
+    fail(`on a host with no ctx.logger the install note was written ${freshQuietSaid} time(s), expected exactly 1 (logged: ${JSON.stringify(freshQuiet.logs)})`);
+  } else ok("with no ctx.logger the install note is said exactly once, through console.log");
+
+  /** A throwaway home with a crew preset dsh-crew wrote one version ago, holding a file the user edited. */
+  const upgradeHome = () => {
+    const home = makeHome();
+    const dir = join(home, ".agent-presets", "crew");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, ".installed-by-dsh-crew"), "0.0.1\n");
+    // Different from the shipped file, so the upgrade has something to keep.
+    writeFileSync(join(dir, "agent.cordis.yml"), "# my own roleAllow edit\n");
+    return home;
+  };
+
+  // The .bak note is the one a user MUST read — it names the settings they have
+  // to re-apply. Said twice, it reads like the upgrade ran twice.
+  const keptLogged = installCapturingLogs(upgradeHome());
+  const keptSaid = timesSaid(keptLogged, ".bak");
+  if (keptSaid !== 1) {
+    fail(`with a logger the upgrade's .bak note was written ${keptSaid} time(s), expected exactly 1 (logged: ${JSON.stringify(keptLogged.logs)})`);
+  } else if (keptLogged.consoleLogs.length !== 0) {
+    fail(`with a logger the .bak note must not also go to console.log (console: ${JSON.stringify(keptLogged.consoleLogs)})`);
+  } else ok("with a logger the upgrade's .bak note is said exactly once, through the logger");
+
+  const keptQuiet = installCapturingLogs(upgradeHome(), {}, { logger: false });
+  const keptQuietSaid = timesSaid(keptQuiet, ".bak");
+  if (keptQuietSaid !== 1) {
+    fail(`on a host with no ctx.logger the upgrade's .bak note was written ${keptQuietSaid} time(s), expected exactly 1 (logged: ${JSON.stringify(keptQuiet.logs)})`);
+  } else ok("with no ctx.logger the upgrade's .bak note is said exactly once, through console.log");
+
 } finally {
   removeHomes(homes);
 }
 
-// 8. Nothing this run created is left in /tmp. This case runs last, after every
+// 9. Nothing this run created is left in /tmp. This case runs last, after every
 //    assertion above has read what it needed out of those folders.
 const leftOver = homes.filter((dir) => existsSync(dir));
 if (leftOver.length > 0) fail(`the run left ${leftOver.length} of its ${homes.length} temporary folder(s) behind: ${leftOver.join(", ")}`);
