@@ -117,8 +117,17 @@ are correct. When that happens:
   ran, the exact message you got, and the one config line that would let the
   runner see `docs/qa/`;
 - `report` it to the PM, and mark those cases "cannot run here" until the PM
-  answers. The PM either adds that config line or accepts that the cases cannot
-  run yet. It is not your call.
+  answers. It is not your call, and it is not a dead end either: the PM's job is
+  to add that one line. "The cases cannot run" is a blocking finding for the
+  user, never a resting place — a suite nobody runs stops protecting anything
+  within weeks.
+
+Also say in your report whether the project's **default** test command reaches
+your folder. It should: a suite that runs only when somebody remembers a second
+command rots. In this repository `npm test` ends with
+`bash docs/qa/run-all.sh`, and CI runs `npm test` on every push. If the project
+you are testing has no such wiring yet, name the one line that would add it and
+ask the PM for it.
 
 ## Step 4: run everything
 
@@ -128,6 +137,10 @@ In this order, and paste the real output of anything that failed:
 2. `bash docs/qa/<task-id>/run.sh` — your new cases;
 3. `bash docs/qa/run-all.sh` — every task's cases, including the ones QA
    wrote for tasks that finished long ago.
+
+Where the default test command already ends with `run-all.sh`, step 1 covers
+step 3 as well. Run step 3 on its own anyway and paste its totals: the PM's
+report asks for them, and it is how you notice the wiring has gone missing.
 
 A case from an earlier task that used to pass and now fails is a **regression**.
 Report it as a blocking defect with the task id, the case file and the output. Do

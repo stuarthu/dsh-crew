@@ -1,0 +1,49 @@
+name: Tests
+
+# Every push runs the checks. Publishing is a separate workflow that only a v*
+# TAG can start (.github/workflows/publish.yml), and that one runs `npm test`
+# again before it publishes — a release never trusts an earlier push's green.
+#
+# Keep this file in step with publish.yml: same runner, same actions, same Node
+# version, and no `npm install` in either. If you bump one, bump both.
+#
+# `on: push` covers tag pushes too, so a release runs the checks here and again
+# inside publish.yml. That is on purpose: the second run is the one that gates
+# the publish, and no filter here can be trusted to keep it honest.
+
+on: push
+
+concurrency:
+  # One run per branch. A newer push makes an in-flight run pointless, so cancel
+  # it — unlike a publish, a cancelled test run costs nothing.
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Full history, on purpose. Some QA cases under docs/qa/ read this
+          # job's own commits (docs/qa/T-01/case-26-repo-diff-scope.mjs looks
+          # up commits by the task marker in their subject line). The default
+          # fetch-depth: 1 is a shallow clone with no history, so those checks
+          # would fail — and their remaining assertions would pass over an
+          # empty set, which is worse than failing.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      # No `npm install`: this package has no dependencies of its own, and
+      # @deepseek-ai/dsh-tool-subagent cannot be installed from the public
+      # registry (its peer @deepseek-ai/dsh-tasks is not published). The checks
+      # know this and say which one they skip — see tools/verify-mount.mjs.
+      # So CI does NOT cover the role-tool half of verify-mount.mjs. That half
+      # only runs on a machine that has dsh's own copy of the package linked in.
+      - name: Run checks
+        run: npm test

@@ -14,11 +14,12 @@ There is no build step and no bundler. The package ships plain ES modules (`"typ
 ## Commands
 
 ```sh
-npm test                            # all four checks; this is what CI runs
+npm test                            # the four checks and then QA's cases; this is what CI runs
 node tools/verify-guard.mjs         # git-guard rules, replayed against fake commands
 node tools/verify-jobs.mjs          # the unfinished-job notice, using throwaway job folders
 node tools/verify-mount.mjs         # package shape, preset shape, role table, real mount
 node tools/verify-preset-install.mjs # installing and upgrading the crew preset
+bash docs/qa/run-all.sh             # every crew job's QA cases, past and present
 ```
 
 Every check runs against temporary folders and a throwaway `DSH_HOME`. None of
@@ -26,9 +27,19 @@ them may read or write the real `~/.dsh` — keep it that way when adding cases.
 
 Run one check on its own by calling its file directly — that is the "single test" here.
 
+`npm test` ends with `bash docs/qa/run-all.sh`, so QA's cases are part of the default test command
+and not a thing you have to remember. `.github/workflows/test.yml` runs `npm test` on **every
+push**; `.github/workflows/publish.yml` runs on a `v*` **tag** only and runs `npm test` again before
+it publishes — a release never trusts an earlier push's green. Expect `npm test` to get slower as
+jobs add cases; when that starts to hurt, split it into a fast check and a full one rather than
+dropping the cases. `test.yml` checks out with `fetch-depth: 0` on purpose: some QA cases read this
+repository's own commits, and the default shallow clone has no history.
+
 `verify-mount.mjs` has two levels. `@deepseek-ai/dsh-tool-subagent` cannot be installed from the
 public npm registry (its peer `@deepseek-ai/dsh-tasks` is not published), so on a plain machine the
-check **skips** the role-tool half out loud. To get the full check locally, link dsh's own copy once:
+check **skips** the role-tool half out loud. **CI is such a plain machine** — neither workflow runs
+`npm install`, so green CI means "everything a public runner can check", not "everything". To get the
+full check locally, link dsh's own copy once:
 
 ```sh
 mkdir -p node_modules/@deepseek-ai
@@ -160,7 +171,9 @@ Four rules there are load-bearing, and `principles.md` 8, 13, 14 and 15 carry th
 
 - **QA writes only under `docs/qa/`**, in the project's own test framework, never into the
   product's test folder and never into project config. If a runner cannot see that folder, QA asks
-  the PM and the PM edits the config — that keeps "one task owns its files" true.
+  the PM and the PM edits the config — that keeps "one task owns its files" true. The PM **adds
+  that line**; "the cases are not runnable" is a blocking finding for the user, not an ending the PM
+  may settle for. Here the line is `bash docs/qa/run-all.sh` at the end of `scripts.test`.
 - **The PM settles the language and stack in step 3, the user confirms it, and it
   then changes only through a CRD.** An existing repository's stack is detected, not
   chosen. A real choice goes through a researcher that lists options and may not

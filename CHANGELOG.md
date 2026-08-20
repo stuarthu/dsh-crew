@@ -192,9 +192,36 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
   `bash docs/qa/run-all.sh`.
 - If your test runner cannot see `docs/qa/` (many only look inside folders
   their config names), QA reports it with the exact command, the message, and the
-  one config line that would fix it. The PM either adds that line or says plainly
-  that those cases cannot run yet. QA never edits your project's config and never
-  moves its files into your test folder.
+  one config line that would fix it. The PM then **adds that line** — a suite
+  nobody runs stops protecting anything, so "those cases cannot run" is a blocking
+  problem the PM brings to you, not somewhere it may stop. QA never edits your
+  project's config and never moves its files into your test folder.
+- **QA's cases now run from `npm test`, and CI runs the tests on every push.**
+  In this repository `scripts.test` ends with `bash docs/qa/run-all.sh`, so the
+  42 cases QA has written are part of the default test command instead of a
+  command somebody has to remember. The new `.github/workflows/test.yml` runs
+  `npm test` on **every push**; publishing is still a separate workflow that only
+  a `v*` tag starts, and it runs `npm test` again before it publishes, so a
+  release never trusts an earlier push's green. It checks out with
+  `fetch-depth: 0` on purpose: some cases read this repository's own commits, and
+  the default shallow clone has no history to read. The cost, written down rather
+  than discovered: **`npm test` gets slower**, and it keeps getting slower as jobs
+  add cases, because every job's cases now run on every change. That is the point
+  — it is the regression net — but one day it will need layers, a fast check and a
+  full one. And CI is not full coverage: `tools/verify-mount.mjs` skips its
+  role-tool half wherever `@deepseek-ai/dsh-tool-subagent` is not installed, which
+  includes CI. It says out loud which half it skipped.
+- **Where crew documents live changed.** `docs/crew/` is gone. Documents now sit
+  in folders named after what they hold: `docs/design/` (PRD, HLD, task list, and
+  the boundary contracts in `docs/design/api/`), `docs/decisions/` (`adr/` for how
+  something was done, `crd/` for change requests), `docs/qa/` (test plans and
+  cases), `docs/research/` (a researcher's answers) and `docs/release/` (the
+  release and upgrade plan per shipped milestone). The DoD moved too: it now lives
+  in the job folder beside the state file, at
+  `~/.dsh/crew/jobs/<job-slug>/dod.md`, because it is one job's document and not
+  the project's. Every role writes to the new paths. If you have a job in flight
+  with files under `docs/crew/`, move them to the matching new folder — nothing
+  reads the old path any more.
 - **The `roleDeny` example in `preset/crew/agent.cordis.yml` was wrong, and the
   comment above these settings now says what they really do.** Both settings
   **replace** the shipped list for that role; they are not added to it. So the

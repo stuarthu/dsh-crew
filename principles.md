@@ -19,10 +19,11 @@ Each principle below has:
 - **Rule** — what the crew actually does.
 - **Why** — the reason, in one or two sentences.
 - **Lives in** — the files that carry it. Change one, check the others.
-- **Source** — where the idea comes from, when it comes from outside.
+- **Source** — where the idea comes from, on the principles that borrowed one.
 
 A principle marked **(ours)** came from running the crew and watching it fail, not
-from a book. Those are the ones a newcomer is most likely to delete.
+from a book, and has no **Source** line — do not invent one for it. Those are the
+ones a newcomer is most likely to delete.
 
 ---
 
@@ -331,14 +332,33 @@ is built in: the Definition of Done has to survive the sprint that produced it.
 product's own test folder. That keeps the existing file-ownership rule intact —
 one task owns its files — and keeps a reviewer's question ("who wrote this test?")
 answerable by the path alone. The cost is real and known: a runner that only
-looks inside configured folders will not see `docs/qa/`, so QA reports that
-to the PM and the PM either adds the one config line or records the cases as not
-runnable. QA never edits project config, and never moves its files to dodge the
-problem.
+looks inside configured folders does not see `docs/qa/` on its own, so QA reports
+that to the PM and the PM adds the one line that wires the folder in. "Not
+runnable" is not an ending the PM may settle for. If that one line truly cannot
+be written, it is a blocking finding the user has to hear, not a note. QA never
+edits project config, and never moves its files to dodge the problem.
+
+**And that line goes in the project's default test command.** A suite that runs
+only when somebody remembers a second command rots, and that is a matter of time,
+not of will. In this repository the line is `bash docs/qa/run-all.sh` at the end
+of `npm test`, and `npm test` runs in CI on every push
+(`.github/workflows/test.yml`); publishing stays on a `v*` tag and runs the same
+checks again before it publishes, so a release never trusts an earlier push's
+green.
+
+Two costs, written down instead of discovered later. First, `npm test` gets
+slower as cases pile up job after job — one day it needs layers (a fast check and
+a full one), or a way to run only the last few tasks. Second, CI does not cover
+everything: `tools/verify-mount.mjs` skips its role-tool half on any machine that
+does not have `@deepseek-ai/dsh-tool-subagent` installed, and CI is such a
+machine, because that package cannot be installed from the public registry. It
+says out loud which half it skipped. Green CI here means "everything a public
+runner can check", not "everything".
 
 **Lives in** `roles/qa.md`, `roles/engineer.md` ("Your test is a file that
 stays"), `roles/architect.md` (the test-file column in a task row),
-`roles/pm.md` (steps 4, 10c, 11, 12, 18).
+`roles/pm.md` (steps 4, 10c, 11, 12, 18), `package.json` (`scripts.test`),
+`.github/workflows/test.yml`.
 
 **Source.** [The 2020 Scrum Guide](https://scrumguides.org/scrum-guide.html)
 

@@ -186,7 +186,11 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    and QA runs it on every task it checks — so a case written in an earlier task
    guards the new one. An old case that starts failing is a blocking regression,
    and nobody is allowed to edit it green. Your QA suite grows with the project
-   and outlives the job. Round two of any review
+   and outlives the job — and the PM wires that command into your project's own
+   default test command, so it runs without anyone remembering it. If your test
+   runner cannot see the folder, the PM adds the one line that makes it visible;
+   "the cases are not runnable" is a problem the PM brings to you, not a place to
+   stop. Round two of any review
    only re-checks the blocking findings; after the round limit the PM brings the
    disagreement to you.
 9. The PM commits — engineers never touch git. It stages only the files that task
@@ -421,8 +425,14 @@ alone). Pick the **Crew** preset for a session to get the roles.
 To check the plugin without dsh:
 
 ```sh
-npm test        # replays the guard rules and the mount, no dsh needed
+npm test        # replays the guard rules and the mount, then runs every QA case; no dsh needed
 ```
+
+This repository's own CI runs `npm test` on every push, and publishes only when a
+`v*` tag is pushed. One gap is worth knowing about: `tools/verify-mount.mjs`
+skips its role-tool half on any machine without `@deepseek-ai/dsh-tool-subagent`
+installed, and CI is such a machine. It says out loud which half it skipped, so a
+green run means "everything a public runner can check", not "everything".
 
 ## Configuration
 
