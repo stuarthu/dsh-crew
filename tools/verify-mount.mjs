@@ -364,10 +364,31 @@ function applyCapturingLogs(config, { logger = true } = {}) {
     // the closing migration step, and never was: the **Hard rules** section
     // repeats `principles.md` and `docs/qa/gaps.md`, and step 11 now names
     // `docs/qa/gaps.md` as well because the PM has to stage it — so the
-    // migration step could be deleted with all three paths still present. If
-    // that step ever needs its own pin, it needs its own assertion.
+    // migration step could be deleted with all three paths still present. The
+    // count below is that step's own pin.
     else if (!section.text.includes("docs/decisions/adr/") || !section.text.includes("principles.md")
       || !section.text.includes("docs/qa/gaps.md")) fail("PM section is missing one of the three decision homes `docs/decisions/adr/`, `principles.md` and `docs/qa/gaps.md` — CRD 0006 puts every decision about HOW in an ADR whatever the size of the job, and makes the PM move a rule to principles.md and QA's untestable gaps to docs/qa/gaps.md before a single-use document is dropped. Put the missing path back in roles/pm.md");
+    // Step 18's closing migration step — move what is durable out of a
+    // single-use document before it is dropped — carried no pin of its own, and
+    // the presence check above cannot be one: delete that whole paragraph and
+    // all three of its paths are still somewhere else in the prompt, so every
+    // check stayed green while "not needed any more" quietly became "lost".
+    // Proved by mutation, not assumed.
+    //
+    // The count closes it, on the same reasoning as the two-copies pin on
+    // `git push origin --delete`: `docs/qa/gaps.md` appears THREE times in
+    // roles/pm.md and each copy does a different job — step 11 stages the file
+    // so the standing gap list is committed, step 18 fills it before the plan is
+    // dropped, and the **Hard rules** summary states the rule. No two of them
+    // sit in the same paragraph, so dropping any one is a real hole with nothing
+    // else covering it. Counted, not eyeballed, because `includes` stops at the
+    // first copy.
+    //
+    // It counts a PATH, not prose, so a reworded sentence inside the migration
+    // step stays green — deliberately unlike the `Parallel by default` and `the
+    // tree was moving` pins (ADR 0004, ADR 0007), which had no path or command
+    // to hold on to. This one does, so it does not pay their brittleness.
+    else if (copiesOf(section.text, "docs/qa/gaps.md") < 3) fail(`PM section holds only ${copiesOf(section.text, "docs/qa/gaps.md")} copy/copies of \`docs/qa/gaps.md\`, and it needs 3 — one of them has been dropped from roles/pm.md. The three are: step 11, which STAGES the file so the gap list is committed; step 18's closing migration step, which FILLS it before a single-use document is dropped (the most likely loss: that paragraph is the only place the five destinations — principles.md, an ADR, a CRD, the commit message, the gap list — are listed, and deleting it leaves every other check green); and the **Hard rules** summary of the same rule. Put the missing copy back`);
     // The two strings CRD 0006 replaced, pinned as ABSENT. A how-decision on a
     // small job used to go into a **Decisions** section of the DoD — a file in
     // the job folder, dropped when the job ends, so the decision went with it.
