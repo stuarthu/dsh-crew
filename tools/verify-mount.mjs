@@ -179,22 +179,51 @@ if (roles) {
   }
 }
 
-/** Fake Cordis context: records what the plugin registers. */
+/** Fake Cordis context: records what the plugin registers, and what it logs. */
 function fakeContext() {
   const sections = [];
   const contexts = [];
   const mounts = [];
+  const logs = [];
   return {
     sections,
     contexts,
     mounts,
+    logs,
     effect: (fn) => fn(),
     systemPrompt: {
       section: (section) => sections.push(section),
       context: (context) => contexts.push(context),
     },
     plugin: (plugin, config) => mounts.push({ plugin, config }),
+    // The plugin writes boot-log lines as
+    //   ctx.logger?.("dsh-crew")?.info?.(note) ?? console.log(note)
+    // so a real deployment may take either path. This covers the logger half;
+    // applyCapturingLogs below covers the console.log fallback, so a case that
+    // reads `logs` passes because the code really logged, not by accident.
+    logger: () => ({ info: (line) => logs.push(String(line)) }),
   };
+}
+
+/**
+ * Mount the host plugin and collect every boot-log line it wrote, through
+ * `ctx.logger` or through the `console.log` fallback.
+ *
+ * @param config - plugin config for this mount
+ * @param logger - false to mount on a host that registers no `ctx.logger`
+ * @returns the fake context, with `logs` holding both paths' lines
+ */
+function applyCapturingLogs(config, { logger = true } = {}) {
+  const ctx = fakeContext();
+  if (!logger) delete ctx.logger;
+  const realLog = console.log;
+  console.log = (...args) => ctx.logs.push(args.map(String).join(" "));
+  try {
+    crew.apply(ctx, config);
+  } finally {
+    console.log = realLog;
+  }
+  return ctx;
 }
 
 {
@@ -209,6 +238,24 @@ function fakeContext() {
     else if (!section.text.includes("product manager (PM)")) fail("PM section does not contain the PM role text");
     else if (!section.text.includes("crew_engineer")) fail("PM section does not list the real role tool names");
     else if (section.text.includes("{{")) fail("PM section contains {{ }}, which dsh would try to interpolate");
+    // The merge-and-clean-up step has to survive a rewrite of the PM prompt: a
+    // squash merge would drop every task's test-first history, a branch deleted
+    // only locally leaves the remote one behind, and a delete with no proof
+    // throws work away. `--ff-only` is the only allowed way to catch local
+    // `main` up with the remote (a force push never is), `origin/crew/` is the
+    // proof that reads the REMOTE work branch, and `publishCheck` is the
+    // record of which CI files were read before a `main` push. The eighth
+    // string is the job-slug pattern: that slug is interpolated into a file
+    // path and into nearly every git command of the merge step, and the PM's
+    // own session is the one the git guard trusts, so the shape rule is the
+    // only thing that keeps those commands one command. All eight must stay
+    // spelled out. Commands, one field name and one pattern only — pinning
+    // prose would turn every small rewording red.
+    else if (!section.text.includes("git merge --no-ff") || !section.text.includes("git branch -d crew/")
+      || !section.text.includes("git push origin --delete") || !section.text.includes("git branch --merged main")
+      || !section.text.includes("--ff-only") || !section.text.includes("origin/crew/")
+      || !section.text.includes("publishCheck")
+      || !section.text.includes("^[a-z0-9]([a-z0-9-]*[a-z0-9])?$")) fail("PM section is missing the merge and clean-up strings `git merge --no-ff`, `git branch -d crew/`, `git push origin --delete`, `git branch --merged main`, `--ff-only`, `origin/crew/` and `publishCheck`, or the job-slug pattern `^[a-z0-9]([a-z0-9-]*[a-z0-9])?$` — put them back in roles/pm.md");
     else ok(`PM prompt section registered (order ${section.order}, ${section.text.length} chars)`);
   }
 
@@ -237,6 +284,41 @@ function fakeContext() {
   } catch (error) {
     ok(`bad limit rejected at load: ${error.message}`);
   }
+
+  // CRD 0003 removed `limits.agentsPerJob`: a job may use as many crew agents as
+  // it needs. A profile written before that still carries the setting, and that
+  // value is not WRONG the way `liveAgents: 0` is wrong — the product dropped
+  // the setting. So the mount must go on (a throw would stop somebody's session
+  // from starting over a line that used to be legal) and must say one line in
+  // the boot log, or the user never learns the line can go.
+  let legacy;
+  try {
+    legacy = applyCapturingLogs({ installPreset: false, limits: { agentsPerJob: 30 } });
+    if (legacy.sections.length !== 1) fail(`limits.agentsPerJob: 30 registered ${legacy.sections.length} prompt section(s), expected 1`);
+    else ok("limits.agentsPerJob is accepted without throwing, and the mount goes on");
+  } catch (error) {
+    fail(`limits.agentsPerJob: 30 threw instead of being accepted — ${error.message}`);
+  }
+  const legacyNote = (legacy?.logs ?? []).find(line => line.includes("agentsPerJob"));
+  if (legacyNote === undefined) {
+    fail(`limits.agentsPerJob: 30 said nothing about the setting in the boot log, so the user cannot know it is gone (logged: ${JSON.stringify(legacy?.logs ?? [])})`);
+  } else ok(`legacy limits.agentsPerJob named in the boot log: ${legacyNote}`);
+
+  // Not every host registers a logger, and the note is the only way the user
+  // learns the setting can go — so it must also come out of the console.log
+  // fallback the plugin ends that line with.
+  const noLogger = applyCapturingLogs({ installPreset: false, limits: { agentsPerJob: 30 } }, { logger: false });
+  if (!noLogger.logs.some(line => line.includes("agentsPerJob"))) fail("on a host with no ctx.logger the removed-setting note never reached the boot log");
+  else ok("removed-setting note also reaches a host with no ctx.logger");
+
+  // The PM prompt is built from the limits, so it is where a limit that no
+  // longer exists would keep being promised to the PM. Defaults after CRD 0003:
+  // 20 agents awake at the same time, review rounds unchanged at 3.
+  const promptText = ctx.sections[0]?.text ?? "";
+  if (/agentsPerJob|agents for one job/.test(promptText)) fail("the PM prompt still names a per-job agent limit, which CRD 0003 removed");
+  else if (!promptText.includes("crew agents awake at the same time: 20")) fail("the PM prompt does not carry the default of 20 crew agents awake at the same time");
+  else if (!promptText.includes("review rounds before you bring the disagreement to the user: 3")) fail("the PM prompt does not carry the default of 3 review rounds");
+  else ok("PM prompt has no per-job limit, and defaults to 20 agents awake and 3 review rounds");
 }
 
 if (roles) {

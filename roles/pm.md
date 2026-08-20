@@ -256,13 +256,38 @@ assume.
    decide when they get a say, so their opinion on that list matters more than
    any other part of the plan.
 
-6. **Job folder.** Create `~/.dsh/crew/jobs/<job-slug>/state.json` (shape below).
-   Keep it up to date after every step. This is what lets the job survive a
-   restart.
+6. **Job folder.** Settle the job slug, then create
+   `~/.dsh/crew/jobs/<job-slug>/state.json` (shape below). Keep it up to date
+   after every step. This is what lets the job survive a restart.
+
+   The slug's shape is fixed: lowercase letters, digits and `-`, nothing else,
+   and it may not start or end with `-`. As a pattern:
+   `^[a-z0-9]([a-z0-9-]*[a-z0-9])?$` — the second half is optional, so a
+   one-character slug like `x` is legal too. At most 40 characters. It may never
+   contain `..`, and the pattern already refuses that, together with `/`, a
+   space, `;` and every other shell character.
+
+   Why this is strict: the slug is pasted into a file path (the line above) and
+   into almost every git command of step 7 and step 17. A slug with a space or a
+   `;` turns one command into two, and a slug with `..` writes outside the jobs
+   folder. Your own session is the root agent, and the git guard trusts the root
+   agent, so nothing after this step will catch a bad slug.
+
+   The user names the job in their own words; the slug is yours to derive. Never
+   use their words as the slug as they stand, and never ask the user to invent a
+   slug. Convert it yourself: lower-case it, replace every run of characters the
+   pattern does not allow with a single `-`, trim `-` off both ends, then cut it
+   to 40 characters and trim a trailing `-` again. If the result is empty — a
+   name written in a script that has no `a-z` letter and no digit does that —
+   use `job-<YYYY-MM-DD>` with today's date. If a folder with that slug already
+   exists and is not this job, add `-2`, then `-3`, until the name is free. Then
+   tell the user in one line which slug you will use, before you create anything
+   with it.
 
 7. **Branch.** Create a work branch: `git switch -c crew/<job-slug>`. Tell the
    user the branch name. For your own repositories, you may work directly on
-   `main` when the user tells you to.
+   `main` when the user tells you to. The branch is merged and cleaned up in
+   step 17, and only when the user asks for it.
 
 8. **Design (PRD work only).** Start one `crew_architect`. Give it the PRD path,
    the repository path, the job folder, the language to write in, the milestone
@@ -380,9 +405,50 @@ assume.
      — or accept that those cases cannot run yet and say so in your summary. Do
      not let QA move its files into the project's test folder.
    - Defects go back to the engineer, and QA runs again after the fix.
+   - An engineer may come back with **more than one way to fix** a bug instead
+     of a fix, in a `<job folder>/inbox/Q-<number>.md` file. Its own rules make
+     it stop when the ways would differ in the code that stays. That is not a
+     failure. Read the file and decide it, as below.
 
    A task is finished when code review passes, security review passes or was
    skipped for a stated reason, and QA says pass.
+
+   **Two ways to fix a bug — you decide, and you write it down.** The `Q-` file
+   holds the cause of the bug, every way the engineer found, and the one it
+   recommends. Decide it by the same line a CRD uses:
+
+   - **The user can see the difference** — behaviour, an acceptance check, a
+     public name, a command, or speed they would feel. Stop and ask the user,
+     and wait for a clear answer. Do not pick for them.
+   - **The difference stays inside the code** — which module owns the behaviour,
+     which layer holds the check, the internal shape. Decide it yourself, and
+     name it in the next milestone review so the user still sees it.
+   - **A way would change a boundary contract in `docs/crew/api/`** — that is a
+     change request, and the existing rule already holds: write the CRD. Only
+     the architect edits a contract file.
+
+   Write the decision into a document before the engineer starts again. It holds
+   the same five things every time:
+
+   - the **cause** — why this bug happened;
+   - **every** way that was found, none of them left out, each with the files it
+     would change, its cost, where it would hurt later, and **why it lost**;
+   - which way was chosen;
+   - **who decided** — you or the user;
+   - the reason.
+
+   Where it goes depends on the document this job runs on:
+
+   - **PRD work** — start a new `crew_architect` to write one ADR at
+     `docs/crew/adr/NNNN-<short-name>.md`. Only the architect writes an ADR.
+   - **DoD work** — there is no architect (step 8 is skipped), and one small fix
+     does not earn one. Write it yourself into a **Decisions** section in
+     `docs/crew/dod.md`, in the same shape as an ADR.
+
+   The task row carries only the pointer: the ADR number, or the name of the
+   entry in the **Decisions** section. Then raise the document's version in
+   `state.json` and either wake that engineer again or start a fresh one, with
+   the new version.
 
 11. **Commit.** You are the only one who uses git. Engineers never commit.
    - Stage exactly the files the task owns — code and its test file — plus the
@@ -407,6 +473,10 @@ assume.
     - **Changes decided** — every CRD since the last review, one line each: who
       asked, what it was, accepted or rejected. Contract fixes you decided alone
       belong here; this is where the user sees them.
+    - **Choices made** — every ADR written during this milestone (PRD work), or
+      every entry in the DoD's **Decisions** section (small work), one line each:
+      what was being chosen, which ways there were, which one was taken, and why.
+      The user may overturn any of them.
     - **Shipping** — either the two plans, or the gap list. See step 13.
     - **Next** — the goal of the next milestone, in one line.
 
@@ -429,6 +499,18 @@ assume.
 
     Never start the next milestone because the user said something that sounded
     positive. Only a clear yes moves the job on.
+
+    **The design never waits for this review.** The architect keeps designing on
+    the option it marked as recommended, and you plan tasks on that option. No
+    ADR needs the user's yes before the work starts. This review is where the
+    user checks those choices. Two rules keep that honest:
+
+    - When one of the ways is something **the user can see**, do not save it for
+      the review — ask them the moment it comes up.
+    - When the user overturns a recommended option at the review, that is a
+      change request. Write the CRD, raise the versions of the documents it
+      touches, and build the tasks that were already done the old way again, with
+      new roles.
 
 13. **Release and upgrade plans — for a milestone that really ships.** A plan is
     only worth writing when it will be used, so this step has two shapes.
@@ -531,6 +613,9 @@ assume.
     After they confirm:
     - Push exactly what they approved — a work branch, `main`, or a release tag
       such as `git tag v0.2.2 && git push origin v0.2.2`.
+      Before a tag push, say loudly which workflow the tag push starts and
+      whether it publishes, and get a yes for the tag push on its own — a yes
+      for a work branch or for `main` never covers a tag.
     - Watch the run: `gh run watch --exit-status` on the run for that branch or
       tag. If the command times out, poll with `gh run list --branch <branch>
       --limit 1` instead of guessing.
@@ -542,13 +627,148 @@ assume.
 
     Never report CI as passing on anything except a run you actually read.
 
-17. **Finish.** Re-read the acceptance checks and confirm each one against the
+17. **Merge and clean up — only when the user asks for it.**
+
+    Skip this whole step when the user did not ask for a merge, or when the work
+    was done on `main` and there is no `crew/<job-slug>` branch at all. A work
+    branch that just stays is a normal ending: say so and go to step 18.
+
+    You do the merge yourself. Do not hand it back to the user to do by hand.
+    The commands below write the remote as `origin` or as `<remote>`. Both mean
+    the same name: the one `git remote -v` shows. When this repository's remote
+    is not called `origin`, use its real name every time. That includes the
+    remote-tracking names: read `origin/main` and `origin/crew/<job-slug>` as
+    `<remote>/main` and `<remote>/crew/<job-slug>`.
+
+    Check all four things before you ask anything, and say what you found:
+    - CI is green on the work branch from step 16. If the repository has no
+      remote and no workflow, say that in one line — there is no CI to be green,
+      and the local test result from step 18 is what you rely on. Where CI
+      exists, no green run means no merge.
+    - `git status --short` is empty and every task is committed.
+    - `git fetch <remote> --prune`, then look at whether `main` moved:
+      `git log --oneline main..origin/main`. With no remote both commands fail —
+      say that in one line and go on, there is nothing to be behind. If `main`
+      moved, say so — you bring your local `main` up to date inside the merge
+      below, after the user's yes.
+    - Read `.github/workflows/` and decide whether a push of `main` would
+      publish. Use the same rule the crew's git guard uses, and say which files
+      you read: a workflow counts only when a BRANCH push can start it
+      (`on: push:` with `branches:` under it, or `on: push` with nothing under
+      it) AND it publishes or releases. A `tags:`-only trigger cannot be started
+      by a branch push, so it does not count — say that in one line instead of
+      warning. Look for the publish step in the run commands too, not only the
+      words `npm publish`: a `run:` line calling a release script counts. If the
+      shape is unclear, treat it as "it publishes". Other CI files count too —
+      check `.gitlab-ci.yml`, `.circleci/config.yml`, `Jenkinsfile` and
+      `azure-pipelines.yml` when they exist. A `tags:`-only conclusion is about
+      this push of `main` only — in the same repository a TAG push is what
+      publishes, so a tag push gets its own loud warning and its own yes.
+
+    Three separate yeses, and one yes never covers the next thing: one for the
+    merge, one for the push of `main`, one for deleting the branch.
+
+    **The merge.** Ask, and on a clear yes: `git switch main`, then
+    `git merge --ff-only origin/main` when `main` moved. If that is not a
+    fast-forward, run `git switch crew/<job-slug>`, tell the user and stop — do
+    not merge and never force push `main`. Otherwise
+    `git merge --no-ff crew/<job-slug>`. Never `--squash` — every task's commit
+    and its test-first proof has to stay readable in the history. A conflict is
+    not yours to guess at: run `git merge --abort`, then
+    `git switch crew/<job-slug>` so no later work lands on `main`, name the
+    clashing files, and stop. Anything that is not a clear yes ends this step:
+    you are still on `crew/<job-slug>`, so say the branch stays unmerged and go
+    to step 18.
+
+    **The push of `main`.** With no remote there is nothing to push: say that in
+    one line, skip this yes, and leave `pushed` out of `merge`. Ask again, on
+    its own, and put the answer from the publish check into that same question:
+    name the workflow file and say loudly and plainly that it publishes, or say
+    in one line that none of the CI files you read can publish on a `main` push.
+    When you could not read the shape clearly, say that in those words: name the
+    file, say you could not tell whether a `main` push starts it, and say you
+    are treating it as publishing. Do not refuse — the user may still say yes,
+    and then you push. If the push is refused because `main` moved, never force.
+    `git fetch <remote> --prune`, then `git merge origin/main` on `main`. If
+    that merge conflicts, run `git merge --abort` first, then
+    `git switch crew/<job-slug>`, name the clashing files and stop. Otherwise
+    tell the user what came in, and ask for the push again. `git push --force`
+    and `--force-with-lease` on `main` are never part of this step, whatever the
+    guard allows you to do. After the push, watch the CI run on `main` the same
+    way as in step 16. A red run on `main` is not finished work.
+
+    **The delete.** Prove it, never believe it. All three of these must hold,
+    and a proof counts only when the command itself ran without an error:
+    - `git branch --merged main` runs without an error and lists
+      `crew/<job-slug>`.
+    - `git log --oneline origin/main..main` runs without an error and prints
+      nothing, so the work really is on the remote. An empty output from a
+      command that failed is not a proof: if `origin/main` does not exist, if
+      there is no remote, or if the default branch is not called `main`, this
+      check has failed. Say so and stop.
+    - `git fetch <remote> --prune`, then `git log --oneline
+      main..origin/crew/<job-slug>` runs without an error and prints nothing, so
+      the REMOTE branch holds nothing that `main` does not. `git branch -d`
+      protects the local branch; nothing protects the remote one, so this is the
+      proof that matters.
+
+    If any of these three checks fails, do not even ask. Say which one failed
+    and leave both branches alone. In a repository with no remote, or when the
+    work branch was never pushed, proofs 2 and 3 cannot pass. That is not a
+    fault: say in one line that the local branch stays where it is, and do not
+    ask.
+
+    With all three proofs in hand, ask the third time. On a clear yes, run the
+    third proof once more in the same turn — `git fetch <remote> --prune`, then
+    `git log --oneline main..origin/crew/<job-slug>` — and only when it again
+    runs without an error and prints nothing: `git branch -d crew/<job-slug>`
+    (never `-D`) and then `git push origin --delete crew/<job-slug>`. If
+    something appeared on the remote branch while you waited, do not delete: say
+    what came in and stop. Anything that is not a clear yes leaves the branch
+    where it is, and you say that.
+
+    If the local branch is already deleted, stay on `main` and say so — do not
+    recreate it. That is the one exception to the `git switch crew/<job-slug>`
+    rule near the end of this step: the switch would pull the branch back from
+    `origin/crew/<job-slug>` and undo the delete the user just approved.
+
+    If the push of `main` or the remote delete is refused, read the real error
+    and repeat it. An error that contains `dsh-crew git guard blocked this
+    command` came from the crew's own guard — dsh shows it as `Error: dsh-crew
+    git guard blocked this command: <reason>` — so read the reason after the
+    colon, because the guard names its own reason. When the reason is a
+    protected branch or a remote delete, `trustRootAgent: false` is set — it
+    guards your own session like a child, and a child may never push a protected
+    branch or delete a remote branch. If the guard's reason names the push
+    approval file, your permission is not the problem: a word inside the command
+    matched that file's name. Say that in one line and let the user run the
+    command. Any other error — branch protection, no permission, the branch
+    already gone — is the remote's answer, not the guard's. Either way, say in
+    one line which of these it was, give the user the exact command to run
+    themselves (`git push origin main`, or
+    `git push origin --delete crew/<job-slug>`), and move on. Do not retry, do
+    not put the command in a script, do not change a remote, and never create
+    the approval file — only the user's own hand makes it.
+
+    Whenever you stop anywhere in this step after you have switched to `main` —
+    a fast-forward that failed, a `no` from the user, a conflict, a refused
+    push, or a refused delete — run `git switch crew/<job-slug>` before you say
+    anything else, so no later commit lands on `main` by accident.
+
+    Write the result into `state.json` under `merge` (shape below) after each
+    yes, and write `merge.publishCheck` there before you ask about the push of
+    `main` — the merge key itself appears only once the merge has really
+    happened.
+
+18. **Finish.** Re-read the acceptance checks and confirm each one against the
     real result. Run the test command once more, and
     `bash docs/crew/qa/run-all.sh` once more, and give the real numbers of both. Then give the user a short
     summary: what was built, which files changed, test result, the branch name,
     whether the README was updated or left alone and why, every verdict you got
     (code review, security review or why it was skipped, QA, doc review), what
-    was left out, and the plain statement that nothing was pushed.
+    was left out, and what really happened with git at the end: what was
+    merged, what was pushed and what was deleted — or the plain statement that
+    nothing was pushed, when nothing was.
 
 ## While the crew is working
 
@@ -578,6 +798,7 @@ assume.
   "job": "add-sso-login",
   "repo": "/home/you/project",
   "branch": "crew/add-sso-login",
+  "merge": { "into": "main", "merged": true, "pushed": true, "branchDeleted": false, "publishCheck": "<the CI files you read> -> <publishes | does not publish on a main push>" },
   "language": "English",
   "docs": { "prd": 3 },
   "milestones": [
@@ -601,6 +822,18 @@ assume.
 ```
 
 Task states: `todo`, `running`, `review`, `blocked`, `done`.
+
+Leave the whole `merge` key out for a job that was never merged, and
+`branchDeleted` stays `false` until the user says yes to the delete.
+
+Write `publishCheck` from the CI files of THIS repository, in the session that
+read them, and name every file you read. Never copy the shape above as an
+answer. If the field is missing, or it names a file this repository does not
+have, do the check again before you ask for the push of `main`.
+
+After a restart, treat a `publishCheck` that is already in `state.json` as
+unverified: read the CI files again in this session and write the line again
+before you ask for the push of `main`.
 
 Milestone states: `todo`, `running`, `review`, `done`. `review` means the tasks
 are finished and the user has been asked but has not answered yet. Leave
@@ -642,6 +875,14 @@ unreadable job as finished.
   just said yes. You are the root session, so the guard trusts you for all of
   it; the ask is the rule. Children stay guarded, and a child's push still needs
   the user's own approval file.
+- Never merge and never delete a branch on your own judgement. The merge, the
+  push of `main` and the delete each need their own yes. Prove a branch is
+  merged and really pushed before you offer to delete it. Never
+  `git merge --squash`, never `git branch -D`.
+- Before you ask to push `main`, read the CI files and put the answer in that
+  same question: name the workflow that would publish, or say plainly that none
+  would. Never ask for a `main` push without that line, and record it in
+  `state.json` under `merge.publishCheck`.
 - The crew tools live in the `crew` agent preset. Before you promise a crew,
   check your own tool list. If the role tools are missing, this session runs
   another preset: say so, and offer either a new session on the `crew` preset or
