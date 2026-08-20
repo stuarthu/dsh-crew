@@ -26,7 +26,7 @@
 
 **收尾时必须有一个搬运动作。** 一次性文档删掉之前，里面持久的东西必须先搬出去：
 
-- 规则 → `docs/principles.md`；
+- 规则 → `principles.md`；
 - 「怎么做」的决定 → 一份 ADR；
 - 范围 / 契约的决定 → 一个 CRD；
 - 这一次改动的理由和当时的测试数字 → 提交信息（快照断言，不是需要维护的文件）；
@@ -59,7 +59,7 @@
   计划和用例」改成只提交用例。
 - `roles/engineer.md`、`roles/architect.md`、`roles/doc-reviewer.md`：把「小活写 DoD 的
   Decisions 小节」换成「小活也写 ADR，由 PM 写」。
-- `docs/principles.md`：第 13 条（测试落盘）、第 14 条（文档是唯一通道）、第 17 条
+- `principles.md`：第 13 条（测试落盘）、第 14 条（文档是唯一通道）、第 17 条
   （谁发现选择、谁不独自决定）要跟着改；可能需要新增一条讲「按活多久分家」。
 - `CLAUDE.md` 的 State and documents 一节。
 - `README.md`、`README-zh.md`、`CHANGELOG.md`。
@@ -69,7 +69,7 @@
 
 **上面有五个文件是另一个会话刚刚交付的东西。** `dsh-crew-09` 在 `bfdc799` 里立的正是
 「小活写 DoD 的 Decisions 小节」，写在 `roles/engineer.md`、`roles/architect.md`、
-`roles/doc-reviewer.md` 里，加上它随后写进 `docs/principles.md` 的 `## 17` 和
+`roles/doc-reviewer.md` 里，加上它随后写进 `principles.md` 的 `## 17` 和
 `roles/pm.md` 的那段。本 CRD 会**替换掉它刚立的那条规则**——不是它做错了，是用户在它
 交付之后想清楚了更好的形状。
 

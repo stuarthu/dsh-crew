@@ -243,7 +243,7 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
 - **A restart knows the milestone.** The unfinished-job notice now says which
   milestone a job stopped in, and says plainly when a milestone is waiting for
   your answer.
-- **`docs/principles.md`** — why the crew works this way, one entry per rule
+- **`principles.md`** — why the crew works this way, one entry per rule
   with its source, plus the ideas we looked at and turned down. For people
   changing the plugin; it is not published to npm.
 

@@ -152,7 +152,7 @@ milestone the user ships (`docs/crew/release/<milestone>-release.md` and
 (`docs/crew/qa/<task-id>-plan.md`, `docs/crew/qa/<task-id>/case-*`, a `run.sh` per task and one
 `docs/crew/qa/run-all.sh` that finds them all).
 
-Four rules there are load-bearing, and `docs/principles.md` 8, 13, 14 and 15 carry the reasons:
+Four rules there are load-bearing, and `principles.md` 8, 13, 14 and 15 carry the reasons:
 
 - **QA writes only under `docs/crew/qa/`**, in the project's own test framework, never into the
   product's test folder and never into project config. If a runner cannot see that folder, QA asks
@@ -160,11 +160,11 @@ Four rules there are load-bearing, and `docs/principles.md` 8, 13, 14 and 15 car
 - **The PM settles the language and stack in step 3, the user confirms it, and it
   then changes only through a CRD.** An existing repository's stack is detected, not
   chosen. A real choice goes through a researcher that lists options and may not
-  recommend one. `docs/principles.md` 8 carries the reasons, including why the
+  recommend one. `principles.md` 8 carries the reasons, including why the
   architect does *not* own this: small DoD work has no architect, the design depends
   on the stack, and only the PM talks to the user.
 - **A shipped milestone's release and upgrade plans are researched, not written
-  from memory** (`docs/principles.md` 15). The plans differ by project type — a
+  from memory** (`principles.md` 15). The plans differ by project type — a
   published npm version cannot be pulled back, a store app waits for review, a
   service redeploys to roll back — so the PM asks a researcher for the shape, with
   a source and a date per claim. A milestone that is not shipping gets a gap list,
@@ -180,14 +180,14 @@ assemble breaks the session.
 
 ## Documentation
 
-`docs/principles.md` holds the **reasons** behind the crew's rules: one entry per
+`principles.md` holds the **reasons** behind the crew's rules: one entry per
 principle, each with the rule, why it exists, the files that carry it, and the
 outside source it came from — plus a table of ideas that were looked at and
 rejected. Role prompts are written short and bossy on purpose, so the reasoning
 has to live somewhere else. When you change a rule in `roles/*.md`, update the
 principle that carries it; when you reject an idea, add it to the table so the
 next person does not re-run the same search. The file is for contributors and is
-not published to npm (`docs/` is not in the `files` list).
+not published to npm (the `files` list does not name it).
 
 `README.md` (English) and `README-zh.md` (Chinese) say the same thing and must be updated together
 whenever user-visible behaviour changes; write the English first, then match the Chinese. Keep the
