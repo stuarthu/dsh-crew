@@ -80,9 +80,21 @@ Also read enough of the real code to tell whether the documents match it.
      happened) and who decided (the PM or the user). Either one missing is a
      finding.
 
-   Small work (DoD work) has no architect, so the same record lives in a
-   **Decisions** section of `~/.dsh/crew/jobs/<job-slug>/dod.md`. Every check
-   above applies to it there, word for word.
+   Small work has no architect, so the PM writes the ADR itself. It still lives
+   in `docs/decisions/adr/`, and every check above applies to it word for word.
+   The size of the job changes nothing here.
+
+   Two more checks on any ADR that came from an engineer's `Q-` file:
+
+   - **It quotes, it never points.** An ADR that says "options: see Q-03", or
+     names that file instead of holding its text, is a **blocking** finding. The
+     `Q-` file lives in the job folder, outside the repository, and is thrown away
+     with the job — so the pointer will soon point at nothing, and the ADR's most
+     valuable section is gone.
+   - **The options are the engineer's own words.** They are copied from the `Q-`
+     file, not rewritten by the person who decided. If the options read like a
+     case for the chosen way — the other ways thin, vague, or described only by
+     what is wrong with them — say so and quote the lines.
 
    A design with no ADR is fine — an ADR is written only when there was a real
    open choice. Say "no ADR" and move on. Never report a finding just because you

@@ -107,6 +107,18 @@ for (const fileName of [PM_PERSONA_FILE, ...ROLES.map(role => role.personaFile)]
   }
 }
 
+// The other side of the same rule (CRD 0006). These three role files used to
+// send a small job's decision about HOW to a **Decisions** section of the DoD.
+// That file lives in the job folder and is dropped with it, so the decision was
+// dropped too. Each file must now name the ADR folder instead. One path and one
+// absent string per file — no prose, so a rewording cannot turn this red.
+for (const fileName of ["engineer.md", "architect.md", "doc-reviewer.md"]) {
+  const text = readRoleText(fileName, undefined);
+  if (!text.includes("docs/decisions/adr/")) fail(`roles/${fileName} does not name docs/decisions/adr/ — CRD 0006 sends every decision about HOW to an ADR there, whatever the size of the job. Put the path back`);
+  else if (text.includes("**Decisions** section")) fail(`roles/${fileName} still sends a small job's decision to a **Decisions** section of the DoD, which is dropped with the job folder. Point it at an ADR in docs/decisions/adr/ instead`);
+  else ok(`roles/${fileName} sends a decision about HOW to docs/decisions/adr/`);
+}
+
 const toolNames = ROLES.map(role => role.toolName);
 if (new Set(toolNames).size !== toolNames.length) fail(`duplicate role tool names: ${toolNames.join(", ")}`);
 else ok(`role tool names are unique: ${toolNames.join(", ")}`);
@@ -307,6 +319,26 @@ function applyCapturingLogs(config, { logger = true } = {}) {
     // above: reword that sentence and this check goes red, so a legitimate
     // reword edits the prompt and this string in one commit.
     else if (!section.text.includes("Parallel is the default")) fail("PM section is missing the string `Parallel is the default` — step 10's parallel rule (the code review, the security review and QA started in one message, with running them in order named in the summary as the exception) has been dropped from roles/pm.md, or that sentence was reworded. Put the rule back, or update this string in tools/verify-mount.mjs in the same commit");
+    // CRD 0006 splits the crew's documents by how long they live. Three of the
+    // homes it names are PATHS, so they can be pinned without pinning prose,
+    // and each one is where something lands that would otherwise vanish with
+    // the job folder: `docs/decisions/adr/` holds a decision about HOW (now
+    // whatever the size of the job, so the PM writes it when there is no
+    // architect), `principles.md` holds a rule the crew must keep, and
+    // `docs/qa/gaps.md` holds QA's "what I could not test here". The last two
+    // appear in roles/pm.md only in the closing migration step, so this check is
+    // also the guard on that step: delete it and the paths go with it. That step
+    // is the one that stops "not needed any more" from meaning "lost".
+    else if (!section.text.includes("docs/decisions/adr/") || !section.text.includes("principles.md")
+      || !section.text.includes("docs/qa/gaps.md")) fail("PM section is missing one of the three decision homes `docs/decisions/adr/`, `principles.md` and `docs/qa/gaps.md` — CRD 0006 puts every decision about HOW in an ADR whatever the size of the job, and makes the PM move a rule to principles.md and QA's untestable gaps to docs/qa/gaps.md before a single-use document is dropped. Put the missing path back in roles/pm.md");
+    // The two strings CRD 0006 replaced, pinned as ABSENT. A how-decision on a
+    // small job used to go into a **Decisions** section of the DoD — a file in
+    // the job folder, dropped when the job ends, so the decision went with it.
+    // And roles/pm.md said "Only the architect writes an ADR", which flatly
+    // contradicts a PM that writes the ADR itself on small work. Neither string
+    // can come back by a reword: it takes someone writing the old rule again.
+    else if (section.text.includes("**Decisions** section")) fail("PM section still sends a decision to a **Decisions** section of the DoD — the DoD lives in the job folder and is dropped with it, so CRD 0006 moved every decision about HOW to an ADR in docs/decisions/adr/. Remove that instruction from roles/pm.md");
+    else if (section.text.includes("Only the architect writes an ADR")) fail("PM section still says `Only the architect writes an ADR` — CRD 0006 makes the PM write it when the job has no architect, so that line contradicts the rule around it. Remove it from roles/pm.md");
     else ok(`PM prompt section registered (order ${section.order}, ${section.text.length} chars)`);
   }
 

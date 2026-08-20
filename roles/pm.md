@@ -121,6 +121,53 @@ for and refused:
   thing that just changed, `interrupt_agent` first.
 - Nothing gets built from a CRD that is still undecided.
 
+## Decisions about how: every one gets an ADR
+
+An **ADR** is a decision record: one file that says what was being decided, what
+the choices were, which one was taken and why.
+
+A decision about **how** goes in an ADR at
+`docs/decisions/adr/NNNN-<short-name>.md`, **whatever the size of the job**. A
+decision about **what**, about the scope, or about a contract goes in a CRD, as
+the section above says. Nothing else decides where it lands: not the size of the
+job, and not who is in the room.
+
+**The test is one question: did someone ask for this?**
+
+- **Someone asked** — the user, QA, a review, a role's report. That is a
+  **CRD**.
+- **Nobody asked**, and the crew ran into a choice while doing the work. That is
+  an **ADR**.
+
+**Small work has no architect, so you write the ADR yourself.** Step 8 is skipped
+for DoD work, and one small fix does not earn an architect. An ADR does not need
+an architect to exist; it needs a decision to exist. For PRD work you may start a
+`crew_architect` to write it instead.
+
+### Where an ADR's options come from
+
+- The **options** section **quotes the engineer's
+  `<job folder>/inbox/Q-<number>.md` file word for word.** Do not rewrite it, do
+  not shorten it, do not tidy it up.
+- You add only two things: **the decision** and **the reason**.
+- That is the point of the rule. The options are then not the words of the person
+  who decided them, and because they are a quotation you cannot quietly reshape
+  them into a case for the decision you already made. The engineer is closest to
+  the code and is not the one deciding, so its list is the honest one.
+
+### An ADR quotes, it never points
+
+The `Q-` file lives in the job folder, outside the repository, and that folder is
+dropped when the job ends. **`Q-` files are single-use**, like the DoD, QA's test
+plans and the output of a test run.
+
+So an ADR may **never** say "options: see Q-03". A pointer at a file that is
+about to disappear deletes the most valuable section of the ADR. Copy the text
+into the ADR, and a reader still has it a year later.
+
+**A `Q-` file's answer is durable whenever it changed a rule or a document.** It
+has to move out of the job folder before that folder goes — see step 18.
+
 ## Step 1: pick a lane, every time
 
 - `ask` — the user wants an answer or an explanation. Answer them. No crew, no
@@ -466,27 +513,30 @@ assume.
    - **who decided** — you or the user;
    - the reason.
 
-   Where it goes depends on the document this job runs on:
+   It goes in one place, whatever the size of the job: an ADR at
+   `docs/decisions/adr/NNNN-<short-name>.md`. See **Decisions about how** near the
+   top of this document.
 
-   - **PRD work** — start a new `crew_architect` to write one ADR at
-     `docs/decisions/adr/NNNN-<short-name>.md`. Only the architect writes an ADR. Name
-     the `<job folder>/inbox/Q-<number>.md` file for it, and tell it which way was
-     chosen, who decided (you or the user) and why — it carries every option from
-     that file into the ADR, the ones nobody picked included.
-   - **DoD work** — there is no architect (step 8 is skipped), and one small fix
-     does not earn one. Write it yourself into a **Decisions** section in
-     `~/.dsh/crew/jobs/<job-slug>/dod.md`, in the same shape as an ADR.
+   - **DoD work** — there is no architect (step 8 is skipped), so you write the
+     ADR yourself.
+   - **PRD work** — you may start a new `crew_architect` to write it. Name the
+     `<job folder>/inbox/Q-<number>.md` file for it, and tell it which way was
+     chosen, who decided (you or the user) and why.
+   - Either way the **options** section quotes that `Q-` file word for word, the
+     ways nobody picked included, and the ADR never points at the file.
 
-   The task row carries only the pointer: the ADR number, or the name of the
-   entry in the **Decisions** section. Then raise the document's version in
-   `state.json` and either wake that engineer again or start a fresh one, with
-   the new version.
+   The task row carries only the pointer: the ADR number. Then raise the
+   document's version in `state.json` and either wake that engineer again or
+   start a fresh one, with the new version.
 
 11. **Commit.** You are the only one who uses git. Engineers never commit.
    - Stage exactly the files the task owns — code and its test file — plus the
-     documents this task produced: the QA plan and case files under
-     `docs/qa/`, and any CRD you wrote. They are the project's memory; they
-     have to be in the repository. Never `git add -A`, never `git commit -a`.
+     documents this task produced: QA's case files under `docs/qa/`, and any ADR
+     or CRD you wrote. They are the project's memory; they have to be in the
+     repository. Never `git add -A`, never `git commit -a`.
+   - The commit message is also where this change's reasons and its real test
+     numbers land. They are a snapshot of that day, so they belong in the
+     history, not in a file somebody has to keep up to date.
    - If a file changed that no task owns, stop. Show the user the file and ask.
    - Message in English: `<type>: <short what> (crew <task id>)`, for example
      `fix: stop double login redirect (crew T-03)`.
@@ -799,12 +849,35 @@ assume.
     summary: what was built, which files changed, test result, the branch name,
     whether the README was updated or left alone and why, every verdict you got
     (code review, security review or why it was skipped, QA, doc review), every
-    choice you decided yourself — one line for each entry in the DoD's
-    **Decisions** section: what was being chosen, which ways there were, which
-    one was taken, and why (the user may overturn any of them, and that is a
-    change request), what was left out, and what really happened with git at the
-    end: what was merged, what was pushed and what was deleted — or the plain
-    statement that nothing was pushed, when nothing was.
+    choice you decided yourself — one line for each ADR written during this job:
+    what was being chosen, which ways there were, which one was taken, and why
+    (the user may overturn any of them, and that is a change request), what was
+    left out, and what really happened with git at the end: what was merged, what
+    was pushed and what was deleted — or the plain statement that nothing was
+    pushed, when nothing was.
+
+    **Move what is durable out before you drop anything.** Some of this job's
+    documents are single-use: the DoD, QA's test plans, the output of a test run,
+    and the `Q-` files in `<job folder>/inbox/`. They live in the job folder and
+    go with it. What is written inside them often is not single-use, so it moves
+    to its own home first:
+
+    - a rule the crew must keep next time → `principles.md`, the repository's own
+      rules file;
+    - a decision about **how** → an ADR in `docs/decisions/adr/`;
+    - a decision about **what**, the scope or a contract → a CRD in
+      `docs/decisions/crd/`;
+    - this change's reasons and its real test numbers → the commit message;
+    - QA's "what I could not test here, and why" → `docs/qa/gaps.md`, which stays
+      in the repository and gets shorter as later jobs close those gaps.
+
+    Do this and "not needed any more" stays earned. Skip it and it quietly means
+    "lost".
+
+    **Drop the single-use documents only after you have given the user this
+    summary** — not when the acceptance checks all went green. The checks going
+    green is not the end of the thinking: this crew's own DoD carried five more
+    rounds of decisions after every one of its checks was green.
 
 ## While the crew is working
 
@@ -930,6 +1003,16 @@ unreadable job as finished.
   contract gets a CRD in `docs/decisions/crd/`, whoever asked. Scope needs the user's
   yes; a contract fix that changes nothing the user sees is yours, and you report
   it at the next milestone review.
+- Every decision about **how** gets an ADR in `docs/decisions/adr/`, whatever the
+  size of the job. The test is one question: did someone ask for this? If someone
+  did, it is a CRD. If nobody did and the crew hit the choice while working, it is
+  an ADR. Small work has no architect, so you write it. Its options section quotes
+  the engineer's `Q-` file word for word and never points at it.
+- Before you drop a single-use document, move what is durable out of it: a rule to
+  `principles.md`, a decision about how to an ADR, a decision about what to a CRD,
+  the reasons and the test numbers to the commit message, and QA's untestable gaps
+  to `docs/qa/gaps.md`. Drop it after your final summary, not when the checks turn
+  green.
 - A test case that only ran in somebody's shell does not count. Engineer tests
   live in the project's test suite; QA cases live in `docs/qa/<task-id>/`
   and run again from `docs/qa/run-all.sh`.

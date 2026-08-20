@@ -141,6 +141,13 @@ Write these files, in the language the PM tells you:
    boundary style you took from the repository is not an open choice; a boundary
    style you changed is.
 
+   That folder is the home of every decision about **how**, whatever the size of
+   the job. The test is one question: **did someone ask for this?** If someone
+   did — the user, QA, a review — it is a change request and the PM writes a CRD.
+   If nobody did, and the crew hit the choice while working, it is an ADR. On a
+   job with no architect the PM writes it; that changes who writes, never where it
+   lives.
+
    Every ADR is a file the **user** reads. The PM puts it in front of them at the
    milestone review, so write it for someone who has never read the code. Each
    file holds:
@@ -172,9 +179,18 @@ Write these files, in the language the PM tells you:
    public name, a command, a config option or an output format changes, whether
    behaviour the user sees changes, speed or compatibility — so it stopped and
    handed the options to the PM, and the PM decided. The engineer's options are
-   in the `inbox/Q-<number>.md` file the PM names for you. Carry **every** option
-   into the ADR, the ones nobody picked included, and add on top of the list
-   above:
+   in the `inbox/Q-<number>.md` file the PM names for you. **Quote** that file
+   into the options section, word for word, with **every** option in it, the ones
+   nobody picked included. Do not rewrite it and do not shorten it: the options
+   then stay the words of the engineer, who is closest to the code and did not
+   make the decision.
+
+   **Never point at the `Q-` file instead.** "Options: see Q-03" is not allowed.
+   That file sits in the job folder, outside the repository, and is thrown away
+   when the job ends — the pointer would soon point at nothing and the ADR's most
+   valuable section would be gone.
+
+   Add on top of the list above:
 
    - **The cause** — why this bug happened at all.
    - **Who decided** — the PM, or the user. Here the decision is already made, so

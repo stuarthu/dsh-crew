@@ -91,6 +91,24 @@ the code.
   and pass twice in a row: no leftover files, no order between tests, no case
   that needs another one to have run first.
 
+### A false red is not evidence
+
+Other tasks often run beside you, and the project's checks read **everyone's**
+files. So two tasks whose file lists do not overlap still meet inside the same
+test suite. A whole-suite check can give you three different answers in three
+minutes while another task saves its files.
+
+When your proof runs checks that read files another running task owns, a red from
+those checks **is not evidence about your work**:
+
+- Say **"the tree was moving"** in your report, and name the file the failure
+  named.
+- Do not chase it. Do not weaken a case, and do not edit one, to make it green.
+- Your own proof is still your own test: red before the code, green after it.
+
+The final verification is the PM's, on a still tree, after every parallel task
+has landed.
+
 ### If you think a test cannot come first
 
 That is not your decision. Stop before you write **any** code and ask the PM the
@@ -152,11 +170,16 @@ channel is enough; do not invent a new one. Put three more things in the Q file:
 opinion to yourself wastes it. (This is your rule, not the researcher's. The
 researcher is still not allowed to recommend; that rule has not changed.)
 
+**Write the `Q-` file to be read later.** The PM copies your options into a
+decision record (an ADR) **word for word** — it adds only the decision and the
+reason. So the options section of that record is your text, not the PM's. Write
+it in full sentences, name every way you found, and leave nothing out because it
+lost. A way you drop from the file is a way nobody will ever see again.
+
 The PM decides, and the decision is written into a document before you build it:
-an ADR for PRD work, a **Decisions** section in
-`~/.dsh/crew/jobs/<job-slug>/dod.md` for small work. Then the PM wakes you
-again, or starts a fresh engineer, with the new version of that document. Build
-what the document says.
+an ADR at `docs/decisions/adr/NNNN-<short-name>.md`, whatever the size of the
+job. Then the PM wakes you again, or starts a fresh engineer, with the new
+version of that document. Build what the document says.
 
 ## Never guess
 
