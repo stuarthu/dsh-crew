@@ -19,6 +19,24 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
   task it checks, so a case from an earlier task guards the new work. A case that
   used to pass and now fails is a blocking regression, and nobody may edit it
   green — it goes back to the engineer that owns those files.
+- **The language and stack are settled before anything is designed, and you
+  approve them.** If your repository already has a stack, that is the stack: the PM
+  reads the manifest, the lock file, the test folder and the CI workflow, states
+  what it found, and you confirm it in one line. When the choice is real — an empty
+  repository, a new service — the PM starts a `crew_researcher` first, which lists
+  the candidates with a source per claim, what the machine already has, and what
+  each one costs, and is **not** allowed to recommend one. The PM then recommends
+  one, names the runner-up and why not, and writes a **Language and stack** section
+  into the PRD or DoD: language and version, package manager, framework, database,
+  and the test framework with its exact test command. You confirm it together with
+  the document. After that it moves only through a CRD.
+- **One test framework for the whole crew.** Engineers write their tests with the
+  framework that section names, and QA writes its cases with the same one, so the
+  tests cannot split in two on an empty repository.
+- **Adding a dependency is the PM's call.** An engineer still picks freely among
+  the libraries the project already has, but a brand-new package comes back to the
+  PM, which says yes or no and writes it into the stack section. Engineers may not
+  edit the manifest or the lock file to slip one in.
 - **Change request documents (CRDs).** When anyone — you, a crew role, or the PM
   itself — asks for something that changes what you get (the scope, an acceptance
   check, the milestone list) or how two modules talk (a boundary contract), the PM

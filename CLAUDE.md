@@ -151,6 +151,12 @@ Two rules there are load-bearing, and `docs/principles.md` 13 and 14 carry the r
 - **QA writes only under `docs/crew/qa/`**, in the project's own test framework, never into the
   product's test folder and never into project config. If a runner cannot see that folder, QA asks
   the PM and the PM edits the config — that keeps "one task owns its files" true.
+- **The PM settles the language and stack in step 3, the user confirms it, and it
+  then changes only through a CRD.** An existing repository's stack is detected, not
+  chosen. A real choice goes through a researcher that lists options and may not
+  recommend one. `docs/principles.md` 8 carries the reasons, including why the
+  architect does *not* own this: small DoD work has no architect, the design depends
+  on the stack, and only the PM talks to the user.
 - **A CRD is written by the PM for scope or contract changes only**, whoever asked. Scope needs the
   user's yes; a contract fix the user cannot see is the PM's call, reported at the milestone review.
   Questions, review findings and internal design changes are deliberately *not* CRDs — widening

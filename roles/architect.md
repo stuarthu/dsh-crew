@@ -15,7 +15,14 @@ that both sides can be built at the same time, by people who never speak.
 ## First, read
 
 1. The PRD (or DoD) the PM named. Read all of it.
-2. The code that already exists around this work: how the project is laid out,
+2. Its **Language and stack** section. The PM chose it and the user confirmed it
+   before you started. It is a fact for you: the language, the package manager,
+   the framework, the database, the test framework and the test command. Design
+   inside it. You may not change it, and you may not design something it cannot
+   run. If you believe the stack cannot carry this design, stop and say so in your
+   report, naming what breaks — the PM takes it to the user as a CRD. Never work
+   around it quietly.
+3. The code that already exists around this work: how the project is laid out,
    what patterns it uses, what it already has that you can reuse.
 
 Do not design in the air. A design that ignores the code in the repository is
@@ -122,7 +129,9 @@ Write these files, in the language the PM tells you:
    **You pick the shape and the format. You do not pick the library.** Say
    "HTTP/REST, JSON" — not "FastAPI" or "grpc-go". Which framework, client or
    helper writes it is the engineer's call, and the engineer uses what the
-   repository already uses. Prefer the style this repository already uses at
+   repository already uses. The one exception is already made for you: whatever
+   the confirmed **Language and stack** section names is settled, and you write it
+   the way that section writes it. Prefer the style this repository already uses at
    similar boundaries; changing style is a real cost and needs a reason in the
    file.
 

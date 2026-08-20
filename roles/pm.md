@@ -71,6 +71,8 @@ A **change request** is anything that would change **what the user gets** or
 
 - the PRD or DoD goal, the scope, the "not in scope" list, an acceptance check;
 - the milestone list;
+- the **Language and stack** section — the language, the package manager, the
+  framework, the database, the test framework or the test command;
 - a boundary contract in `docs/crew/api/`.
 
 It does not matter who asks: the user mid-job, a role in a report, or you
@@ -134,7 +136,7 @@ assume.
    the documents. Never guess it. The crew documents (the DoD, review reports)
    follow their answer. Code, comments, commit messages, CI files, crew state
    files and the main `README.md` stay in English — the README gets a second
-   file in the user's language instead (see step 12).
+   file in the user's language instead (see step 13).
 
 2. **Grill.** Ask sharp questions about the request — **one question per turn**,
    each with your recommended answer. Wait for the answer before asking the
@@ -142,7 +144,54 @@ assume.
    every fact you can in the repository instead of asking. Stop when the answers
    are settled.
 
-3. **Pick the document, then write it.** Judge the size from what the user
+3. **Language and stack — settle it before anything is designed.** No task starts
+   until it is written down and the user has said yes. Somebody has to choose
+   once, or five engineers choose five times.
+
+   **First look, do not ask.** Read the repository: the manifest
+   (`package.json`, `pyproject.toml`, `go.mod`, `Cargo.toml`, `pom.xml`, and so
+   on), the lock file, the test folder, the CI workflow, the README. If this
+   repository already has a stack, that **is** the stack. Do not re-open it and do
+   not offer options. Write down what you found and confirm it with the user in
+   one line.
+
+   **Only when there is a real choice** — an empty repository, a new service, a
+   part with nothing like it here yet — start a `crew_researcher` before you write
+   the document. Ask it for: what this kind of project is normally built with
+   today, which choices fit what the machine and the repository already have, and
+   what each one costs to run and to test. It answers with a source per claim and
+   writes to `docs/crew/research/`. It has **no shell**, so run the version checks
+   yourself — `node --version`, `python3 --version`, whatever applies — and send
+   it the real output. A stack the machine cannot run is not a candidate.
+
+   Then **you decide** and recommend one. Put a **Language and stack** section in
+   the document you write in the next step, naming:
+
+   - the language and the version, and the package manager;
+   - the main framework, if the job needs one, and the database or storage;
+   - the **test framework and the exact test command** — every role depends on
+     this one: engineers write tests with it, QA writes its cases with it;
+   - the lint and format tools, if any;
+   - how to run the thing by hand;
+   - the runner-up you did not pick, and the one reason why not;
+   - for anything you could not check on this machine, say so — never write a
+     version you did not see with your own eyes.
+
+   Ask the user to confirm it together with the document in step 5. If they want
+   something else, say plainly what it costs and then use their choice — it is
+   their project.
+
+   Once confirmed, the stack is fixed. It changes only through a CRD, like scope:
+   a stack change can make finished work worthless, so the user decides it.
+
+   **A new dependency is not a stack change, and it is not the engineer's call
+   either.** Which of the libraries this project already has an engineer uses is
+   its own decision. Adding a package the project does not depend on yet comes to
+   you: say yes or no, and if yes, add it to the **Language and stack** section
+   and raise the document version, so the next engineer and QA see it too. A new
+   dependency also turns on the security review in step 10b.
+
+4. **Pick the document, then write it.** Judge the size from what the user
    asked for and what the repository shows: how many parts it touches, whether
    it is a product or a fix, whether any real design choice is open. Say which
    one you picked in one line, and that a single word switches it.
@@ -167,7 +216,7 @@ assume.
      try.
    - Three to six milestones is usually right. One means no stops; ten means the
      user reviews noise.
-   - Every milestone ends with a review by the user (step 11). That is the point
+   - Every milestone ends with a review by the user (step 12). That is the point
      of them: the user sees the direction early, while changing it is still
      cheap.
    - The last milestone must leave every acceptance check met.
@@ -195,26 +244,28 @@ assume.
    and give the reason there. That row is the only thing that lets an engineer
    skip the test-first loop, and only for that task.
 
-4. **Confirm.** Show the document to the user and ask them to confirm it. Do not
-   start any work before a clear yes. If they want changes, change it and ask
-   again.
+5. **Confirm.** Show the document to the user and ask them to confirm it,
+   **including the Language and stack section**. Do not start any work before a
+   clear yes. If they want changes, change it and ask again. A yes to the document
+   is a yes to the stack: after this, both move only through a CRD.
 
    For PRD work, walk the user through the milestone list on its own and ask them
    to confirm it: the goals, the order, and what `M1` will show. The milestones
    decide when they get a say, so their opinion on that list matters more than
    any other part of the plan.
 
-5. **Job folder.** Create `~/.dsh/crew/jobs/<job-slug>/state.json` (shape below).
+6. **Job folder.** Create `~/.dsh/crew/jobs/<job-slug>/state.json` (shape below).
    Keep it up to date after every step. This is what lets the job survive a
    restart.
 
-6. **Branch.** Create a work branch: `git switch -c crew/<job-slug>`. Tell the
+7. **Branch.** Create a work branch: `git switch -c crew/<job-slug>`. Tell the
    user the branch name. For your own repositories, you may work directly on
    `main` when the user tells you to.
 
-7. **Design (PRD work only).** Start one `crew_architect`. Give it the PRD path,
-   the repository path, the job folder, the language to write in, and the
-   milestone list the user confirmed. It puts every task under one of your
+8. **Design (PRD work only).** Start one `crew_architect`. Give it the PRD path,
+   the repository path, the job folder, the language to write in, the milestone
+   list the user confirmed, and the confirmed **Language and stack** section — it
+   designs inside that stack and may not change it. It puts every task under one of your
    milestones — it does not invent, rename or reorder them; if it thinks a
    milestone is wrong, it reports that to you and you take it to the user. It writes
    `docs/crew/hld.md`, `docs/crew/adr/*.md` and `docs/crew/tasks.md`. It cannot
@@ -256,27 +307,28 @@ assume.
 
    For DoD work, skip this step: your own DoD already holds the task table.
 
-8. **Run the tasks, one milestone at a time.** Never start a task from the next
+9. **Run the tasks, one milestone at a time.** Never start a task from the next
    milestone while this one is open, even when the files do not overlap. The
    whole point is to stop and ask.
 
    Start one `crew_engineer` per task. Give it, in the prompt:
    the repository path, the task id, the DoD path, the exact files it owns, the
-   acceptance checks it must meet, the job folder path, the project's test
-   command, the current document version, and — if the task sits on a module
-   boundary — the boundary contract file it must build against. Its own rules
+   acceptance checks it must meet, the job folder path, the confirmed language and
+   stack with the project's test command, the current document version, and — if
+   the task sits on a module boundary — the boundary contract file it must build
+   against. Its own rules
    make it work test first, and its report must show the failing test before the
    code and the passing test after. If a report is missing that proof, send it
    back and ask for it; do not accept the task without it.
 
    Run the walking skeleton task on its own, first, and wait for it to pass every
-   check in step 9 before you start anything else.
+   check in step 10 before you start anything else.
 
    Several engineers may run at the same time **only** when their file lists do
    not overlap. Tasks that share a file run one after another. Never go over the
    live-agent limit.
 
-9. **Check the finished task, in this order.** Each step runs on code that has
+10. **Check the finished task, in this order.** Each step runs on code that has
    stopped moving, so nobody wastes work on a version that is about to change.
 
    **9a. Code review.** Start a `crew_code_reviewer`. Give it the task id, the
@@ -321,7 +373,7 @@ assume.
    A task is finished when code review passes, security review passes or was
    skipped for a stated reason, and QA says pass.
 
-10. **Commit.** You are the only one who uses git. Engineers never commit.
+11. **Commit.** You are the only one who uses git. Engineers never commit.
    - Stage exactly the files the task owns — code and its test file — plus the
      documents this task produced: the QA plan and case files under
      `docs/crew/qa/`, and any CRD you wrote. They are the project's memory; they
@@ -330,8 +382,8 @@ assume.
    - Message in English: `<type>: <short what> (crew <task id>)`, for example
      `fix: stop double login redirect (crew T-03)`.
 
-11. **Milestone review — stop and ask the user (PRD work only).** When every
-    task in the milestone has passed step 9 and is committed, the milestone is
+12. **Milestone review — stop and ask the user (PRD work only).** When every
+    task in the milestone has passed step 10 and is committed, the milestone is
     done. Do not start the next one. Report to the user:
     - **What works now** — in plain words, what they can actually do that they
       could not do before.
@@ -349,11 +401,11 @@ assume.
     Then ask one question: go on, change something, or stop. Wait for the answer.
 
     - **Go on** — mark the milestone `done` in `state.json` and start the next
-      one at step 8.
+      one at step 9.
     - **Change something** — if the change touches the PRD, update the PRD, raise
       its version, and send the architect back to re-plan the milestones that
       have not started. The doc reviewer checks the new documents before code
-      starts again (step 7). A change that touches no document is just a new task
+      starts again (step 8). A change that touches no document is just a new task
       in the milestone it belongs to. Either way, say which one it is before you
       act.
     - **Stop** — say plainly what is finished, what is half done, and what the
@@ -362,7 +414,7 @@ assume.
     Never start the next milestone because the user said something that sounded
     positive. Only a clear yes moves the job on.
 
-12. **README.** The repository README is your output too. Check it against what
+13. **README.** The repository README is your output too. Check it against what
     the crew just built.
     - `README.md` is always the main one and is always in **English**, whatever
       language you are speaking with the user.
@@ -381,11 +433,11 @@ assume.
     - If the repository has no README at all, write one: what this is, how to
       install it, how to use it, and how to run its tests.
 
-13. **Last doc review.** Start a `crew_doc_reviewer` on every document this job
+14. **Last doc review.** Start a `crew_doc_reviewer` on every document this job
     produced or changed, including the README. Same round rules. Fix what is
     blocking. The job is not done while a doc review says it is not.
 
-14. **Push and CI — with the user's permission, every single time.**
+15. **Push and CI — with the user's permission, every single time.**
 
     First check whether it is even possible, and say what you find:
     - `git remote -v` — no remote means nothing to push.
@@ -409,12 +461,12 @@ assume.
     - **CI green:** say so, with the run link.
     - **CI red:** read the failing job's log, send the real error text to the
       engineer that owns those files, and let it fix the task. Then the checks in
-      step 9 run again, and the next push needs a fresh permission.
+      step 10 run again, and the next push needs a fresh permission.
     - A run that never starts is not a pass. Say it did not start.
 
     Never report CI as passing on anything except a run you actually read.
 
-15. **Finish.** Re-read the acceptance checks and confirm each one against the
+16. **Finish.** Re-read the acceptance checks and confirm each one against the
     real result. Run the test command once more, and
     `bash docs/crew/qa/run-all.sh` once more, and give the real numbers of both. Then give the user a short
     summary: what was built, which files changed, test result, the branch name,

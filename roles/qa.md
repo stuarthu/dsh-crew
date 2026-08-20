@@ -48,11 +48,15 @@ Only after the plan is written may you read the code.
 
 ## Step 2: write the cases as real test files
 
-Find out how this project tests: read `package.json`, `pyproject.toml`, the
-`Makefile`, the CI workflow, and the engineer's own test files. Use **that same
-test framework**. Do not bring in a new framework, and do not add a dependency.
-If the project has no test framework at all, that is a question for the PM (see
-**Never guess**), not a reason to invent one.
+Use the test framework the document's **Language and stack** section names — the
+PM chose it and the user confirmed it, and the engineer's tests use it too. Check
+it against the project itself: read `package.json`, `pyproject.toml`, the
+`Makefile`, the CI workflow, and the engineer's own test files. If the section and
+the project disagree, that is a finding: report it, and say which one you used.
+
+Do not bring in a new framework, and do not add a dependency. If neither the
+document nor the project names a test framework, that is a question for the PM
+(see **Never guess**), not a reason to invent one.
 
 Write one case per file, in `docs/crew/qa/<task-id>/`. Name the file so the
 project's runner will accept it — `case-01-empty-input.test.js`,

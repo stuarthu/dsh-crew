@@ -137,7 +137,7 @@ The milestone goals are the PM's and the user confirms them. The architect may
 not add, rename or reorder them. If one cannot be built as written, the architect
 says so, and the PM takes it back to the user.
 
-**Lives in** `roles/pm.md` (steps 3, 4, 7, 8, 11), `roles/architect.md`,
+**Lives in** `roles/pm.md` (steps 4, 5, 8, 9, 12), `roles/architect.md`,
 `roles/doc-reviewer.md`, `host/jobs.js` (a restart says which milestone).
 
 **Source.** [The 2020 Scrum Guide](https://scrumguides.org/scrum-guide.html)
@@ -184,11 +184,21 @@ item).
 
 ---
 
-## 8. The architect picks the shape, the engineer picks the library
+## 8. The stack is settled once and confirmed, then shape and library split
 
-**Rule.** The architect says "HTTP/REST, JSON" or "in-process call, typed
-objects". It never says "FastAPI" or "grpc-go". Which framework or helper writes
-it is the engineer's call, using what the repository already uses.
+**Rule.** Before anything is designed, the **PM** settles the language and stack
+and the **user confirms it**, as a *Language and stack* section in the PRD or DoD:
+language and version, package manager, framework, database, and the test framework
+with its exact test command. If the repository already has a stack, that is the
+stack — no options, no research, just state it and confirm. Only when the choice is
+real does the PM start a `crew_researcher` for the options and their costs, then
+decide and recommend one.
+
+After that, the old line holds: the architect says "HTTP/REST, JSON" or
+"in-process call, typed objects", never "FastAPI" or "grpc-go". Which of the
+libraries the project already has an engineer uses is the engineer's call. Adding
+a package the project does not depend on yet is the PM's call, and gets written
+into the stack section. Changing the stack itself needs a CRD, like scope.
 
 **Why.** Architect job descriptions put boundaries, patterns and standards with
 the architect, and implementation with the engineers. Crossing that line costs
@@ -196,8 +206,24 @@ twice. The architect knows the repository's habits less well than the engineer
 reading the code around the change. And a named library in a design document
 starts an argument the crew has no way to hold.
 
-**Lives in** `roles/architect.md`, `roles/doc-reviewer.md` (a named library in a
-contract is a finding).
+**Why the up-front part (ours).** The old rule said the engineer uses "what the
+repository already uses", which quietly assumed a repository that already exists.
+On an empty one there is nothing to use, and roles cannot talk to each other, so
+several engineers would each pick a language and a test framework and none of
+them would find out. Worse, the choice reaches further than code: QA writes its
+cases in the same framework, so a disagreement splits the tests too. It is also
+the decision a user most wants a say in, and the PM is the only role that talks to
+them.
+
+**Why the PM and not the architect.** Small DoD work has no architect at all, and
+the design itself depends on the stack, so it must be settled before the architect
+starts. Facts still come from a researcher — it lists candidates with costs and
+sources and is forbidden to recommend one — so "the PM decides" does not mean the
+PM guesses.
+
+**Lives in** `roles/pm.md` (step 3), `roles/researcher.md`,
+`roles/architect.md`, `roles/engineer.md`, `roles/qa.md`,
+`roles/doc-reviewer.md` (a named library in a contract is a finding).
 
 **Source.** [Software architect job description (Interview Kickstart)](https://interviewkickstart.com/job-description/software-architect)
 
@@ -306,7 +332,7 @@ runnable. QA never edits project config, and never moves its files to dodge the
 problem.
 
 **Lives in** `roles/qa.md`, `roles/engineer.md` ("Your test is a file that
-stays"), `roles/pm.md` (steps 3, 9c, 10, 11, 15).
+stays"), `roles/pm.md` (steps 4, 10c, 11, 12, 16).
 
 **Source.** [The 2020 Scrum Guide](https://scrumguides.org/scrum-guide.html)
 
@@ -364,6 +390,9 @@ document that owns it. A question the files can answer stays an inbox `Q-` file.
 | QA cases as plain shell scripts, one exit code each | Portable and needs no framework. Rejected: a shell can only test what a shell can reach, so a library's return value or a browser app has to be squeezed through a command, and the assertions end up weaker than the ones the project already has. The project's own framework is used instead, with the runner-cannot-see-the-folder problem handled by asking the PM. |
 | A CRD for every request, question and review finding | A complete audit trail, and nothing lost. Rejected: most of those are answered from the files in one turn, and the PM would spend the job writing records instead of deciding. Scope and contract changes are the ones that cost real work, so those are the ones that get a file. |
 | The PM deciding scope changes on its own, and telling the user later | Faster, and the CRD folder would still hold the history. Rejected: it defeats the milestone stop (principle 5). The whole reason milestones exist is that the user judges direction while changing it is cheap. |
+| The architect chooses the stack | It is the most technical decision in the job, so this looked right. Rejected: small DoD work has no architect, the design already depends on the stack, and the user has to approve it — and only the PM talks to the user. The architect designs inside the stack instead, and must say so if the stack cannot carry the design. |
+| Each engineer picks its own libraries in a new repository | This is what the old principle 8 implied. Rejected once the crew met an empty repository: roles cannot talk, so two engineers pick two languages and two test frameworks and nobody notices until the halves are joined. QA's cases would split the same way. |
+| The researcher recommends a stack | It has the sources in front of it. Rejected: a researcher that recommends is deciding, and its findings are then read as a verdict nobody approved. It lists candidates and costs; the PM decides and the user confirms. |
 | The team writes its own Definition of Done (Scrum) | Ours is written by the PM and confirmed by the user. There is no self-organising team here to agree on anything, and the user is the only one who can say what "done" is worth. |
 
 ---

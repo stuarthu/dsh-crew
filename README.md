@@ -10,9 +10,10 @@ starts an **architect** to design the work, **engineers** to write the code, and
 through files on disk, and the PM passes messages.
 
 > **Version 0.7.0.** PM, researcher, architect, engineer, QA, code reviewer,
-> security reviewer, doc reviewer — plus a QA suite that stays on disk and runs
-> again, a written change request for every scope or contract change, pushing with
-> your permission, CI watching, and picking a job up after a crash.
+> security reviewer, doc reviewer — plus a language and stack you approve before
+> any work starts, a QA suite that stays on disk and runs again, a written change
+> request for every scope or contract change, pushing with your permission, CI
+> watching, and picking a job up after a crash.
 
 ## Two planes
 
@@ -111,7 +112,22 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    of questions. It looks up every fact it can in the repository first. For anything bigger than a
    quick look it starts a `crew_researcher`, which writes findings with a source
    for every answer, so you are only asked what the files cannot answer.
-4. It picks the document and writes it: a **DoD** (`docs/crew/dod.md`) for small
+4. **It settles the language and stack, and you approve it.** If the repository
+   already has one, that is the stack — the PM reads the manifest, the lock file,
+   the test folder and the CI workflow, states what it found, and you confirm it in
+   one line. When the choice is real (an empty repository, a new service), it
+   starts a `crew_researcher` first: what this kind of project is normally built
+   with today, with a source per claim, what the machine already has, and what each
+   option costs. The researcher lists the options and is not allowed to recommend
+   one. The PM then recommends one, names the runner-up and why not, and writes a
+   **Language and stack** section into the document: language and version, package
+   manager, framework, database, and the **test framework with the exact test
+   command** — engineers write their tests with it and QA writes its cases with it,
+   so it has to be one choice, not five. You confirm it together with the document,
+   and after that it moves only through a CRD. An engineer may pick freely among
+   the libraries the project already has; adding a brand-new dependency goes back
+   to the PM.
+5. It picks the document and writes it: a **DoD** (`docs/crew/dod.md`) for small
    work, a **PRD** (`docs/crew/prd.md`) for a real product. It says which it
    picked, and one word switches it. **You confirm before any work starts.**
    A PRD is cut into **milestones** — three to six stops, each one something you
@@ -119,7 +135,7 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    is the proof of concept: the thinnest real path through the riskiest part,
    running for real. You confirm the milestone list on its own, because it decides
    when you get a say.
-5. For PRD work it starts `crew_architect`, which writes the high level design,
+6. For PRD work it starts `crew_architect`, which writes the high level design,
    the decision records and the task breakdown. It also splits the system into
    modules — reusing what the repository already has before it invents anything
    new — and when two or more modules talk to each other it writes one contract
@@ -136,7 +152,7 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    is cheapest to fix there. It also puts every task under one of your
    milestones — it cannot add, rename or reorder them. Then `crew_doc_reviewer`
    must pass all of it before a single line of code is written.
-6. It creates a `crew/<job>` branch and runs one `crew_engineer` per task, one
+7. It creates a `crew/<job>` branch and runs one `crew_engineer` per task, one
    milestone at a time. Two engineers run together only when their file lists do
    not overlap, and never across a milestone line. Every
    engineer works **test first**: it writes one unit test, runs it, checks that it
@@ -146,7 +162,7 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    row and committed with the code — never a command someone ran once in a shell.
    An engineer that believes a test cannot come first must ask the PM before it
    writes any code.
-7. Each finished task is checked in order: **code review** (correctness, then the
+8. Each finished task is checked in order: **code review** (correctness, then the
    tests that drove the change, then reuse, simpler code, readability and this
    repository's own style — the reviewer may hold up a task on those, but only if
    it shows the exact replacement it wants; otherwise the finding is optional) → **security review**, only when the change touches
@@ -161,9 +177,9 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    and outlives the job. Round two of any review
    only re-checks the blocking findings; after the round limit the PM brings the
    disagreement to you.
-8. The PM commits — engineers never touch git. It stages only the files that task
+9. The PM commits — engineers never touch git. It stages only the files that task
    owns, never `git add -A`.
-9. **Milestone review — the PM stops and asks you.** When every task in the
+10. **Milestone review — the PM stops and asks you.** When every task in the
    milestone has passed those checks and is committed, the PM reports what works
    now, the exact commands to try it yourself, what is deliberately not there
    yet, and the test results. Then you say: go on, change something, or stop.
@@ -171,19 +187,19 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    the doc reviewer before code starts again. No milestone begins until you have
    answered the one before it. Small DoD work has no milestones — it is one
    piece of work with one report at the end.
-10. The PM updates the repository README to match what was built. `README.md` is
+11. The PM updates the repository README to match what was built. `README.md` is
    always English. If you chose another language for the job, it keeps a second
    file beside it — `README-zh.md`, `README-ja.md` — saying the same thing. If
    nothing a reader would notice changed, it leaves the README alone and tells
    you so.
-11. A last `crew_doc_reviewer` pass over every document the job produced, the
+12. A last `crew_doc_reviewer` pass over every document the job produced, the
     README included. It checks that the documents can be worked from, that they
     stay consistent (one name per idea, one shape, and the language files saying
     the same thing), and that they read easily for someone about 14 years old
     whose first language is not English — by counting things like sentence
     length, idioms and unexplained terms, not by taste. It may hold up the job on
     wording, but only if it writes the replacement sentence itself.
-12. **Push and CI, if you allow it.** The PM checks there is a remote, a
+13. **Push and CI, if you allow it.** The PM checks there is a remote, a
     workflow and a working `gh` first. Then it asks you — before **every** push,
     including a re-push after a fix. It pushes only what you said yes to — a
     `crew/*` branch, `main`, or a release tag — watches the run, and sends a red
