@@ -24,6 +24,9 @@ let failures = 0;
 const fail = (message) => { failures += 1; console.error(`FAIL  ${message}`); };
 const ok = (message) => console.log(`ok    ${message}`);
 const skip = (message) => console.log(`SKIP  ${message}`);
+// How many times a string appears. A pinned string that must appear twice
+// cannot be checked with `includes`, which stops at the first copy.
+const copiesOf = (haystack, needle) => haystack.split(needle).length - 1;
 
 // ------------------------------------------------------------- package shape
 
@@ -276,6 +279,25 @@ function applyCapturingLogs(config, { logger = true } = {}) {
       || !section.text.includes("--ff-only") || !section.text.includes("origin/crew/")
       || !section.text.includes("publishCheck")
       || !section.text.includes("^[a-z0-9]([a-z0-9-]*[a-z0-9])?$")) fail("PM section is missing the merge and clean-up strings `git merge --no-ff`, `git branch -d crew/`, `git push origin --delete`, `git branch --merged main`, `--ff-only`, `origin/crew/` and `publishCheck`, or the job-slug pattern `^[a-z0-9]([a-z0-9-]*[a-z0-9])?$` — put them back in roles/pm.md");
+    // `git push origin --delete` has to appear TWICE, and the presence check
+    // above cannot see that: once as the command the PM runs itself, and once
+    // in the fallback it hands the user when the guard or the remote refuses
+    // that delete. Dropping either copy leaves a real hole — no way to delete
+    // the remote branch, or no way for the user to finish the delete by hand —
+    // while every presence check stays green. Two engineers proved that
+    // separately, so the count is pinned. It counts a command, not prose, so a
+    // rewording cannot trip it.
+    else if (copiesOf(section.text, "git push origin --delete") < 2) fail("PM section holds only 1 copy of `git push origin --delete` — the string is there, but one of the two copies is gone. It belongs in roles/pm.md twice: once as the command the PM runs, and once in the fallback command it gives the user when that delete is refused. Put the missing copy back");
+    // Step 9's parallel rule carries no command, so none of the strings above
+    // pins it: the whole paragraph could be deleted and all four checks stayed
+    // green. It is pinned anyway, because losing it is invisible — no check, no
+    // error, just a job where the PM hands tasks out one at a time again and
+    // the user waits four times as long. Unlike the eight strings above this is
+    // prose, and it IS brittle on purpose: reword the bold heading of that
+    // paragraph and this check goes red, so whoever rewords it edits this
+    // string in the same commit. `Parallel is the default` would not do — that
+    // is step 10's own rule, and it would stay green with step 9 deleted.
+    else if (!section.text.includes("Parallel by default")) fail("PM section is missing the string `Parallel by default` — step 9's parallel rule (one crew_engineer per task, all the calls in one message) has been dropped from roles/pm.md, or its heading was reworded. Put the rule back, or update this string in tools/verify-mount.mjs in the same commit");
     else ok(`PM prompt section registered (order ${section.order}, ${section.text.length} chars)`);
   }
 
