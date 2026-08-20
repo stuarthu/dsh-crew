@@ -152,25 +152,52 @@ Note that this repository's own `.github/workflows/publish.yml` is tag-triggered
 
 ## State and documents
 
-Job state and the DoD live **outside** the repository, in `~/.dsh/crew/jobs/<job-slug>/`
-(`state.json` and `dod.md`), so a user's `git status` stays clean. Crew documents live **inside**
-it, under `docs/`, and every folder name says **what the thing is**, never who made it:
+**A document's home is decided by how long it lives, not by who wrote it or how big the job was**
+(`principles.md` 19).
+
+**Single-use — outside the repository**, in `~/.dsh/crew/jobs/<job-slug>/`, so a user's
+`git status` stays clean and the whole folder can be dropped when the job ends:
+
+| File | What it is |
+| --- | --- |
+| `state.json` | job progress: tasks, milestones, versions, the merge result |
+| `dod.md` | the DoD for small work — its acceptance checks are history once they are all true |
+| `<task-id>-plan.md` | QA's test plan, written before it reads the code; the cases replace it |
+| `inbox/Q-<number>.md` | a role's question to the PM, and the ways an engineer found for a fix |
+| — | the output of a test run: it goes to stdout and is never written to a file |
+
+**Durable — inside the repository**, under `docs/`, and every folder name says **what the thing
+is**, never who made it:
 
 | Folder | What it holds |
 | --- | --- |
 | `docs/design/` | `prd.md`, `hld.md`, `tasks.md`, and one module boundary contract per pair of modules that talk (`docs/design/api/<caller>-<callee>.md`) |
-| `docs/decisions/` | `adr/NNNN-<short-name>.md` (how it was done) and `crd/NNNN-<short-name>.md` (one change request per scope-or-contract change) |
-| `docs/qa/` | QA's plan plus its **runnable** cases: `<task-id>-plan.md`, `<task-id>/case-*`, a `run.sh` per task and one `docs/qa/run-all.sh` that finds them all |
+| `docs/decisions/` | `adr/NNNN-<short-name>.md` (how it was done, whatever the size of the job) and `crd/NNNN-<short-name>.md` (one change request per scope-or-contract change) |
+| `docs/qa/` | QA's **runnable** cases — `<task-id>/case-*`, a `run.sh` per task and one `docs/qa/run-all.sh` that finds them all — plus `gaps.md`, the standing list of what no case can check |
 | `docs/release/` | a release and an upgrade plan for each milestone the user ships: `<milestone>-release.md` and `<milestone>-upgrade.md` |
 | `docs/research/` | one answer per question the PM sent to a researcher: `<short-name>.md` |
 
 Only `docs/decisions/` and `docs/qa/` exist in this repository today. The other three appear the
 first time a job writes into them.
 
-Four rules there are load-bearing, and `principles.md` 8, 13, 14 and 15 carry the reasons:
+Six rules there are load-bearing, and `principles.md` 8, 13, 14, 15 and 19 carry the reasons:
 
-- **QA writes only under `docs/qa/`**, in the project's own test framework, never into the
-  product's test folder and never into project config. If a runner cannot see that folder, QA asks
+- **Dropping a single-use document requires moving its durable half out first**, and only after
+  the PM's final summary — not when the acceptance checks turn green. A rule goes to
+  `principles.md`, a decision about **how** to an ADR, a decision about **what** or a contract to
+  a CRD, this change's reasons and its real test numbers to the commit message, and QA's "what I
+  could not test here, and why" to `docs/qa/gaps.md`. "Not needed any more" has to be earned; skip
+  the move and it quietly means "lost". The same reason makes an ADR **quote** the engineer's `Q-`
+  file word for word: an ADR that says "options: see Q-03" points at a file that is about to
+  disappear.
+- **Every decision about how gets an ADR, whatever the size of the job**, and the test is one
+  question: did someone ask for this? Someone asked → a CRD. Nobody asked and the crew hit the
+  choice while working → an ADR. Small work has no architect, so the PM writes it. Nothing else
+  decides where it lands — not the size of the job, not who was in the room.
+- **Everything QA puts in the repository goes under `docs/qa/`** — its cases, their `run.sh`
+  files and its entries in `gaps.md` — in the project's own test framework, never into the
+  product's test folder and never into project config. Its plan is the one thing it writes outside
+  the repository, in the job folder. If a runner cannot see that folder, QA asks
   the PM and the PM edits the config — that keeps "one task owns its files" true. The PM **adds
   that line**; "the cases are not runnable" is a blocking finding for the user, not an ending the PM
   may settle for. Here the line is `bash docs/qa/run-all.sh` at the end of `scripts.test`.

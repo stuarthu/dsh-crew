@@ -321,6 +321,17 @@ task and one `docs/qa/run-all.sh` that finds and runs them all. QA runs all
 of them — including cases written for tasks that finished long ago — on every
 task it checks, and an old case that now fails is a blocking regression.
 
+**QA's test plan is not one of those files.** The plan is single-use: it exists to
+turn acceptance checks into cases, and once the cases are written the cases carry
+the same information in a runnable form. So the plan is written to
+`<job folder>/<task-id>-plan.md`, outside the repository, and it goes when the job
+folder goes (principle 19). One part of it is durable and must not go with it:
+**"what I could not test here, and why"**. That moves to `docs/qa/gaps.md`, a
+standing list about this product's testability, grouped by the thing that cannot
+be checked and never by task id. QA writes it there itself, in the same turn it
+reports, because QA is the only role that knows why a thing could not be tested —
+and nothing then depends on the plan still existing.
+
 **Why (ours).** A crew job ends; the project does not. A case that only ever ran
 inside an agent's shell proves something for ten minutes and then protects
 nothing, so the next change breaks a promise nobody is watching. Written down,
@@ -328,8 +339,9 @@ the same cases become the project's regression suite, and each job leaves the
 next one better guarded. This is the plain reading of the Scrum idea that quality
 is built in: the Definition of Done has to survive the sprint that produced it.
 
-**How the split is drawn.** QA writes only inside `docs/qa/`, never into the
-product's own test folder. That keeps the existing file-ownership rule intact —
+**How the split is drawn.** Everything QA puts in the repository goes inside
+`docs/qa/` — its cases, its `run.sh` files, and its entries in `gaps.md` — and
+never into the product's own test folder. That keeps the existing file-ownership rule intact —
 one task owns its files — and keeps a reviewer's question ("who wrote this test?")
 answerable by the path alone. The cost is real and known: a runner that only
 looks inside configured folders does not see `docs/qa/` on its own, so QA reports
@@ -357,7 +369,8 @@ runner can check", not "everything".
 
 **Lives in** `roles/qa.md`, `roles/engineer.md` ("Your test is a file that
 stays"), `roles/architect.md` (the test-file column in a task row),
-`roles/pm.md` (steps 4, 10c, 11, 12, 18), `package.json` (`scripts.test`),
+`roles/pm.md` (steps 4, 10c, 11, 12, 18), `docs/qa/gaps.md` (which states its own
+rules at the top), `package.json` (`scripts.test`),
 `.github/workflows/test.yml`.
 
 **Source.** [The 2020 Scrum Guide](https://scrumguides.org/scrum-guide.html)
@@ -397,7 +410,22 @@ The one exception is the user overturning an ADR at a milestone review
 changing a choice the crew already built on costs rebuilt work, so that one gets
 a CRD.
 
-**Lives in** `roles/pm.md` ("Documents are the only channel", "Change requests"),
+**The channel is not the archive.** Being the only channel does not make a
+document permanent. Some of the documents the crew talks through are single-use
+and live in the job folder — the DoD, QA's test plans, the `Q-` files in
+`<job folder>/inbox/` — and they are dropped with the job (principle 19). So the
+rule has a second half. Anything that may not live only in a message may not live
+only in a document that is about to be thrown away either — the reason is the
+same one, that it has to be readable by somebody who is not here yet. A decision about **how** goes in an
+ADR in `docs/decisions/adr/`, a decision about **what**, the scope or a contract
+goes in a CRD in `docs/decisions/crd/`, a rule the crew must keep comes here, and
+QA's untestable gaps go to `docs/qa/gaps.md`. That is why an ADR **quotes** the
+engineer's `Q-` file word for word and may never say "options: see Q-03": the
+pointer would outlive the file it points at, and the ADR's most valuable section
+would be gone.
+
+**Lives in** `roles/pm.md` ("Documents are the only channel", "Change requests",
+"An ADR quotes, it never points"),
 `roles/architect.md` ("When the PM sends you a CRD"), `roles/engineer.md`,
 `roles/qa.md`.
 
@@ -546,10 +574,10 @@ the PM's finish summary; a way that would change a boundary contract gets a CRD.
 
 Every such decision is written into a document before the engineer starts again,
 and holds the same five things: the cause, **every** option with its cost and
-**why it lost**, which one was chosen, who chose it, and the reason. PRD work
-puts it in an ADR written by a fresh architect; small DoD work has no architect,
-so the PM writes it into a **Decisions** section of
-`~/.dsh/crew/jobs/<job-slug>/dod.md`, in the same shape. And every ADR — bug fix
+**why it lost**, which one was chosen, who chose it, and the reason. It goes in an
+ADR at `docs/decisions/adr/NNNN-<short-name>.md`, whatever the size of the job.
+PRD work may have a fresh architect write it; small DoD work has no architect, so
+the PM writes it itself, in the same shape. And every ADR — bug fix
 or not — lists every option with its cost and why it lost, **marks** the one it
 recommends with a one sentence reason, and
 is written so a reader who has never seen the code can tell the options apart.
@@ -650,13 +678,93 @@ while another task's QA cases read them, and `docs/qa/run-all.sh` gave
 three different answers in three minutes. The danger is not that a bad change
 gets in; nothing landed that should not have. The danger is a **false red**,
 which can send an engineer to fix something that was never broken, and a **false
-green**, which hides a real failure behind a half-written file. The rule as
-written does not cover this, and pretending it does would be worse than saying
-so. What the crew does about it today is small and manual: the run that counts
-is the PM's own, on a still tree, after every parallel task has landed. An
-engineer's or QA's green is evidence, not the verdict.
+green**, which hides a real failure behind a half-written file. The parallel test
+itself still only asks about overlapping **writes**, and that has not changed —
+what changed is that the engineer is now told what to do when the reading side
+bites. `roles/engineer.md` ("A false red is not evidence") says it plainly: a red
+from a check that reads a file another running task owns is not evidence about
+your work, so name the file, say **"the tree was moving"**, and never weaken or
+edit a case to make it green. What closes the hole is that instruction, not a new
+test — no test can tell a half-written file from a broken one. And the run that
+counts is still the PM's own, on a still tree, after every parallel task has
+landed. An engineer's or QA's green is evidence, not the verdict.
 
-**Lives in** `roles/pm.md` (steps 9 and 10).
+**Lives in** `roles/pm.md` (steps 9 and 10), `roles/engineer.md` ("A false red is
+not evidence").
+
+---
+
+## 19. Documents are split by how long they live, not by who was in the room
+
+**Rule (ours).** A crew document's home is decided by one question: **does it
+outlive the job?**
+
+- **Durable, in the repository.** An ADR in `docs/decisions/adr/` for a decision
+  about **how**; a CRD in `docs/decisions/crd/` for a decision about **what**, the
+  scope or a contract; the PRD, the design and the boundary contracts in
+  `docs/design/`; QA's runnable cases and `gaps.md`, its standing list of what no
+  case can check, in `docs/qa/`; a
+  researcher's answers in `docs/research/`; the release and upgrade plans in
+  `docs/release/`; a rule the crew must keep, here in `principles.md`.
+- **Single-use, in the job folder** (`~/.dsh/crew/jobs/<job-slug>/`, outside the
+  repository, beside `state.json`): the **DoD**, because the acceptance checks it
+  lists become history the moment they are all true; **QA's test plans**
+  (`<task-id>-plan.md`), because the cases carry the same information in a runnable
+  form as soon as they are written; the **`Q-` files** in `inbox/`; and the
+  **output of a test run**, which was never on disk and now may not be.
+- **Neither the size of the job nor who was in the room decides anything.** An
+  ADR is written for a one-file bug fix as readily as for a milestone, and small
+  work — which has no architect — has the PM write it.
+- **Dropping a single-use document requires moving its durable half out first**,
+  and only after the PM has given the user the final summary. A rule goes to
+  `principles.md`, a decision about how to an ADR, a decision about what to a CRD,
+  this change's reasons and its real test numbers to the commit message, and QA's
+  "what I could not test here, and why" to `docs/qa/gaps.md`.
+
+**Why not by who was in the room (ours).** The old rule sent a decision to an ADR
+when there was an architect and to a **Decisions** section of the DoD when there
+was not. So where a reader had to look depended on who happened to be staffed on
+the job, which tells them nothing about the decision. An ADR does not need an
+architect to exist; it needs a decision to exist.
+
+**Why not by the size of the job.** That was the first alternative, and it repeats
+the same mistake one step along: a year later, finding a decision would mean first
+knowing whether that job was big or small. It also collides with the shapes of the
+two file types. A CRD is built around changing something already agreed — who
+asked, the scope, the cost, whether the user must say yes — and "there are two ways
+to write this fix" has none of that: nobody asked, and nothing the user sees
+changes. The proof is this crew's own job. It was **small work** and it wrote nine
+CRDs (`0001`–`0009`), every one a real change to what was already agreed, and every
+one decided by the user. Had small work's CRD folder been taken over by design
+decisions, two completely different kinds of file would be lying in one folder.
+
+**Why the record outlives the negotiation.** A DoD is job progress wearing a
+document's clothes: `state.json` already lives outside the repository so the
+user's `git status` stays clean, and the DoD is the same kind of thing. But what
+gets *written inside* a single-use document usually is not single-use. That is the
+asymmetry the split has to respect, and it is where this rule earns its keep: the
+`Q-` file that an ADR quotes is dropped with the job, so an ADR must copy the
+options in and may never point at the file; and the `Q-` files of this crew's own
+job survived only because the PM happened to write their answers into documents —
+nothing in the rules asked it to. Now something does.
+
+**Why "not needed any more" has to be earned.** The cheap reading of "single-use"
+is "delete it and move on", and that quietly means "lost". The migration step is
+what makes the word honest. It also runs late on purpose: not when the acceptance
+checks all turn green, but after the PM's final summary. This job's own DoD had
+every check green at version 19 and then carried five more rounds of decisions, up
+to version 26.
+
+**The known cost.** Every job now ends with a step that produces files somebody
+has to read — and a PM in a hurry can do it badly, which is worse than not having
+the step, because the folder is gone afterwards either way. The doc reviewer's last
+pass (step 15) and the PM's final summary are where that shows up.
+
+**Lives in** `roles/pm.md` (steps 4, 10c, 11, 18, and the hard rules),
+`roles/qa.md` (the plan's home, and step 6), `roles/engineer.md`,
+`roles/architect.md`, `roles/doc-reviewer.md`, `docs/qa/gaps.md`,
+`docs/decisions/crd/0006-split-by-lifetime.md` (the change request that settled
+it).
 
 ---
 
@@ -686,7 +794,8 @@ engineer's or QA's green is evidence, not the verdict.
 | Closing the gap between the last proof and the remote delete with a leased delete | It would make the delete safe against a commit that arrives while the user is thinking. Rejected: it is the `--force-with-lease` shape, and this step forbids every force form — that ban is what has kept a wrong push from happening. Re-running the proof in the same turn narrows the window, and the limit is written down instead of hidden. |
 | Checking the job slug's shape in the git guard instead of the prompt | Rejected: the slug is not input arriving from outside, it is a value the PM invents in step 6. The middleware reads command text and would only see the damage after the fact, while the guard trusts the root session anyway. The place to make a value safe is where it is made. |
 | The team writes its own Definition of Done (Scrum) | Ours is written by the PM and confirmed by the user. There is no self-organising team here to agree on anything, and the user is the only one who can say what "done" is worth. |
-| A new document type, `docs/decisions/fix/<task-id>.md`, for bug-fix choices | Rejected: an ADR is already the file that records one open choice, so a second type would give the same thing two homes and split the place a reader has to look. And small DoD work writes no ADR at all — a **Decisions** section inside `~/.dsh/crew/jobs/<job-slug>/dod.md` carries the same five things without a new folder to keep in step. |
+| A new document type, `docs/decisions/fix/<task-id>.md`, for bug-fix choices | Rejected: an ADR is already the file that records one open choice, so a second type would give the same thing two homes and split the place a reader has to look. Small DoD work writes an ADR too (principle 19), so there is no size of job left for a second folder to serve. |
+| Sending a small job's decision to a **Decisions** section of the DoD | This was the rule for one day, and principle 19 replaced it. Rejected: it made the home of a decision depend on whether the job had an architect, and the DoD is single-use — the decision would have been dropped with the job folder. |
 | Every ADR stops and waits for the user to pick | Rejected: one design often holds several ADRs, so the job would stop once per ADR and the user would be interrupted with choices about the inside of the code. The architect marks a recommendation and the design keeps moving; the user sees every option at the milestone review and may overturn one. Options the user can see are still asked on the spot. |
 
 ---

@@ -96,10 +96,9 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
   The PM then decides on the same line a CRD uses. If you can see the
   difference, it asks you and waits for a clear answer. If the difference stays
   inside the code, it decides itself and names the choice at the next milestone
-  review. The decision goes into a document before the engineer builds it. PRD
-  work gets an **architecture decision record (ADR)** under `docs/decisions/adr/`.
-  Small work gets a new **Decisions** section in
-  `~/.dsh/crew/jobs/<job-slug>/dod.md`. That record holds the cause, every way
+  review. The decision goes into a document before the engineer builds it: an
+  **architecture decision record (ADR)** under `docs/decisions/adr/`, whatever
+  the size of the job. That record holds the cause, every way
   that was found with its cost and why it lost, the way that was taken, who
   decided, and the reason. New features and refactors do not go this way —
   there the design and the engineer's judgement decide, as
@@ -214,14 +213,51 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
 - **Where crew documents live changed.** `docs/crew/` is gone. Documents now sit
   in folders named after what they hold: `docs/design/` (PRD, HLD, task list, and
   the boundary contracts in `docs/design/api/`), `docs/decisions/` (`adr/` for how
-  something was done, `crd/` for change requests), `docs/qa/` (test plans and
-  cases), `docs/research/` (a researcher's answers) and `docs/release/` (the
+  something was done, `crd/` for change requests), `docs/qa/` (QA's runnable cases
+  and its standing list of what no case can check), `docs/research/` (a
+  researcher's answers) and `docs/release/` (the
   release and upgrade plan per shipped milestone). The DoD moved too: it now lives
   in the job folder beside the state file, at
   `~/.dsh/crew/jobs/<job-slug>/dod.md`, because it is one job's document and not
   the project's. Every role writes to the new paths. If you have a job in flight
   with files under `docs/crew/`, move them to the matching new folder — nothing
   reads the old path any more.
+- **A decision about *how* now gets an ADR, whatever the size of the job.** The
+  rule used to depend on who was staffed: PRD work wrote an ADR, and small work
+  wrote a **Decisions** section inside its DoD. So where you had to look for a
+  decision depended on whether that job happened to have an architect. Now there
+  is one home — `docs/decisions/adr/NNNN-<short-name>.md` — and one question tells
+  an ADR from a CRD: **did someone ask for this?** Someone asked (you, QA, a
+  review) → a change request, so a CRD. Nobody asked, and the crew ran into a
+  choice while doing the work → an ADR. Small work has no architect, so the PM
+  writes the ADR itself, and its options section **quotes the engineer's `Q-`
+  question file word for word** — the PM adds only the decision and the reason. It
+  may not write "options: see Q-03" either: that file is dropped with the job, and
+  a pointer at a file that disappears deletes the most valuable part of the record.
+- **What survives a job, and what does not.** Documents are now split by how long
+  they live. Single-use documents stay in the job folder outside your repository
+  and go when it goes: the DoD, QA's test plans (`<task-id>-plan.md`), the `Q-`
+  question files in `inbox/`, and a test run's output, which is printed and never
+  written to a file. Durable ones are in your repository: the ADRs and CRDs, the
+  PRD and design, QA's runnable cases, the release plans, the researcher's
+  answers. **Before anything is dropped, the durable half moves out** — a rule the
+  crew must keep to `principles.md`, a decision about how to an ADR, a decision
+  about what or a contract to a CRD, this change's reasons and its real test
+  numbers to the commit message. And QA's "what I could not test here, and why"
+  now has a standing home in **`docs/qa/gaps.md`**, written by QA itself, grouped
+  by the thing that cannot be checked rather than by task id, and shortened by
+  later jobs. That move happens **after** the PM's closing summary, not when the
+  acceptance checks turn green — this crew's own job carried five more rounds of
+  decisions after every check was already green.
+- **An engineer no longer chases a red that another running task caused.** Two
+  tasks whose file lists do not overlap still meet inside the same test suite,
+  because the project's checks read everyone's files. So a whole-suite run could
+  give three different answers in three minutes and send an engineer to fix
+  something that was never broken. The rule now says it plainly: a red from a check
+  that reads a file another running task owns is **not evidence** about your work.
+  The engineer says "the tree was moving", names the file, and carries on — and it
+  may never weaken or edit a case to make it green. The run that counts is still
+  the PM's own, on a still tree, after every parallel task has landed.
 - **The `roleDeny` example in `preset/crew/agent.cordis.yml` was wrong, and the
   comment above these settings now says what they really do.** Both settings
   **replace** the shipped list for that role; they are not added to it. So the

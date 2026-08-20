@@ -182,7 +182,12 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    customer data or a new dependency → **QA**, which writes its test plan from
    the document *before* reading the code, then turns every case into a real test
    file under `docs/qa/<task-id>/`, in your project's own test framework,
-   with a `run.sh` beside it. `bash docs/qa/run-all.sh` runs every task's cases,
+   with a `run.sh` beside it. The plan itself is single-use and stays out of your
+   repository — once the cases exist they say the same thing in a form that runs,
+   so the plan is dropped with the job. The one part of it that must not be lost
+   is "what I could not test here, and why": QA writes that into
+   `docs/qa/gaps.md`, a standing list about your product's testability that later
+   jobs shorten. `bash docs/qa/run-all.sh` runs every task's cases,
    and QA runs it on every task it checks — so a case written in an earlier task
    guards the new one. An old case that starts failing is a blocking regression,
    and nobody is allowed to edit it green. Your QA suite grows with the project
@@ -283,12 +288,16 @@ come back by themselves. After an upgrade, copy your changes into the new file.
     next milestone review. New features and refactors do not go this way.
 
     The decision is written down before any code is built, and it holds
-    **every** option. PRD work gets one ADR — a decision record in
-    `docs/decisions/adr/` — written by the architect; small work gets an entry
-    in a **Decisions** section in `~/.dsh/crew/jobs/<job-slug>/dod.md`. Either
-    one holds the cause of the bug, every option with what it costs, where it
-    would hurt later and **why it lost**, which one was taken, who decided, and
-    the reason. **Every
+    **every** option. It goes in one place, whatever the size of the job: an
+    **ADR** — a decision record in `docs/decisions/adr/`. On PRD work an
+    architect may write it; small work has no architect, so the PM writes it
+    itself. The ADR holds the cause of the bug, every option with what it costs,
+    where it would hurt later and **why it lost**, which one was taken, who
+    decided, and the reason. The options section **quotes the engineer's own
+    question file word for word** — the PM adds only the decision and the
+    reason, so it cannot quietly reshape the options into a case for the choice
+    it already made, and a pointer like "options: see Q-03" is not allowed
+    because that file is dropped with the job. **Every
     ADR is written for you**: a reader who has never seen the code must be able
     to tell the options apart, and the recommended one is marked. The design
     does not stop and wait for you to pick — the architect keeps going on its
@@ -327,15 +336,36 @@ Small questions do not become CRDs — a role's question that the files can answ
 is just a note in the job folder, and a review finding about code is a review
 finding. Only scope and contracts, the two things that cost real work to redo.
 
-Documents live in the repository, under `docs/`, and each folder name says what
-it holds: the PRD and the design in `docs/design/` (with one contract file per
-module boundary in `docs/design/api/`), the decision records and the change
-requests in `docs/decisions/` (`adr/` and `crd/`), QA's plans and runnable cases
-in `docs/qa/`, the release and upgrade plans for each milestone you ship in
-`docs/release/`, and the researcher's answers in `docs/research/`. The DoD and
-the job state live outside the repository, in
-`~/.dsh/crew/jobs/<job-slug>/` (`dod.md` and `state.json`), so your
-`git status` stays clean.
+**A decision about *how* gets an ADR instead, whatever the size of the job.** One
+question tells the two apart: **did someone ask for this?** If someone did — you,
+QA, a review — it is a change request and gets a CRD. If nobody did, and the crew
+ran into a choice while doing the work, it is an ADR in `docs/decisions/adr/`.
+Nothing else decides where it lands: not how big the job was, and not whether it
+had an architect. Small work has no architect, so the PM writes the ADR itself.
+
+**Where a document lives depends on how long it lives.** What outlives the job is
+in your repository, under `docs/`, and each folder name says what it holds: the
+PRD and the design in `docs/design/` (with one contract file per module boundary
+in `docs/design/api/`), the decision records and the change requests in
+`docs/decisions/` (`adr/` and `crd/`), QA's runnable cases and its standing list
+of what no test can check in `docs/qa/`, the release and upgrade plans for each milestone you ship in
+`docs/release/`, and the researcher's answers in `docs/research/`.
+
+What belongs to this one job is outside the repository, in
+`~/.dsh/crew/jobs/<job-slug>/`, so your `git status` stays clean: the job state
+(`state.json`), the DoD (`dod.md`), QA's test plans, and the `Q-` question files a
+role leaves for the PM. That whole folder is dropped when the job ends, and a test
+run's output was never a file at all.
+
+**Before anything is dropped, the durable half moves out.** This is a real step at
+the end of a job, and it happens after the PM's closing summary to you — not the
+moment the acceptance checks turn green, because the thinking usually carries on
+past that point. A rule the crew must keep next time goes into `principles.md`, a
+decision about how into an ADR, a decision about what or a contract into a CRD,
+this change's reasons and its real test numbers into the commit message, and QA's
+"what I could not test here, and why" into `docs/qa/gaps.md`. "Not needed any
+more" has to be earned. It is the same reason an ADR copies the engineer's options
+in instead of pointing at the file they came from.
 
 ## After a crash
 
