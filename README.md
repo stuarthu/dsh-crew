@@ -143,9 +143,11 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    is the proof of concept: the thinnest real path through the riskiest part,
    running for real. You confirm the milestone list on its own, because it decides
    when you get a say.
-6. It creates a `crew/<job-slug>` branch and tells you the name. Then, for PRD
-   work, it starts `crew_architect`, which writes the high level design,
-   the decision records and the task breakdown. It also splits the system into
+6. It turns your job name into a short slug — lowercase letters, digits and `-`,
+   nothing else — tells you the slug it picked, and creates a `crew/<job-slug>`
+   branch with it. Then, for PRD work, it starts `crew_architect`, which writes
+   the high level design, the decision records and the task breakdown. It also
+   splits the system into
    modules — reusing what the repository already has before it invents anything
    new — and when two or more modules talk to each other it writes one contract
    file per boundary in `docs/crew/api/`: how the two sides talk (in-process
@@ -238,6 +240,19 @@ come back by themselves. After an upgrade, copy your changes into the new file.
     including a re-push after a fix. It pushes only what you said yes to — a
     `crew/*` branch, `main`, or a release tag — watches the run, and sends a red
     CI's real error text back to the engineer that owns those files.
+15. **Merge and clean up, only when you ask for it.** The PM merges the
+    `crew/<job-slug>` branch into `main` itself. It asks you three separate
+    times — once for the merge, once for pushing `main`, once for deleting the
+    branch — and one yes never covers the next thing. The merge is never
+    squashed, so your one commit per task and its test-first proof stay readable
+    in the history. Before it pushes `main` it tells you whether that push would
+    start a workflow that publishes, naming the file it read — and if you still
+    say yes, it pushes. It offers to delete the branch only after it has proved
+    the work is merged and really on the remote, including that the remote
+    branch holds nothing `main` does not: `git push origin --delete` has no
+    protection of its own. With `trustRootAgent: false` that remote delete is
+    refused on purpose; the PM then hands you the command to run yourself
+    instead of retrying. A work branch that simply stays is a normal ending too.
 
 ## Nothing important lives in a chat message
 
@@ -305,8 +320,11 @@ Every crew role is a child agent, and the guard refuses, from a child:
 - any tag push, remote delete, `--mirror`, `--all`, or force push;
 - `npm`/`pnpm`/`yarn`/`bun publish`, `npm dist-tag`, `gh release create`;
 - a push into a repository whose CI runs on push and looks like it publishes;
-- any command that touches the approval file — not even the trusted root may
-  write it, so an agent cannot approve itself.
+- any command that names the approval file — not even the trusted root may
+  write it, so an agent cannot approve itself. The name is matched as a whole
+  file name, so a longer name that merely contains it is left alone: a
+  `crew/push-ok-flow` branch, a `push-okay.md` file and a `push-ok.bak` backup
+  are not mistaken for the approval file.
 
 A child's other branch push needs a one-shot approval that **you** create:
 
@@ -318,9 +336,16 @@ The guard deletes that file as soon as one push uses it. One approval, one push.
 
 Set `trustRootAgent: false` to guard your own session exactly like every child.
 
+`approvalFile` must name a file, never a folder. A value like `~/.dsh/crew/`
+would leave `crew` as the protected name, so the guard refuses to load and the
+message tells you to name the file itself.
+
 This reads command text, so it is a strong seat belt, not a locked door: a
-command hidden inside a script file could still slip past. Your dsh approval
-prompts stay the real gate.
+command hidden inside a script file could still slip past, and so does a file
+name the shell builds from pieces. It cuts the other way too — a command that
+only *mentions* the approval file by name is refused as well, your own session
+included, so a commit message with `push-ok` in it will not run. Your dsh
+approval prompts stay the real gate.
 
 ## Install
 
@@ -348,15 +373,14 @@ profile's `cordis.patch.yml`:
 | Setting | Default | What it does |
 | --- | --- | --- |
 | `rolesDir` | `~/.dsh/crew/roles` | Your own role markdown files replace the shipped ones, by file name |
-| `limits.liveAgents` | `4` | Crew agents awake at the same time |
-| `limits.agentsPerJob` | `20` | Crew agents one job may use |
+| `limits.liveAgents` | `20` | Crew agents awake at the same time |
 | `limits.reviewRounds` | `3` | Review rounds before the PM asks you to decide |
 | `installPreset` | `true` | Write the `crew` preset into `$DSH_HOME/.agent-presets` |
 | `jobsDir` | `~/.dsh/crew/jobs` | Where job state lives, and what the crash notice reads |
 | `resumeNotice` | `true` | Put unfinished jobs in front of the PM at session start |
 | `enabled` (guard) | `true` | Turn the git guard off — not recommended |
 | `trustRootAgent` (guard) | `true` | Trust your own session (the PM) with any git or publish command |
-| `approvalFile` | `~/.dsh/crew/push-ok` | One-shot push approval file |
+| `approvalFile` | `~/.dsh/crew/push-ok` | One-shot push approval file. A file path, never a folder — a trailing slash fails at startup |
 
 **Roles** — the `dsh-crew-roles` row in
 `~/.dsh/.agent-presets/crew/agent.cordis.yml`:

@@ -76,9 +76,58 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
   and raises no version until you answer.
 - **The state file tracks CRDs**, so a session that picks the job up after a crash
   knows which change requests are still undecided.
+- **The PM can merge your work branch and clean it up — when you ask, and in
+  three steps.** A new step near the end of a job: the PM merges
+  `crew/<job-slug>` into `main` itself, and asks you three separate times — once
+  for the merge, once for pushing `main`, once for deleting the branch — because
+  one yes never covers the next thing. The merge is never squashed, so every
+  task's commit and its test-first proof stay in the history. Before the push of
+  `main` it names the CI files it read and says whether that push would publish,
+  and it still pushes if you say yes. It offers to delete the branch only after
+  three checks pass, one of them being that the **remote** branch holds nothing
+  `main` does not — `git push origin --delete` has no protection of its own. It
+  never merges or deletes anything you did not ask for, and a branch that simply
+  stays is still a normal ending.
+- **The PM tells you which job slug it will use.** You name the job in your own
+  words; the slug that name becomes now has a fixed shape — lowercase letters,
+  digits and `-`, at most 40 characters, never `..` — and the PM converts your
+  name itself and says the result in one line before it creates the job folder or
+  the branch. That slug is pasted into a file path and into almost every git
+  command the PM runs in your own trusted session, so a name carrying a space, a
+  `;` or `..` is no longer used as it stands.
+
+### Fixed
+
+- **A branch or file whose name contains `push-ok` no longer blocks every git
+  command.** The guard protects the one-shot push approval file
+  (`~/.dsh/crew/push-ok`) by name, and it used to look for that name anywhere
+  inside the command text. So a job branch called `crew/push-ok-flow` had every
+  git command refused — merge, push, delete — with an error about touching the
+  approval file, and your own session was refused too, not only the crew roles.
+  The name is now matched as a whole file name: `crew/push-ok-flow`,
+  `push-okay.md` and `push-ok.bak` pass, while `touch push-ok`, `rm ./push-ok`,
+  the quoted spellings and the full path are still refused for everyone. A
+  command that
+  only mentions the name — a commit message, a `grep` — is still refused, as
+  before.
+- **A folder-shaped `approvalFile` now fails at startup instead of protecting the
+  wrong name.** Writing `approvalFile: ~/.dsh/crew/`, with the trailing slash,
+  used to leave `crew` as the protected name: every push of a `crew/...` branch
+  was refused as if it had touched the approval file, while the guard was
+  watching a folder instead of the file, so the one-shot approval no longer
+  worked as written. The guard now refuses to load and the message tells you to
+  name the file itself.
 
 ### Changed
 
+- **No cap any more on how many crew agents one job may use, and 20 awake at
+  once instead of 4.** One job used to be limited to 20 agents in total, and only
+  4 of them could be awake together. So tasks whose files did not overlap queued
+  for no reason, and a long job ran out of its 20 right where the last reviews
+  were. The total cap is gone: a job uses as many agents as the work needs.
+  `limits.liveAgents` now defaults to `20`. If your profile still sets
+  `limits.agentsPerJob`, dsh starts as before — the plugin ignores that setting
+  and says one line about it in the boot log. You can delete the line.
 - **An engineer's test must be a file that stays.** It goes in your project's test
   suite, in the naming that project already uses, is named in the task row, and is
   committed with the code. No proving a behaviour with a throwaway command, no

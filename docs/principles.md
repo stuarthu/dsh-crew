@@ -338,7 +338,7 @@ problem.
 
 **Lives in** `roles/qa.md`, `roles/engineer.md` ("Your test is a file that
 stays"), `roles/architect.md` (the test-file column in a task row),
-`roles/pm.md` (steps 4, 10c, 11, 12, 17).
+`roles/pm.md` (steps 4, 10c, 11, 12, 18).
 
 **Source.** [The 2020 Scrum Guide](https://scrumguides.org/scrum-guide.html)
 
@@ -417,6 +417,88 @@ when shipping starts.
 
 ---
 
+## 16. A branch is merged and deleted only on the user's word, and only when it is proven
+
+**Rule (ours).** The PM merges the work branch into `main` and cleans it up only
+when the user asks for it, and only with three separate yeses: one for the merge,
+one for the push of `main`, one for deleting the branch. It never runs
+`git merge --squash` and never `git branch -D`. Before it offers to delete, three
+checks must each run **without an error** and give the answer it needs: the branch
+is listed by `git branch --merged main`; `git log --oneline origin/main..main`
+prints nothing; `git log --oneline main..origin/crew/<job-slug>` prints nothing.
+The third check runs again in the same turn as the user's yes, just before the
+delete. When a push of `main` would start a workflow that publishes, the PM warns
+loudly and names the file — and still pushes when the user says yes. The
+`<job-slug>` that all of these commands are built from has a fixed shape:
+`^[a-z0-9]([a-z0-9-]*[a-z0-9])?$`, at most 40 characters, never containing `..`.
+The PM derives it from the user's job name itself and says in one line which slug
+it will use.
+
+**Why three separate yeses.** The merge, the push and the delete are three
+different risks. A merge stays inside the repository and can be undone. A push of
+`main` reaches everybody else and can start a release. A remote delete throws work
+away for good. So one yes never carries over to the next thing: each one is asked
+on its own, right before the command it pays for.
+
+**Why never a squash.** The crew's output is one commit per task, each carrying
+its test-first proof in the message. A squash merge replaces all of them with one
+commit and one message. The history is the only place that proof survives the job,
+so a squash would throw away the very thing the crew was built to produce.
+
+**Why proof before the delete, and why the remote branch is the proof that
+matters.** `git branch -d` refuses to delete a branch that is not merged, so the
+local side already protects itself. `git push origin --delete` protects nothing.
+If a commit reached the remote branch after the last push — from another machine,
+another session, or somebody else — the delete destroys it with no warning, and no
+disk anywhere holds a copy. That is why the third check reads the **remote**
+branch and not the local one: `main..origin/crew/<job-slug>` must be empty.
+
+**Why an empty output is not a proof.** A command that failed prints nothing
+either. `git log --oneline origin/main..main` prints nothing when there is no
+remote, when `origin/main` does not exist, and when the default branch has another
+name — and read as a proof, that silence says "everything is pushed". So a check
+counts only when the command itself ran without an error. Where the proofs can
+never pass — no remote, or a work branch that was never pushed — the PM says the
+local branch stays where it is and does not ask.
+
+**Why the publish warning is loud but does not refuse (ours).** The user asked for
+exactly this: warn plainly, then push if I say yes. The PM is the user's own
+session, and refusing what the user just decided only teaches them to work around
+the crew. What the warning must not do is cry wolf, so it follows the same rule
+the crew's git guard uses — a workflow counts only when a **branch** push can
+start it AND it publishes — instead of searching the CI files for the words
+`npm publish`. This repository is the example: its `publish.yml` does contain
+`npm publish`, but it is triggered by `tags:` only, so a push of `main` cannot
+publish anything. A keyword search would warn on every single `main` push here,
+and a warning that always fires teaches the user to say yes without reading it.
+
+**Why the slug inside those commands has a fixed shape (ours).** The job slug is
+not only a label. It is pasted into a file path
+(`~/.dsh/crew/jobs/<job-slug>/state.json`) and into almost every git command of
+steps 7 and 17. A slug holding `..` writes outside the jobs folder. A slug holding
+a space or a `;` turns one command into two. And the session that runs those
+commands is the PM's own — the root agent, the one the git guard trusts and lets
+straight through. Two security reviews of the merge step landed on the same hole:
+every command in this step assumes that value is safe, and nothing made it safe.
+It is a rule in the prompt and not in the middleware because the PM invents the
+slug itself; it is not input arriving from somewhere else. The PM converts the
+user's words rather than asking them for a slug — asking moves a technical rule
+onto the user and costs a turn, and refusing their job name is worse — and it says
+the result out loud, so the user reads the folder and branch name before either
+one exists.
+
+**Why the window is only narrowed, not closed.** Between the third proof and the
+delete a few seconds remain, and a commit can land inside them. Closing that gap
+needs a delete that carries a lease, so that it refuses unless the remote branch
+is still where it was — and this step forbids both `--force` and
+`--force-with-lease` outright, whatever the guard would allow. Re-running the
+proof in the same turn as the yes is the honest limit of this design, not a
+guarantee. Say it that way; do not call it airtight.
+
+**Lives in** `roles/pm.md` (steps 6, 7, 17 and 18), `tools/verify-mount.mjs`.
+
+---
+
 ## What we looked at and did not take
 
 | Idea | Why not |
@@ -437,6 +519,11 @@ when shipping starts.
 | A full release and upgrade plan at every milestone | The user asked for exactly this first, then chose the narrower rule with the cost in front of them. A plan for a milestone nobody ships is written from guesses, and a reader cannot tell a guessed plan from an agreed one. The gap list carries the warning instead. |
 | The PM writing the release plan from what it knows | Faster, and it would look right. Rejected: the plans differ so much by project type that a remembered one is an average of all of them — it would tell an npm package to roll back by redeploying, and a mobile app to un-publish. A researcher with dated sources answers for the actual type. |
 | The release plan doubling as permission to push | It would save a round trip. Rejected: a plan is written once and a push happens many times. Approving the plan is not approving each run of it, and the push rule (ask every single time) is the one that has kept a wrong push from happening. |
+| A squash merge, so `main` gets one tidy commit per job | Rejected: the crew's one commit per task, each with its test-first proof, is the record. A squash keeps the code and deletes the record. |
+| The user merges the branch by hand, and the PM only cleans up afterwards | Rejected: the PM is the only one who uses git, and it is the one that knows which tasks are committed and whether CI is green. Handing the merge back splits that knowledge, and the clean-up would then be proved against work the PM never did. |
+| Refusing a push of `main` that would start a publishing workflow | Considered, and the user chose the loud warning instead, with the cost in front of them. A refusal in the user's own session is a rule they would route around, and the guard already refuses the same push from every child. |
+| Closing the gap between the last proof and the remote delete with a leased delete | It would make the delete safe against a commit that arrives while the user is thinking. Rejected: it is the `--force-with-lease` shape, and this step forbids every force form — that ban is what has kept a wrong push from happening. Re-running the proof in the same turn narrows the window, and the limit is written down instead of hidden. |
+| Checking the job slug's shape in the git guard instead of the prompt | Rejected: the slug is not input arriving from outside, it is a value the PM invents in step 6. The middleware reads command text and would only see the damage after the fact, while the guard trusts the root session anyway. The place to make a value safe is where it is made. |
 | The team writes its own Definition of Done (Scrum) | Ours is written by the PM and confirmed by the user. There is no self-organising team here to agree on anything, and the user is the only one who can say what "done" is worth. |
 
 ---
