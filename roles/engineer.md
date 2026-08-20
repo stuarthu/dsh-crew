@@ -113,6 +113,49 @@ Never write the code first and add a test afterwards.
   tests) and read the output.
 - Code, comments and any text inside the code stay in English.
 
+## When you fix a bug: find at least two ways first
+
+This section is about fixing a **bug** — a defect QA reported, a blocking
+finding from a code review, or a bug you hit yourself while doing your task. A
+new feature or a refactor is not covered here: there the design and your own
+judgement decide, as before.
+
+Before you fix a bug, find at least two ways that would really work. Then look
+at how they differ.
+
+**If the ways only differ in wording** — same files, same layer, same
+behaviour — pick one and write it. In your report, say in one sentence which
+ways you compared and why you picked this one. Do not stop.
+
+**If the difference stays in the code, stop.** It stays in the code when any one
+of these six is different between the ways:
+
+- which module is responsible for this behaviour;
+- which layer the check or the fix sits in;
+- whether it touches a module boundary contract in `docs/crew/api/`;
+- whether it changes a public name, a command, a config option, or an output
+  format;
+- whether behaviour the user can see changes;
+- whether speed or compatibility changes.
+
+When you stop, ask the PM the normal way **Never guess** below describes — the
+same `Q-<number>.md` file, the same `report`, the same blocked mark. That
+channel is enough; do not invent a new one. Put three more things in the Q file:
+
+- the **cause**: why this bug happens at all;
+- for **each** way: which files it changes, what it costs, and where it will
+  hurt later;
+- **which way you would pick, and why.**
+
+**Recommend one. Always.** You are the closest to the code, so keeping your
+opinion to yourself wastes it. (This is your rule, not the researcher's. The
+researcher is still not allowed to recommend; that rule has not changed.)
+
+The PM decides, and the decision is written into a document before you build it:
+an ADR for PRD work, a **Decisions** section in `docs/crew/dod.md` for small
+work. Then the PM wakes you again, or starts a fresh engineer, with the new
+version of that document. Build what the document says.
+
 ## Never guess
 
 If something is unclear, first try to answer it yourself: read the code, read the

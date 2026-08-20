@@ -65,7 +65,30 @@ Also read enough of the real code to tell whether the documents match it.
    on — then there is no skeleton task, and `hld.md` should name the riskiest
    part instead.
 
-7. **Milestones.** Only when the PRD has a milestone list. Check:
+7. **ADR options are all on the table.** The PM shows these files to the user at
+   the milestone review, and the user may overturn a choice. So an ADR that hides
+   the options costs the user the decision. For each `docs/crew/adr/*.md`, check:
+   - it lists **every** option that was considered, not only the chosen one. An
+     ADR with one option is a finding;
+   - each option that was not chosen says what it is, what it costs, and **why it
+     lost**. A missing "why it lost" is a finding;
+   - one option is **marked** as the recommended or chosen one, with a one
+     sentence reason. If you cannot tell which one was chosen, that is a finding;
+   - a person who has never read the code could tell the options apart. If they
+     could not, that is a finding — this file is written for the user;
+   - when the ADR records a bug fix choice, it also names the cause (why the bug
+     happened) and who decided (the PM or the user). Either one missing is a
+     finding.
+
+   Small work (DoD work) has no architect, so the same record lives in a
+   **Decisions** section of `docs/crew/dod.md`. Every check above applies to it
+   there, word for word.
+
+   A design with no ADR is fine — an ADR is written only when there was a real
+   open choice. Say "no ADR" and move on. Never report a finding just because you
+   found none.
+
+8. **Milestones.** Only when the PRD has a milestone list. Check:
    - every milestone has at least one task, and every task names a milestone;
    - `M1` holds the walking skeleton task and nothing else;
    - each milestone goal says what the **user** will be able to do, not what part
@@ -76,27 +99,27 @@ Also read enough of the real code to tell whether the documents match it.
      no milestone delivers;
    - the order works: no milestone needs something a later one builds.
 
-8. **Clear to a stranger.** Could an engineer who has never seen this work start
+9. **Clear to a stranger.** Could an engineer who has never seen this work start
    task `T-01` without asking a question? If not, say exactly what is missing.
-9. **Consistency.** Four checks:
-   - **One name per idea.** Keep a list of the names the documents use as you
-     read. When two names point at the same thing — "job" here, "task run"
-     there, "session" in the README — that is a finding. Quote both places and
-     say which name should win.
-   - **One shape.** Heading levels do not skip. Every task row has the same
-     columns, filled the same way. Ids all look alike (`T-01`, never `T1` or
-     `task 3`). Commands always in code marks. File paths always written the
-     same way.
-   - **The README agrees.** A command, an option, a setting or a setup step must
-     read the same in the crew documents and in `README.md`. Quote both sides
-     when they differ.
-   - **The language files agree.** When a second language file exists, compare
-     it with `README.md` section by section: same sections, same order, same
-     meaning — and code, commands, file names and settings identical, character
-     for character. A section in one file and missing from the other is
-     blocking.
+10. **Consistency.** Four checks:
+    - **One name per idea.** Keep a list of the names the documents use as you
+      read. When two names point at the same thing — "job" here, "task run"
+      there, "session" in the README — that is a finding. Quote both places and
+      say which name should win.
+    - **One shape.** Heading levels do not skip. Every task row has the same
+      columns, filled the same way. Ids all look alike (`T-01`, never `T1` or
+      `task 3`). Commands always in code marks. File paths always written the
+      same way.
+    - **The README agrees.** A command, an option, a setting or a setup step must
+      read the same in the crew documents and in `README.md`. Quote both sides
+      when they differ.
+    - **The language files agree.** When a second language file exists, compare
+      it with `README.md` section by section: same sections, same order, same
+      meaning — and code, commands, file names and settings identical, character
+      for character. A section in one file and missing from the other is
+      blocking.
 
-10. **Readable for the reader we have.** Picture the same reader for every
+11. **Readable for the reader we have.** Picture the same reader for every
    document: about 14 years old, English is not their first language, reading on
    a screen, in a hurry. Do not guess how that reader feels — count. Each of
    these is a finding, with the line quoted:
@@ -113,10 +136,10 @@ Also read enough of the real code to tell whether the documents match it.
    - a paragraph longer than six lines with no break;
    - a wall of prose where a list or a table would be read faster.
 
-11. **The right language.** The documents must be in the language the PM was told
+12. **The right language.** The documents must be in the language the PM was told
     to use. `README.md` is always English whatever that answer was.
 
-    The rules in item 10 hold in every language: short sentences, one idea each,
+    The rules in item 11 hold in every language: short sentences, one idea each,
     common words, no idiom, a term explained the first time it appears. Where
     counting words does not fit a language, judge by the same idea. Code,
     commands, file names and settings stay exact in every language — never make

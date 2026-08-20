@@ -137,10 +137,46 @@ Write these files, in the language the PM tells you:
    file.
 
 3. **Decision records** — `docs/crew/adr/NNNN-<short-name>.md`, one file per real
-   choice. Each one: the choice, the options you weighed, why this one, and what
-   it costs. Only for choices that were genuinely open — not for every line. A
+   choice. Only for choices that were genuinely open — not for every line. A
    boundary style you took from the repository is not an open choice; a boundary
    style you changed is.
+
+   Every ADR is a file the **user** reads. The PM puts it in front of them at the
+   milestone review, so write it for someone who has never read the code. Each
+   file holds:
+
+   - **The choice** — one sentence: what is being decided.
+   - **Every option, none left out** — one entry per option, including the ones
+     you dropped early. Each entry: what it is, what it costs, where it will hurt
+     later, and **why it lost**. The option you recommend needs no "why it lost".
+   - **The recommendation** — mark which option you recommend, and give one
+     sentence of reason.
+   - **Plain words** — a reader who has never seen the code must be able to tell
+     the options apart. If an option only makes sense to an engineer, rewrite it.
+
+   Those three — every option, why each one lost, the recommendation marked —
+   are what a doc reviewer checks one by one. Any one missing is a finding.
+
+   **The design does not stop and wait for the user to pick.** Keep designing on
+   your own recommendation, and write the task rows on it. The user's review
+   happens later, at the PM's milestone review. If the user overturns a
+   recommendation, that is a CRD: the PM handles it by the existing rule and
+   starts a fresh architect to change it. Never end an ADR with "waiting for the
+   user" and stop.
+
+   **A bug-fix choice is an ADR too.** The PM may start you for one of these
+   alone. It comes from an engineer that found several ways to fix a bug where
+   the difference would stay in the code — which module is responsible, which
+   layer the check sits in, whether a boundary contract is touched, whether a
+   public name changes, whether behaviour the user sees changes, speed or
+   compatibility — so it stopped and handed the options to the PM, and the PM
+   decided. The engineer's options are in the `inbox/Q-<number>.md` file the PM
+   names for you. Carry **every** option into the ADR, the ones nobody picked
+   included, and add on top of the list above:
+
+   - **The cause** — why this bug happened at all.
+   - **Who decided** — the PM, or the user. Here the decision is already made, so
+     the chosen option takes the place of your recommendation.
 
 4. **Task breakdown** — `docs/crew/tasks.md`. This is the file engineers work
    from, so it decides whether the work goes well:
