@@ -13,12 +13,13 @@
 //   ln -s ~/.dsh/profiles/node_modules/@deepseek-ai/dsh-tool-subagent \
 //         node_modules/@deepseek-ai/dsh-tool-subagent
 
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { PM_PERSONA_FILE, ROLES, readRoleText } from "../host/roles.js";
+import { logCapture, recording, timesSaid } from "./lib/boot-log.mjs";
 
 let failures = 0;
 const fail = (message) => { failures += 1; console.error(`FAIL  ${message}`); };
@@ -44,6 +45,312 @@ for (const shipped of ["host", "roles", "preset", "cordis.patch.yml"]) {
   if (!manifest.files?.includes(shipped)) fail(`package.json "files" is missing "${shipped}", so it would not be published`);
 }
 
+// The commands `npm test` has to keep running. Each one is a gate that lives
+// nowhere else: delete its segment from `scripts.test` and the thing it guards
+// goes unchecked for ever while `npm test` is still green.
+//
+// CRD 0009 pinned the first segment. CRD 0011 added the second one — the
+// Verdicts gate — and its own "what it moves" table said this pin had to grow
+// with it; that line was dropped when the gate was built, so for a while
+// `node tools/verify-tasks.mjs` could have been deleted from `scripts.test`
+// with every check in this file still green (T-45, T-46). Both segments are
+// pinned by the same code now, so what counts as "neutralised" cannot drift
+// between them, and adding a third gate is one row in the table below.
+const scriptsTest = manifest.scripts?.test ?? "";
+/**
+ * Is the exit code of the command that starts with `segment` thrown away?
+ *
+ * Present is not enough: `… run-all.sh || true` reads exactly like a runner
+ * that runs, and QA's cases could never turn `npm test` red again. `||`, a
+ * single `|`, a `;` with another command after it, and a single `&` (the
+ * background operator) all throw that command's exit code away. `&&` keeps it,
+ * so appending a further script — CRD 0011 did exactly that — stays green, and
+ * so does a lone trailing `;`.
+ *
+ * Position is deliberately NOT pinned: a pin on where the segment sits would go
+ * red the day something else is appended, and appending is what CRD 0011 did.
+ *
+ * What this does NOT catch, named rather than guessed at (T-46): the
+ * neutraliser has to sit immediately after the segment, so
+ * `run-all.sh --quiet | tee log` still reads green. Catching that means reading
+ * the whole segment up to the next `&&`, which is wider than the two defects
+ * T-46 was opened for.
+ */
+const throwsAwayExitCode = (segment) =>
+  new RegExp(`${segment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[ \\t]*(?:\\||&(?!&)|;[ \\t]*\\S)`).test(scriptsTest);
+for (const gate of [
+  {
+    segment: "bash docs/qa/run-all.sh",
+    missing: "package.json scripts.test does not run `bash docs/qa/run-all.sh`, so QA's cases would never run again (CRD 0009)",
+    thrown: "package.json scripts.test lets `bash docs/qa/run-all.sh` fail without failing npm test, so QA's cases can never turn `npm test` red again (CRD 0009)",
+    ok: "npm test runs QA's cases (bash docs/qa/run-all.sh)",
+  },
+  {
+    segment: "node tools/verify-tasks.mjs",
+    missing: "package.json scripts.test does not run `node tools/verify-tasks.mjs`, so a task section with no Verdicts line could never turn `npm test` red again (CRD 0011)",
+    thrown: "package.json scripts.test lets `node tools/verify-tasks.mjs` fail without failing npm test, so a task section with no Verdicts line can never turn `npm test` red again (CRD 0011)",
+    ok: "npm test runs the Verdicts gate (node tools/verify-tasks.mjs)",
+  },
+]) {
+  if (!scriptsTest.includes(gate.segment)) fail(gate.missing);
+  else if (throwsAwayExitCode(gate.segment)) fail(`${gate.thrown}: ${scriptsTest}`);
+  else ok(gate.ok);
+}
+
+const testWorkflow = join(packageRoot, ".github", "workflows", "test.yml");
+if (!existsSync(testWorkflow)) fail(".github/workflows/test.yml is missing, so nothing runs npm test on a push (CRD 0009)");
+else {
+  // The `ok` line below claims three things, so all three are pinned. It used to
+  // claim them while checking only one, and that one was checked against the
+  // whole file as a single string — which is a false green here of all places,
+  // because this workflow's own comments discuss `fetch-depth: 1` and quote
+  // `npm test`. Every pattern below is line-anchored and reaches real settings
+  // only: `#` is not whitespace, so `^[ \t]*` cannot walk into a comment. Same
+  // trade as the preset escapes below.
+  const workflow = readFileSync(testWorkflow, "utf8");
+  // `on:` has three legal spellings. The file uses the shortest one today, and a
+  // pin on that one alone would go red the day somebody adds a second trigger,
+  // so all three pass — and nothing else, so `on: workflow_dispatch` stays red.
+  // In the block form the walk down to `push:` can only cross lines that START
+  // with whitespace, so it stops at the next top-level key and never reaches
+  // into `jobs:`.
+  const inlinePush = /^on:[ \t]*(?:push|\[[^\]]*\bpush\b[^\]]*\])[ \t]*(?:#.*)?$/m;  // on: push  |  on: [push, …]
+  const blockPush = /^on:[ \t]*(?:#.*)?\n(?:[ \t].*\n|[ \t]*\n)*[ \t]+push:/m;       // on: ⏎   push:
+  if (!inlinePush.test(workflow) && !blockPush.test(workflow)) {
+    fail(".github/workflows/test.yml is not triggered by a push (`on: push`), so an ordinary push runs no CI (CRD 0009)");
+  // `npm test` has to BE the command, not a word inside somebody's `echo`: it
+  // either follows `run:` — as a key of its own, or in the one-liner list form
+  // `- run: npm test`, which is legal YAML and a common style — or it is a body
+  // line of a `run: |` block. The leading `-` is allowed only together with
+  // `run:`, so a bare `- npm test` list item under some action's `with:` still
+  // proves nothing. Both workflow pins spell this the same way (T-43).
+  } else if (!/^[ \t]*(?:(?:-[ \t]+)?run:[ \t]*)?npm test\b/m.test(workflow)) {
+    fail(".github/workflows/test.yml never runs `npm test`, so the push CI proves nothing (CRD 0009)");
+  } else if (!/^[ \t]*fetch-depth:[ \t]*0[ \t]*$/m.test(workflow)) {
+    fail(".github/workflows/test.yml does not set fetch-depth: 0 — the cases that read this repository's own commits cannot run on a shallow clone (T-22)");
+  } else ok(".github/workflows/test.yml runs npm test on a push, with full history");
+}
+
+// The release CI. `npm publish` is the one action in this repository that cannot
+// be undone: a published version stays published for ever. CRD 0009 pinned the
+// push CI above and left the release workflow with **no pin at all**, so
+// deleting `run: npm test` there was a change nothing anywhere noticed and the
+// next tag would have published untested code. Same line-anchored technique as
+// test.yml: `[ \t]` never crosses a newline and `#` is not whitespace, so no
+// comment can satisfy a pin, and a command has to BE the command, not a word
+// inside somebody's `echo` (T-41).
+//
+// Read the FOLDER, never a file name. T-41 and T-43 pinned `publish.yml` by that
+// name, while host/git-guard.js's publishingWorkflow() reads EVERY
+// `.github/workflows/*.yml` — so a second workflow called anything else, with
+// `npm publish` under a bare `on: push`, kept this pin green while the
+// repository really published on every branch push. The guard would still have
+// refused that push, so it was a hole in the pin and not in the guard; and the
+// pin's job is to stop such a file existing at all. Renaming the release
+// workflow, which the trusted-publisher setting on npmjs.com allows, used to red
+// a file that was still perfectly correct — a gate that reds correct files
+// teaches people to stop reading it. Both extensions count, because GitHub reads
+// `.yaml` exactly like `.yml` (T-44).
+const workflowsDir = join(packageRoot, ".github", "workflows");
+const workflowNames = existsSync(workflowsDir)
+  ? readdirSync(workflowsDir).filter((name) => /\.ya?ml$/i.test(name)).sort()
+  : [];
+// What makes a workflow a PUBLISHING workflow: a live `npm publish` command,
+// spelled the way every other command pin here is spelled — `run:` as a key of
+// its own, the one-liner list form `- run: npm publish`, or a body line of a
+// `run: |` block. So a `# run: npm publish` note about what somebody might add
+// one day is not a release, and test.yml, whose comments talk about publishing
+// at length, is not a publishing workflow either. Narrower than the guard's own
+// test, which also knows `pnpm|yarn|bun publish`, `semantic-release`,
+// `release-please` and `gh release create`, and which does not read comments:
+// this pin covers the one vocabulary this repository uses, and T-44's report
+// names the rest as a follow-up rather than guessing at them here.
+const publishCommand = /^[ \t]*(?:(?:-[ \t]+)?run:[ \t]*)?npm publish\b/m;
+const publishers = workflowNames
+  .map((name) => ({ name, text: readFileSync(join(workflowsDir, name), "utf8") }))
+  .filter((workflow) => publishCommand.test(workflow.text));
+
+/**
+ * Every pin on ONE publishing workflow. Each message names the file it read,
+ * because "a workflow is wrong" is not actionable in a folder of them.
+ *
+ * @param rel - the file's path from the repository root, for the messages
+ * @param release - the file contents
+ */
+function checkPublishWorkflow(rel, release) {
+  // The trigger, read as lines. Both filters below are looked for inside the
+  // `push:` block and nowhere else, because that block alone decides what can
+  // start this run — and host/git-guard.js's branchPushTriggers() walks this very
+  // shape, in these very files, to answer the same question. It answers "tag-only,
+  // so a branch push cannot publish", and that answer is the reason the guard
+  // lets a crew agent push an ordinary branch at all. A `branches:` filter beside
+  // the tag filter would leave the guard waving branch pushes through while every
+  // one of them published a release, so the two are pinned together here, in the
+  // shape that function reads: the `on:` line down to the next top-level key,
+  // then the `push:` key, then the lines indented under it. YAML 1.1 reads a bare
+  // `on` as the boolean true, so `"on":` is a legal spelling of the same key and
+  // is accepted — a walk that could not see it would be blind to the whole
+  // trigger, which is exactly where a `branches:` filter would hide (T-43).
+  const releaseLines = release.split(/\r?\n/);
+  const onAt = releaseLines.findIndex((line) => /^["']?on["']?[ \t]*:/.test(line));
+  const onEnd = releaseLines.findIndex((line, index) => index > onAt && /^\S/.test(line));
+  const onRegion = onAt === -1 ? [] : releaseLines.slice(onAt, onEnd === -1 ? releaseLines.length : onEnd);
+  // Anything after the colon on the `on:` line itself is the inline form
+  // (`on: push`, `on: [push, workflow_dispatch]`). That form carries no filter of
+  // any kind, so it has no tag filter either.
+  const onInline = onAt === -1 ? "" : onRegion[0].slice(onRegion[0].indexOf(":") + 1).replace(/#.*/, "").trim();
+  const pushAt = onRegion.findIndex((line, index) => index > 0 && /^[ \t]+push[ \t]*:/.test(line));
+  const pushIndent = pushAt === -1 ? -1 : onRegion[pushAt].search(/\S/);
+  const pushFilters = [];
+  for (let index = pushAt + 1; pushAt !== -1 && index < onRegion.length; index += 1) {
+    const line = onRegion[index];
+    if (line.trim().length === 0) continue;      // a blank line is not a sibling key
+    if (line.search(/\S/) <= pushIndent) break;  // back out to a sibling trigger
+    pushFilters.push(line);
+  }
+  // Only the push trigger's own filters. A `branches:` under `pull_request:` is a
+  // sibling and stays out: a pull request is not a branch push, and a pin that
+  // reds a correct file teaches people to stop reading it.
+  const pushBlock = pushFilters.join("\n");
+  // A tag filter naming a v-glob, in either spelling.
+  const inlineTags = /^[ \t]*tags:[ \t]*\[[^\]]*['"]?v[*?\[0-9]/m;                                   // tags: ["v*"]
+  const blockTags = /^[ \t]*tags:[ \t]*(?:#.*)?\n(?:[ \t]*(?:#.*)?\n)*[ \t]*-[ \t]*['"]?v[*?\[0-9]/m; // tags: ⏎   - "v*"
+  // `branches:` and `branches-ignore:` are the two spellings of "a branch push
+  // starts this run", and branchPushTriggers() treats them the same way. `#` is
+  // not whitespace, so a commented-out filter cannot trip this.
+  const branchFilter = /^[ \t]*branches(?:-ignore)?[ \t]*:/m;
+  // Same spelling as the test.yml pin above: `run:` as a key of its own, the
+  // one-liner list form `- run: npm test`, or a body line of a `run: |` block —
+  // and a leading `-` only ever together with `run:`. The capture is the rest of
+  // that line, checked below for the CRD 0009 hole.
+  const testStep = /^[ \t]*(?:(?:-[ \t]+)?run:[ \t]*)?npm test\b([^\n]*)/m.exec(release);
+  // The same pattern that picked this file out of the folder, now for its
+  // position: one definition, so "what counts as publishing" cannot drift
+  // between finding the file and pinning it.
+  const publishStep = publishCommand.exec(release);
+  // Two steps of ONE job run in file order, so comparing where they appear in
+  // the text is a sound order pin. Across two jobs it proves nothing — only a
+  // `needs:` edge would, and this file has no YAML parser to read one — so a
+  // file that grew a second job is refused out loud rather than waved through
+  // by a pin that can no longer read it. Job names are the shallowest keys
+  // under `jobs:`; the walk stops at the next top-level key.
+  const jobsKey = /^jobs:[ \t]*(?:#.*)?$/m.exec(release);
+  const afterJobs = jobsKey ? release.slice(jobsKey.index + jobsKey[0].length) : "";
+  const nextTopLevel = /^\S/m.exec(afterJobs);
+  const jobsRegion = nextTopLevel ? afterJobs.slice(0, nextTopLevel.index) : afterJobs;
+  const keyIndents = [...jobsRegion.matchAll(/^([ \t]+)[A-Za-z0-9_.-]+:[ \t]*(?:#.*)?$/gm)].map((m) => m[1].length);
+  const jobCount = keyIndents.filter((n) => n === Math.min(...keyIndents)).length;
+  // The step the `npm test` line belongs to: from the list item that opens it to
+  // the one that opens the next step. Needed because a step that is skipped or
+  // allowed to fail sits in the right place and still gates nothing.
+  const stepOpeners = [...release.matchAll(/^[ \t]*-[ \t]+(?:name|uses|run|id|if|shell|env|with):/gm)].map((m) => m.index);
+  const opens = testStep ? stepOpeners.filter((i) => i <= testStep.index) : [];
+  const closes = testStep ? stepOpeners.filter((i) => i > testStep.index) : [];
+  const testStepBlock = opens.length
+    ? release.slice(Math.max(...opens), closes.length ? Math.min(...closes) : release.length)
+    : "";
+  // Is the test step allowed to fail? Every `continue-on-error:` line of that
+  // step, with a trailing comment and any trailing whitespace taken off, so the
+  // VALUE can be judged on its own.
+  //
+  // Judging it on its own is the fix for a pin that never worked (T-46). It used
+  // to read `/^[ \t]*continue-on-error:[ \t]*(?!false\b)/m`, meaning "…and the
+  // value is not `false`". A negative lookahead placed after a variable-width
+  // match is not anchored: `[ \t]*` backtracks to zero width, so the lookahead
+  // was tested at the SPACE before `false`, a space is not `false`, and the
+  // pattern matched every time. So the exemption never exempted anything, and
+  // `continue-on-error: false` — the explicit spelling of the default, which
+  // plenty of house styles require — was reported red on a completely correct
+  // file, with a message saying the opposite of the truth. A gate that reds
+  // correct files teaches people to stop reading it.
+  //
+  // What counts as "not allowed to fail": the value spelled exactly `false`,
+  // `False` or `FALSE` — the three spellings YAML 1.2's core schema reads as the
+  // boolean false. Everything else is red, because where YAML's answer and this
+  // pin's answer could differ this pin errs red and says which spellings it
+  // accepts:
+  //   - `continue-on-error:   false`, a tab, or trailing spaces: green. Any
+  //     amount of whitespace, and a trailing `# comment`, are YAML's business.
+  //   - `continue-on-error: "false"` / `'false'`: RED. YAML reads a quoted
+  //     scalar as the STRING "false", not as the boolean, and this pin does not
+  //     guess how a runner coerces that string.
+  //   - `continue-on-error: fAlse`: RED. Also a plain string in YAML, and a
+  //     truthy string here would mean the step really may fail — the dangerous
+  //     direction — so the accepted set is those three spellings and not a
+  //     case-insensitive match.
+  //   - `continue-on-error:` with the value on the NEXT line: RED. Legal YAML,
+  //     and one line cannot tell a `false` below from a `true` below, so it is
+  //     refused out loud rather than waved through.
+  //   - an expression value: RED, because an expression can evaluate to true.
+  //   - any other scalar — `0`, `no`, an empty value: RED. A runner may or may
+  //     not coerce those to false, this pin does not guess, and no house style
+  //     asks for them.
+  //   - `continue-on-error:false`, no space: green, and it does not matter —
+  //     that is not a YAML mapping at all, so GitHub refuses to parse the file
+  //     and it publishes nothing.
+  // Read from the step block, so a `continue-on-error:` on a neighbouring step
+  // is neither borrowed as an exemption nor blamed on this one. Every line in
+  // the block is read, not just the first: `false` followed by `true` is red.
+  const continueOnError = [...testStepBlock.matchAll(/^[ \t]*continue-on-error:[ \t]*([^\n]*)$/gm)]
+    .map((match) => match[1].replace(/[ \t]+#.*$/, "").trimEnd());
+  const mayFailAt = continueOnError.findIndex((value) => !/^(?:false|False|FALSE)$/.test(value));
+  if (onAt === -1 || (onInline.length === 0 && pushAt === -1)) {
+    fail(`${rel} publishes, and has no \`push:\` trigger this pin can read, so it can no longer tell what starts a release — and host/git-guard.js's branchPushTriggers() reads the same shape to decide whether a branch push publishes here. Re-pin it (T-43)`);
+  } else if (onInline.length > 0 || (!inlineTags.test(pushBlock) && !blockTags.test(pushBlock))) {
+    fail(`${rel} publishes and has no v* tag filter on its push trigger, so an ordinary branch push could publish (T-41)`);
+  } else if (branchFilter.test(pushBlock)) {
+    fail(`${rel} filters branches as well as v* tags on its push trigger, so every push to that branch publishes a release — while host/git-guard.js's branchPushTriggers() goes on reading this file as tag-only and lets a crew agent's branch push straight through (T-43)`);
+  } else if (!testStep) {
+    fail(`${rel} publishes and never runs \`npm test\`, so a v* tag would publish code no check ever ran (T-41)`);
+  // Cannot happen while the caller picks its files with `publishCommand` — kept
+  // because a later caller might not, and an unguarded `publishStep.index` would
+  // throw and take every remaining check in this run down with it.
+  } else if (!publishStep) {
+    fail(`${rel} publishes, but this pin cannot find the \`npm publish\` step it just matched — re-pin it against however publishing is done now (T-41)`);
+  } else if (jobCount !== 1) {
+    fail(`${rel} has ${jobCount} jobs, and file order proves nothing across jobs — the test step gates the publish only through a \`needs:\` edge, which this text pin cannot read. Re-pin it (T-41)`);
+  } else if (testStep.index > publishStep.index) {
+    fail(`${rel} runs \`npm test\` AFTER \`npm publish\`, so the release publishes code that was never tested (T-41)`);
+  // The CRD 0009 hole again, one file over: `npm test || true` reads exactly
+  // like a step that gates the release and gates nothing. A pipe hides the exit
+  // code too, and so does a `;` chain and a trailing `&`. `&&` keeps it, so
+  // chaining another command stays green.
+  } else if (/\||;[ \t]*\S|&[ \t]*$/.test(testStep[1])) {
+    fail(`${rel} throws the \`npm test\` exit code away, so a failing test never stops the publish (T-41): npm test${testStep[1]}`);
+  } else if (/^[ \t]*if:/m.test(testStepBlock)) {
+    fail(`${rel} puts an \`if:\` on the \`npm test\` step, so the release can skip its own tests (T-41)`);
+  } else if (mayFailAt !== -1) {
+    fail(`${rel} lets the \`npm test\` step fail without failing the run, so the tests gate nothing — the only values this pin reads as "not allowed to fail" are a bare \`false\`, \`False\` and \`FALSE\` (T-41, T-46): continue-on-error: ${JSON.stringify(continueOnError[mayFailAt])}`);
+  }
+}
+
+if (publishers.length === 0) {
+  // Nothing in this folder can publish. `private: true` makes `npm publish`
+  // refuse outright, so such a repository has no release to gate and an `ok`
+  // line claiming a tag-only release would be a lie — this one says out loud
+  // that it pinned nothing. Without that flag the package IS published from CI,
+  // and no publishing workflow is the T-41 hole again: the release moved
+  // somewhere no check here can read it.
+  if (manifest.private === true) {
+    ok(`no workflow under .github/workflows/ runs \`npm publish\` and package.json is private, so there is no release to gate — this pin checked nothing (workflow files read: ${workflowNames.join(", ") || "none"})`);
+  } else {
+    fail(`no workflow under .github/workflows/ runs \`npm publish\`, so nothing proves npm test runs before this package's one irreversible action — workflow files read: ${workflowNames.join(", ") || "none"} (T-41, T-44)`);
+  }
+} else {
+  // A local counter, the same trick as the three above: an unrelated failure
+  // earlier in this run must not silence the `ok` line, and a broken workflow
+  // must not let a green one claim the folder is fine.
+  const failuresBefore = failures;
+  for (const workflow of publishers) checkPublishWorkflow(`.github/workflows/${workflow.name}`, workflow.text);
+  // The claim is exactly what was checked: how many of the files in that folder
+  // were read, which of them publish, and what was pinned on those. It names the
+  // files because the next reader has to be able to tell whether the pin saw the
+  // file they are worried about.
+  if (failures === failuresBefore) {
+    ok(`${publishers.length} of ${workflowNames.length} workflow files under .github/workflows/ carry a live \`npm publish\` (${publishers.map((workflow) => workflow.name).join(", ")}), and every one of those is tag-only on push (a v* tag filter, no branches filter) and runs npm test — unconditionally, in the same job — before npm publish`);
+  }
+}
+
 // ------------------------------------------------------------- crew preset
 
 // The role tools live in this preset, and the preset is what makes their
@@ -55,6 +362,11 @@ const presetYaml = join(presetDir, "agent.cordis.yml");
 if (!existsSync(join(presetDir, "preset.yml"))) fail("preset/crew/preset.yml is missing");
 if (!existsSync(presetYaml)) fail("preset/crew/agent.cordis.yml is missing");
 else {
+  // A local counter, not the global one: `if (failures === 0)` asserted a LOCAL
+  // fact with a GLOBAL number, so one unrelated failure earlier in the run made
+  // this line print neither `ok` nor `FAIL` — it simply vanished, and a reader
+  // cannot tell a check that passed from a check that was skipped.
+  const before = failures;
   const preset = readFileSync(presetYaml, "utf8");
   if (!preset.includes("dsh-crew/host/roles-preset.js")) fail("the crew preset does not load dsh-crew/host/roles-preset.js, so it would have no role tools");
   for (const escape of ["toolName: subagent", "dsh-tool-workflow", "dsh-tool-ralph", "provider: codex", "provider: claude-code"]) {
@@ -85,15 +397,18 @@ else {
       else if (!preset.includes(provider)) fail(`${role.toolName}: allow list names "${allowed}", but the crew preset does not load ${provider}, so every spawn would fail`);
     }
   }
-  if (failures === 0) ok("crew preset loads the roles, keeps subagent-control, and re-opens no other way to start an agent");
+  if (failures === before) ok("crew preset loads the roles, keeps subagent-control, and re-opens no other way to start an agent");
 }
 
 if (manifest.dsh?.desktop?.presets?.[0]?.path !== "./preset/crew") fail("package.json does not declare the crew preset under dsh.desktop.presets");
+// A local counter again, for the reason given above the preset block: with the
+// global one, an unrelated earlier failure makes the `ok` below vanish.
+const exportsBefore = failures;
 // Every module named by a cordis row must be exported, or dsh cannot resolve it.
 for (const [row, subpath] of [...readFileSync(join(packageRoot, patch ?? "cordis.patch.yml"), "utf8").matchAll(/name:\s*'dsh-crew\/([^']+)'/g)]) {
   if (manifest.exports?.[`./${subpath}`] === undefined) fail(`cordis.patch.yml loads "./${subpath}" but package.json "exports" does not expose it (${row.trim()})`);
 }
-if (failures === 0) ok("every module the patch loads is exported from package.json");
+if (failures === exportsBefore) ok("every module the patch loads is exported from package.json");
 
 // ---------------------------------------------------------------- role files
 
@@ -150,7 +465,12 @@ for (const fileName of ["engineer.md", "architect.md", "doc-reviewer.md"]) {
 // evidence in the CRD. An absent string cannot go red from a rewording — it
 // takes somebody writing the old rule back, which is exactly what it is here to
 // catch. Two paths and one section name, so no prose is pinned.
-for (const fileName of ["architect.md", "engineer.md", "qa.md", "doc-reviewer.md"]) {
+//
+// The two reviewer files were added to this list after they were the only files
+// in the batch that carried the rule with nothing pinning it: the old "the DoD
+// file the PM named (`docs/crew/dod.md`)" wording could come back in either of
+// them with every check in this run still green.
+for (const fileName of ["architect.md", "engineer.md", "qa.md", "doc-reviewer.md", "code-reviewer.md", "security-reviewer.md"]) {
   const text = readRoleText(fileName, undefined);
   if (text.includes("dod.md")) fail(`roles/${fileName} names a file called \`dod.md\` (at index ${text.indexOf("dod.md")}) — CRD 0010 forbids that file name anywhere, because a DoD file lives in the job folder and is dropped with it. \`DoD\` is a section of docs/design/prd.md or of a task row in docs/design/tasks.md. Point the role at those two files instead`);
   else if (!text.includes("docs/design/tasks.md")) fail(`roles/${fileName} does not name \`docs/design/tasks.md\` — CRD 0010 gives both lanes one task table in one place, with one shape; only the typist changes (the architect on big work, the PM on small work). Every task row and its DoD section live there, so a role that does not know the path cannot read its own task. Put it back`);
@@ -173,10 +493,31 @@ for (const fileName of ["engineer.md", "qa.md"]) {
   else ok(`roles/${fileName} tells the role to say "the tree was moving" instead of reporting a false red`);
 }
 
+// A doc review's report opens with its scope, and the rule is written in TWO
+// files on purpose: whoever starts the review — the PM sending it, or the
+// reviewer reading its own rules — the line gets written. Lose it and a `pass`
+// over one file reads, months later, exactly like a `pass` over the whole set.
+//
+// The pin is the BACKTICKED start of the line, not the bare word: `roles/pm.md`
+// says "It changes only through a CRD, like scope:" in step 3, so a pin on
+// `scope:` alone stays green with the whole instruction deleted — measured, in a
+// copy, and it does. The wording AFTER the colon is deliberately not pinned: it
+// was reworded once already, while this pin was being written (the first form
+// could not describe a commit holding three documents), and the two forms share
+// no words worth pinning.
+for (const fileName of [PM_PERSONA_FILE, "doc-reviewer.md"]) {
+  const text = readRoleText(fileName, undefined);
+  if (!text.includes("`scope:")) fail(`roles/${fileName} no longer tells the doc reviewer to open its report with a \`scope:\` line — without it a pass over one file reads like a pass over everything. Put it back, or update this string in tools/verify-mount.mjs in the same commit`);
+  else ok(`roles/${fileName} carries the doc review's \`scope:\` line`);
+}
+
 const toolNames = ROLES.map(role => role.toolName);
 if (new Set(toolNames).size !== toolNames.length) fail(`duplicate role tool names: ${toolNames.join(", ")}`);
 else ok(`role tool names are unique: ${toolNames.join(", ")}`);
 
+// A local counter again, for the reason given above the preset block: with the
+// global one, an unrelated earlier failure makes the `ok` below vanish.
+const rolesBefore = failures;
 for (const role of ROLES) {
   if (["subagent", "subagent_fork"].includes(role.toolName)) fail(`role tool "${role.toolName}" collides with a stock dsh tool`);
   if ((role.allow === undefined) === (role.deny === undefined)) fail(`${role.toolName}: a role needs exactly one of allow / deny`);
@@ -211,7 +552,7 @@ for (const role of ROLES) {
     if (role.deny.includes(absent)) fail(`${role.toolName}: deny list names "${absent}", which the crew preset does not define — every spawn would fail`);
   }
 }
-if (failures === 0) ok("every role is denied all delegation tools (the crew stays flat)");
+if (failures === rolesBefore) ok("every role is denied all delegation tools (the crew stays flat)");
 
 // The reviewer must stay read-only, and reading is all it may do. Two live
 // tests forced this shape: a deny list let it write with `echo > file`, and
@@ -249,40 +590,31 @@ if (roles) {
   }
 }
 
-/** Fake Cordis context: records what the plugin registers, and what it logs. */
-function fakeContext() {
+/**
+ * Fake Cordis context: records what the plugin registers, and what it logs.
+ *
+ * The boot-log half — `logs`, `loggerLogs`, `consoleLogs`, `effect`, `logger`,
+ * and the `logger` option — comes from tools/lib/boot-log.mjs, shared with
+ * tools/verify-preset-install.mjs. What this script records BESIDES the log is
+ * added here: prompt sections, dynamic contexts, and mounted plugins.
+ *
+ * @param options - passed to `logCapture`; `logger: false` is a host that
+ *   registers none, any other value is put in `ctx.logger` as it is
+ */
+function fakeContext(options) {
   const sections = [];
   const contexts = [];
   const mounts = [];
-  const logs = [];
-  const loggerLogs = [];
-  const consoleLogs = [];
   return {
+    ...logCapture(options),
     sections,
     contexts,
     mounts,
-    // `logs` is every boot-log line, whichever path wrote it. The two lists
-    // beside it record WHICH path took each line, which is how a line said
-    // twice — once through the logger and once through the console — is caught.
-    logs,
-    loggerLogs,
-    consoleLogs,
-    effect: (fn) => fn(),
     systemPrompt: {
       section: (section) => sections.push(section),
       context: (context) => contexts.push(context),
     },
     plugin: (plugin, config) => mounts.push({ plugin, config }),
-    // A deployment may hand the plugin a logger or none at all, so a boot-log
-    // line has two paths out. This is the logger half; applyCapturingLogs below
-    // catches the console.log half, so a case that reads `logs` passes because
-    // the code really logged, not by accident.
-    logger: () => ({
-      info: (line) => {
-        loggerLogs.push(String(line));
-        logs.push(String(line));
-      },
-    }),
   };
 }
 
@@ -291,28 +623,13 @@ function fakeContext() {
  * `ctx.logger` or through the `console.log` fallback.
  *
  * @param config - plugin config for this mount
- * @param logger - `true` for the recording logger, `false` for a host that
- *   registers none, or any other value to put in `ctx.logger`: a logger that is
- *   not a function, or one that hands back nothing, or one with no `info`
+ * @param options - `{ logger }`, as `fakeContext` above
  * @returns the fake context, with `logs` holding both paths' lines and
  *   `loggerLogs` / `consoleLogs` saying which path each line took
  */
-function applyCapturingLogs(config, { logger = true } = {}) {
-  const ctx = fakeContext();
-  if (logger === false) delete ctx.logger;
-  else if (logger !== true) ctx.logger = logger;
-  const realLog = console.log;
-  console.log = (...args) => {
-    const line = args.map(String).join(" ");
-    ctx.consoleLogs.push(line);
-    ctx.logs.push(line);
-  };
-  try {
-    crew.apply(ctx, config);
-  } finally {
-    console.log = realLog;
-  }
-  return ctx;
+function applyCapturingLogs(config, options) {
+  const ctx = fakeContext(options);
+  return recording(ctx, (context) => crew.apply(context, config));
 }
 
 {
@@ -373,6 +690,12 @@ function applyCapturingLogs(config, { logger = true } = {}) {
     // above: reword that sentence and this check goes red, so a legitimate
     // reword edits the prompt and this string in one commit.
     else if (!section.text.includes("Parallel is the default")) fail("PM section is missing the string `Parallel is the default` — step 10's parallel rule (the code review, the security review and QA started in one message, with running them in order named in the summary as the exception) has been dropped from roles/pm.md, or that sentence was reworded. Put the rule back, or update this string in tools/verify-mount.mjs in the same commit");
+    // Step 10's finish gate. This is the rule the crew actually broke: 20 tasks
+    // were called done with no code review at all, and nothing in the system
+    // noticed. It carries no command and no path, so the pin is prose and brittle
+    // on purpose (ADR 0004, ADR 0007) — a legitimate reword edits the prompt and
+    // this string in one commit.
+    else if (!section.text.includes("A task is finished when code review passes")) fail("PM section is missing `A task is finished when code review passes` — step 10's finish gate (code review, security review or a stated skip, and QA pass) has been dropped or reworded in roles/pm.md. This crew ran 20 tasks without it. Put it back, or update this string in tools/verify-mount.mjs in the same commit");
     // CRD 0006 splits the crew's documents by how long they live. Three of the
     // homes it names are PATHS, so they can be pinned without pinning prose,
     // and each one is where something lands that would otherwise vanish with
@@ -504,8 +827,6 @@ function applyCapturingLogs(config, { logger = true } = {}) {
   // as well, because a real logger's `info()` returns undefined and `??` reads
   // that as "nothing happened". Counted here, not eyeballed, on every shape of
   // host a deployment may hand the plugin.
-  const timesSaid = (ctx, marker) => (ctx?.logs ?? []).filter(line => line.includes(marker)).length;
-
   const saidWithLogger = timesSaid(legacy, "agentsPerJob");
   if (saidWithLogger !== 1) {
     fail(`with a logger the removed-setting note was written ${saidWithLogger} time(s), expected exactly 1 (logged: ${JSON.stringify(legacy?.logs ?? [])})`);
@@ -622,7 +943,7 @@ if (roles) {
 
   try {
     const withLogger = upgradeIn(upgradeHome());
-    const saidWith = withLogger.logs.filter(line => line.includes(".bak")).length;
+    const saidWith = timesSaid(withLogger, ".bak");
     if (saidWith !== 1) {
       fail(`with a logger the upgrade's .bak note was written ${saidWith} time(s), expected exactly 1 (logged: ${JSON.stringify(withLogger.logs)})`);
     } else if (withLogger.consoleLogs.length !== 0) {
@@ -630,7 +951,7 @@ if (roles) {
     } else ok("with a logger the upgrade's .bak note is said exactly once, through the logger");
 
     const withoutLogger = upgradeIn(upgradeHome(), { logger: false });
-    const saidWithout = withoutLogger.logs.filter(line => line.includes(".bak")).length;
+    const saidWithout = timesSaid(withoutLogger, ".bak");
     if (saidWithout !== 1) {
       fail(`on a host with no ctx.logger the upgrade's .bak note was written ${saidWithout} time(s), expected exactly 1 (logged: ${JSON.stringify(withoutLogger.logs)})`);
     } else ok("with no ctx.logger the upgrade's .bak note is said exactly once, through console.log");

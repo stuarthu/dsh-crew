@@ -152,19 +152,162 @@ ln -s ~/.dsh/profiles/node_modules/@deepseek-ai/dsh-tool-subagent \
 
 ## 9. 「整套项目测试全绿」这件事，故意没有 QA 用例
 
-**缺口**：检查 1（`npm test` 四项全绿）和检查 18（`node tools/verify-guard.mjs` 全绿）
-没有写成 QA 用例。
+**缺口**：检查 1（`npm test` 四项全绿——写下这条时 `scripts.test` 里是四条命令，今天是
+**六**条）和检查 18（`node tools/verify-guard.mjs` 全绿）没有写成 QA 用例。
 
 **为什么**：写了就是把工程师的测试抄一遍。
 
 **该怎么办**：直接跑，把真实输出贴进报告：
 
 ```sh
-npm test                      # 四项检查，最后一步就是 bash docs/qa/run-all.sh
-bash docs/qa/run-all.sh       # 只跑 QA 的用例
+npm test                      # scripts.test 里的六条命令，用 && 依次跑
+bash docs/qa/run-all.sh       # 只跑 QA 的用例（它是那六条里的第五条）
 ```
 
 因为 `run-all.sh` 在 `npm test` 里面，QA 的用例是项目测试的一部分——**旧任务的用例
 今天红了就是回归**，不是「旧文件过期了」。
 
 **状态**：未关闭，按设计如此。
+
+## 10. 收尾那道门没有封闭的判定词表：`code: maybe` 照样绿
+
+**缺口**：`tools/verify-tasks.mjs` 检查 Verdicts 行的**形状**——一节一行、四个值都在、
+每个 `not run` / `skipped` 各带理由、`changes needed` 点名任务号。它**不检查那个值是不是
+一个合法的判定词**。所以下面这些全都是绿的：
+
+```
+- **Verdicts**：code: maybe ｜ security: 待办 ｜ qa: 大概吧 ｜ doc: ¯\_(ツ)_/¯
+```
+
+`docs/qa/T-42/case-20-gate-all-four-values.mjs` 里那条「四个 `pass` 是绿的」正好也证明了
+这一点的另一半：门只看到「有一个值」。
+
+**为什么没有用例**：写一条「`code: maybe` 必须红」的用例，等于要求先有一张封闭词表，
+而**没有任何 DoD 条目要求过它**。T-40 的工程师自己把这件事报了出来，并且没有替规则做
+决定：门是按 `CRD 0011` 写的。
+
+**要说准一点：词表本身并不缺。** `roles/pm.md` 第 11 步已经把允许的写法逐条列了出来——
+`code: pass`（或 `code: pass (round 2)`）、`security: pass` 或 `security: skipped — <理由>`、
+`qa: pass`、`doc: pass` 或 `doc: skipped — the user asked for it`，没跑的写
+`not run — <理由>`，`changes needed` 要点名 `T-<编号>`。`pass with notes` 不在这张表里。
+所以缺的**不是那张表，是「把那张表变成门的一条规则」这个决定**：那张表今天是写给 PM 的
+规矩，门一个字都不读。
+真要变成门规则，还得先说清「值」和「理由」各自的边界——理由是自由文本（本仓库的 Verdicts
+行就写着 `not run — 任务还在跑`），值不是。凭空放宽或收紧都会误红，所以这里留一个洞，
+不留一条替用户拍板的用例。
+
+**该怎么办**：要关它，先要一个决定——哪些词算合法判定词，写进 `CRD` 或 `principles.md`；
+然后加一条门规则，再加一条 QA 用例。**在那之前，这一行只保证「写下来了」，不保证「写对
+了」。** 检查脚本自己每次都把这句话打出来：「Passing is not the same as clean … it cannot
+prove a review happened — a `code: pass` typed by the PM passes it」。
+
+**状态**：未关闭，等一个决定（不是等代码）。
+
+## 11. 发布钉子只认 `npm publish`，认不出另外七种发布方式
+
+**缺口**：`tools/verify-mount.mjs` 扫 `.github/workflows/` 下每个文件，把带**活的**
+`npm publish` 命令的那些当成发布工作流，然后钉它们：push 触发必须只认 `v*` tag、不能有
+`branches:` 过滤、必须在同一个 job 里先无条件跑 `npm test`。
+
+`host/git-guard.js` 认的发布方式比它多。它那条正则（`host/git-guard.js:238`）是：
+
+```js
+/\b(npm|pnpm|yarn|bun)\s+publish\b|semantic-release|release-please|gh\s+release\s+create|JS-DevTools\/npm-publish/i
+```
+
+除了 `npm publish` 本身，它还认**七**种：`pnpm publish`、`yarn publish`、`bun publish`、
+`semantic-release`、`release-please`、`gh release create`、以及
+`JS-DevTools/npm-publish`（一个 GitHub Action，不是 shell 命令，所以钉子那条找
+「活的 `npm publish` 命令」的正则连形状都对不上）。**七这个数是按「用户会写下的写法」数的**：
+`(npm|pnpm|yarn|bun)` 这一段是四种写法，减掉 `npm publish` 剩三种，加上后面四个选择项。
+按正则的顶层选择项数只有五个——数法不同，数字就不同，所以这里把数法写出来。
+
+**任何用这七种之一发布的工作流，在 guard 眼里是发布者，在钉子眼里什么都不是**——它不会被
+钉，`ok` 行也不会提它。其中 `JS-DevTools/npm-publish` 最值得记住：它是这个仓库最可能用上
+的那一种「文件里不出现 `npm publish` 这几个字」的发布方式。
+
+**为什么没有用例**：不是写不出用例，是**不知道该断言什么**。T-44 拒绝了直接放宽：
+`gh release create` 常常出现在一个 `workflow_dispatch:` 的手动工作流里，那种文件是对的，
+一放宽就会把它误判成红——而「一道会把正确文件判红的门，会教人不再读它」是这个仓库自己写下
+的理由（`tools/verify-mount.mjs` 里 T-44 那段注释）。所以要先有一个决定：这七种里哪些算
+「必须先跑 `npm test`」的发布，哪些不算。
+
+**该怎么办**：先决定（`CRD`），再改钉子，再补用例。今天这个仓库只用 `npm publish`，所以
+**它自己是被盖住的**；这一条讲的是「换一种发布方式之后会静默失去保护」。
+
+**状态**：未关闭，等一个决定。
+
+## 12. `workflow_dispatch:` 配 tag-only 的 `push:`：人可以从任何分支手动发布
+
+**缺口**：一个发布工作流写成这样，钉子和 guard 都不响：
+
+```yaml
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+```
+
+- **钉子**只读 `push:` 那一块，看到 `tags: ["v*"]`、没有 `branches:`，判「tag-only」；
+- **guard** 的 `branchPushTriggers()` 读的是同一块，得到同一个答案，于是放一个 crew 子
+  agent 的普通分支推送过去；
+- 但 `workflow_dispatch:` 让**任何有权限的人**在 GitHub 界面上选任意分支，手工跑这个
+  工作流——于是从一个没有打 tag 的分支发布了一个版本。
+
+**为什么没有用例**：和第 11 条同一个原因。`workflow_dispatch:` 本身是完全正常的东西
+（重跑一次失败的发布、发一个 canary），把它一律判红会误伤正确的文件；把它判成「必须带
+分支保护条件」需要读 `if:` 表达式里的 `github.ref`，那已经是要一个 YAML 解析器和一套
+新规则了。**没有任何 DoD 条目要求过这件事**，所以这里只把洞写下来。
+
+**该怎么办**：这是一条设计决定，不是一个用例：要么规定发布工作流不许有
+`workflow_dispatch:`，要么规定它必须带一个限制分支的 `if:`。定了再加钉子和用例。
+在那之前，**「钉子说 tag-only」的意思是「push 触发是 tag-only」，不是「只有 tag 能发布」**。
+
+**状态**：未关闭，等一个决定。
+
+## 13. 只数份数的钉子有余量时，掉一份没人看得见
+
+**缺口**：`tools/verify-mount.mjs` 用「`docs/qa/gaps.md` 在 PM 提示词里至少出现 3 次」
+钉住第 18 步的收尾搬运段落（`includes` 只看第一份，所以只能数）。今天
+`roles/pm.md` 里有**4** 份。所以现在掉一份，计数还是 3，**门是绿的**。
+
+`docs/qa/T-42/case-14-closing-migration-step-count.mjs` 把这件事说清楚了：它断言
+「砍到 2 份必须红」「正好 3 份必须绿」——也就是钉住的是**下限**，不是「四份都在」。
+
+**为什么没有用例**：把它写成「必须正好 4 份」会在下一次正当的编辑上变红（提示词加一句话
+提到这个路径是完全正常的），那正是 `ADR 0004` 说的「会误红正确文件的门」。而要判「这四份
+各在各自该在的段落里」，就要判段落的意思，那是第 2 条讲的事。
+
+**该怎么办**：改 `roles/pm.md` 里任何提到 `docs/qa/gaps.md` 的段落时，别只看绿灯——门只
+数数。真要更强，就给每一处加一个各自不同的、更长的锚点串（然后接受 `ADR 0004` 那份脆弱
+性）。
+
+**状态**：未关闭，按设计如此（宁可少一点保护，也不要一道会误红的门）。
+
+## 14. `scripts.test` 的两个钉子只看紧跟在段落后面的那一个符号
+
+**缺口**：`tools/verify-mount.mjs` 钉住 `package.json` 的 `scripts.test` 里两段命令
+（`bash docs/qa/run-all.sh` 和 `node tools/verify-tasks.mjs`）：段落必须在，而且它的退出码
+不许被扔掉。判「扔掉」的办法是看**紧跟在那一段后面**的符号是不是 `||`、单个 `|`、单个 `&`、
+或者 `;` 后面还有别的命令。所以中间夹了任何东西，它就看不见了：
+
+```
+bash docs/qa/run-all.sh --quiet | tee log      <- 钉子读作绿
+bash docs/qa/run-all.sh | tee log              <- 钉子读作红（符号紧跟着段落）
+```
+
+第一种写法里 QA 的用例照样跑，但退出码被 `tee` 吃掉，用例再也不能把 `npm test` 判红——
+和这个钉子要防的那件事一模一样。
+
+**为什么没有用例**：这不是「测不到」，是钉子本身盖不到；而**盖住它要读到那一段后面的下一个
+`&&` 为止**——也就是要把整段命令切出来判，比 T-46 那个任务（修两个具体缺陷）宽得多。
+T-46 把这个限制在源码注释里点了名，没有顺手放大自己的范围：一个顺手改宽的判断很容易在某个
+正当的写法上误红，而「一道会把正确文件判红的门，会教人不再读它」是这个仓库自己的理由
+（`ADR 0004`，第 11 条和第 13 条讲的是同一件事）。
+
+**该怎么办**：先决定「一段命令到哪里结束」（读到下一个 `&&`），再改钉子，再补一条用例。
+在那之前，**这两个钉子的意思是「段落在，而且紧跟着它的那个符号没有扔掉退出码」，不是
+「这一段的退出码一定传得出来」**。给 `scripts.test` 里任何一段加参数或加重定向的时候，
+自己看一眼退出码还在不在——绿灯不代表看过了。
+
+**状态**：未关闭，等一个决定（不是等代码）。范围比 T-46 宽，所以那个任务没有做。

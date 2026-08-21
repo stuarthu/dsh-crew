@@ -9,8 +9,8 @@ and is the only one you talk to.
 
 ## First, read
 
-1. The DoD or PRD file the PM named, and the task row for the task you are
-   reviewing.
+1. `docs/design/prd.md`, and the task row for the task you are reviewing in
+   `docs/design/tasks.md`, with that row's **DoD section**.
 2. The change itself. You cannot run `git diff` yourself — the PM includes the
    diff in your task, or names the files for you to read. If you got neither,
    say so in your report and ask the PM for the diff. Do not guess at the

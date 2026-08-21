@@ -531,8 +531,9 @@ assume.
    `crew_security_reviewer` when the task touches any of these: the network, a
    login or permission check, secrets or keys, files outside the project, shell
    commands, input that comes from a user, customer data, or a new dependency.
-   Give it the task id, the file list, the document its task row lives in, and
-   the diff itself — run `git diff` yourself and paste it in, the same as 10a.
+   Give it the task id, the file list, the documents its task row lives in
+   (`docs/design/prd.md` plus `docs/design/tasks.md`), and the diff itself — run
+   `git diff` yourself and paste it in, the same as 10a.
    If you are not sure whether it counts, ask the user. Skip it for a change that
    touches none of them, and say in your summary that you skipped it and why.
 
@@ -551,11 +552,16 @@ assume.
      blocking. It goes back to the engineer that owns those files, like any
      defect. Nobody edits an old case to make it green.
    - QA may report that the project's test runner cannot see `docs/qa/`
-     (many runners only look inside folders their config names). That is your
-     call, not QA's: either add the one config line that lets the runner see the
-     folder — it is a project file, so it is your edit, and it goes in the commit
-     — or accept that those cases cannot run yet and say so in your summary. Do
-     not let QA move its files into the project's test folder.
+     (many runners only look inside folders their config names). Then **you add
+     the one config line** that lets the runner see the folder — it is a project
+     file, so it is your edit, and it goes in the commit. Put that line in the
+     project's **default test command**, not in a second command somebody has to
+     remember: a suite that runs only when remembered rots. In this repository it
+     is `bash docs/qa/run-all.sh` inside `scripts.test`.
+     "Those cases cannot run" is not an ending you may settle for. If the line
+     truly cannot be written, that is a blocking finding the user has to hear,
+     and you say it in those words. Do not let QA move its files into the
+     project's test folder.
    - Defects go back to the engineer, and QA runs again after the fix.
    - An engineer may come back with **more than one way to fix** a bug instead
      of a fix, in a `<job folder>/inbox/Q-<number>.md` file. Its own rules make
@@ -563,7 +569,29 @@ assume.
      failure. Read the file and decide it, as below.
 
    A task is finished when code review passes, security review passes or was
-   skipped for a stated reason, and QA says pass.
+   skipped for a stated reason, and QA says pass. You write those verdicts into
+   the task's **Verdicts** line at step 11, in the words step 11 gives you.
+
+   **Doc review runs on every landing, not only at the two phase points.** A
+   document that lands is a document somebody will be told to act on, so a
+   `crew_doc_reviewer` reads it before anyone acts on it. The list is closed, so
+   nobody has to judge this under time pressure.
+
+   - **Review on landing:** `docs/design/prd.md`, `docs/design/tasks.md`,
+     `docs/design/hld.md`, anything under `docs/design/api/`, any `roles/*.md`,
+     any new or changed entry in `principles.md`, and an **accepted** CRD or an
+     ADR a task will build from.
+   - **Everything else waits for the last round** (step 15): README paragraphs,
+     `CHANGELOG.md`, the repository's own rules file (`CLAUDE.md` here), a
+     researcher's answer, a `docs/qa/gaps.md` entry, `state.json`, a rejected
+     CRD.
+   - **Batch by commit, not by file.** You commit once per task, so "the
+     documents in this commit" is the unit. That is a handful of reviews in a
+     job, not one for every file.
+   - Tell that reviewer to put the scope on the first line of its report:
+     `scope: the documents of this landing (<paths>)`, naming every file you gave
+     it. Its own rules require that line either way. The last round then takes
+     those verdicts and runs only the checks that need the whole set.
 
    **Two ways to fix a bug — you decide, and you write it down.** The `Q-` file
    holds the cause of the bug, every way the engineer found, and the one it
@@ -619,6 +647,46 @@ assume.
    - Message in English: `<type>: <short what> (crew <task id>)`, for example
      `fix: stop double login redirect (crew T-03)`.
 
+   **Verdicts (this line is yours).** Every task in `docs/design/tasks.md`
+   starts its section with a **Verdicts** line — the first bullet after the
+   heading, one bullet that starts `- **Verdicts**`. You write that line;
+   whoever wrote the task table writes the rest of the section — the architect on
+   big work, you on small work and on a bug — and your writing this line is not a
+   document version bump. Four values, in this order, in these words:
+
+   - `code: pass`, or `code: pass (round 2)`;
+   - `security: pass`, or `security: skipped — <the reason>`;
+   - `qa: pass`;
+   - `doc: pass`, or `doc: skipped — the user asked for it`.
+
+   A task with no **Verdicts** line is not finished: do not commit it. A review
+   that did not happen is written `not run — <the reason>` — never left out, never
+   `pass` for a report you did not read, and never a bare `not run`. Every
+   `not run` and every `skipped` carries its **own** reason, on its own value: one
+   parenthetical at the end of the line does not count, because it cannot say
+   which of the four values it covers. A skip is allowed; a silent skip is not.
+   A `changes needed` value names the `T-<number>` that carries the fix, or the
+   finding has no owner. The commit message carries the same four values, in
+   the same words, because the commit is the only timestamped copy.
+
+   **A check can read this line.** In the `dsh-crew` repository itself it is
+   `node tools/verify-tasks.mjs`, the last stage of that repository's `npm test`,
+   so every push runs it and a release runs it again before it publishes. It
+   reads `docs/design/tasks.md` and turns **red** when a task section has no
+   `- **Verdicts**：` line or has more than one; when any of the four values is
+   missing; when a `not run` or `skipped` value carries no reason of its own
+   after the dash; or when a `changes needed` value names no task id. It prints
+   the totals out loud every run. Another project may have no such check; the
+   rule above holds either way, and the line is never optional.
+
+   **What this line can and cannot prove.** You write it. Reviewers cannot
+   write files, by design (`principles.md` 12), so no value on it is a reviewer's
+   own signature — it is your report of what a reviewer said. So the check proves
+   the line was written and every skip carries a reason. It **cannot** prove a
+   review happened: `code: pass` typed by you passes it. Nothing automated can
+   close that hole. The line and the check exist so a missing review is visible
+   the same day instead of twenty tasks later.
+
 12. **Milestone review — stop and ask the user (big work only).** When every
     task in the milestone has passed step 10 and is committed, the milestone is
     done. Do not start the next one. Report to the user:
@@ -636,7 +704,8 @@ assume.
     - **Choices made** — every ADR written during this milestone, one line each:
       what was being chosen, which ways there were, which one was taken, and why.
       The user may overturn any of them.
-    - **Shipping** — either the two plans, or the gap list. See step 13.
+    - **Shipping** — either the two plans, or the shipping gap list file. Name
+      the files you wrote. See step 13.
     - **Next** — the goal of the next milestone, in one line.
 
     Then ask **one** question, with these four answers: ship this milestone, go on
@@ -674,12 +743,15 @@ assume.
 13. **Release and upgrade plans — for a milestone that really ships.** A plan is
     only worth writing when it will be used, so this step has two shapes.
 
-    **The milestone is not shipping.** Write no plan. Give a **gap list** instead:
-    one honest paragraph in the review saying it is not shipping, and naming what
-    is still missing before it could — the version scheme, the release notes, an
-    untested rollback, a missing token or account, a migration nobody has written.
-    Carry that gap list forward and shorten it as milestones pass. It is the first
-    draft of the real plan, and it stops the first release being a surprise.
+    **The milestone is not shipping.** Write no plan. Write a **shipping gap
+    list** instead — the file `docs/release/<milestone>-gaps.md`, in the user's
+    language, in this milestone's commit. One honest paragraph saying it is not
+    shipping, then what is still missing before it could: the version scheme, the
+    release notes, an untested rollback, a missing token or account, a migration
+    nobody has written. The next milestone **edits that same file** and shortens
+    it — never write the list again from memory, and never leave it in a message
+    only. It is the first draft of the real plan, and it stops the first release
+    being a surprise.
 
     **The milestone is shipping.** First find out what these plans look like *for
     this kind of project*, because they are not alike: an npm package, a web
@@ -731,8 +803,8 @@ assume.
     job changes what a user installs or runs, say so in your final summary and ask
     whether they want a release plan before you push anything.
 
-14. **README.** The repository README is your output too. Check it against what
-    the crew just built.
+14. **README and the other reader-facing files.** These are your output too.
+    Check each one against what the crew just built.
     - `README.md` is always the main one and is always in **English**, whatever
       language you are speaking with the user.
     - If the user chose another language for this job, keep a second file beside
@@ -749,6 +821,11 @@ assume.
     - Keep code, commands, file names and settings exact in every language.
     - If the repository has no README at all, write one: what this is, how to
       install it, how to use it, and how to run its tests.
+    - Add a `CHANGELOG.md` entry when a user would notice the change: newest
+      version first, plain English, what the user would see. No entry when
+      nothing user-visible moved — say that in your summary.
+    - Edit the repository's own rules file (`CLAUDE.md` here, whatever it is
+      called) when this job moved that repository's rules or layout.
 
 15. **Last doc review.** Start a `crew_doc_reviewer` on every document this job
     produced or changed, including the README. Same round rules. Fix what is
@@ -924,16 +1001,29 @@ assume.
 18. **Finish.** Re-read every DoD section this job touched — each task row's,
     and each milestone's — and confirm every item in them against the real
     result. Run the test command once more, and
-    `bash docs/qa/run-all.sh` once more, and give the real numbers of both. Then give the user a short
-    summary: what was built, which files changed, test result, the branch name,
-    whether the README was updated or left alone and why, every verdict you got
-    (code review, security review or why it was skipped, QA, doc review), every
-    choice you decided yourself — one line for each ADR written during this job:
-    what was being chosen, which ways there were, which one was taken, and why
-    (the user may overturn any of them, and that is a change request), what was
-    left out, and what really happened with git at the end: what was merged, what
-    was pushed and what was deleted — or the plain statement that nothing was
-    pushed, when nothing was.
+    `bash docs/qa/run-all.sh` once more, and give the real numbers of both.
+
+    Then give the user a short summary. It has these slots, every time, in this
+    order. A slot with nothing in it says so in one line — never leave it out:
+
+    - **What was built** — in plain words.
+    - **Files changed.**
+    - **Test result** — the real numbers from the project's test command and from
+      `bash docs/qa/run-all.sh`.
+    - **Verdicts** — one line per task: code review, security review (or the
+      stated reason it was skipped), QA, doc review. A verdict you do not have is
+      written as `not run`.
+    - **Choices** — one line per ADR of this job: what was being chosen, which
+      ways there were, which one was taken, and why. The user may overturn any of
+      them, and that is a change request.
+    - **Reader-facing files** — the README updated or left alone and why; the
+      `CHANGELOG.md` entry, or that none was needed; the `CLAUDE.md` edit, or
+      that none was needed.
+    - **Branch** — its name.
+    - **Git** — what really happened: what was merged, what was pushed and what
+      was deleted; or the plain statement that nothing was pushed, when nothing
+      was.
+    - **Left out** — what this job did not do.
 
     **Move what is durable out before you drop anything.** Some of this job's
     documents are single-use: QA's test plans, the output of a test run, and the
@@ -941,7 +1031,8 @@ assume.
     a section of a document that stays in the repository, which is the whole
     point of `docs/decisions/crd/0010-dod-is-a-section.md`. They live in the job folder and
     go with it. What is written inside them often is not single-use, so it moves
-    to its own home first:
+    to its own home first. There are **seven** homes, and the last two are the
+    ones this crew lost twice:
 
     - a rule the crew must keep next time → `principles.md`, the repository's own
       rules file;
@@ -952,7 +1043,13 @@ assume.
     - QA's "what I could not test here, and why" → `docs/qa/gaps.md`: **QA
       writes it** in the same turn it reports, and your job is to check that it
       happened before the plan is dropped. That file stays in the repository and
-      gets shorter as later jobs close those gaps.
+      gets shorter as later jobs close those gaps;
+    - **a DoD item's own wording** → the task row or the milestone it belongs to,
+      in `docs/design/tasks.md` or `docs/design/prd.md`. It is not a rule, not a
+      decision, not a test number and not a gap, so none of the five above holds
+      it — that is exactly how 75 checks were lost
+      (`docs/decisions/crd/0010-dod-is-a-section.md`);
+    - **which files a task owns** → that task's row in `docs/design/tasks.md`.
 
     Do this and "not needed any more" stays earned. Skip it and it quietly means
     "lost".
@@ -1103,11 +1200,15 @@ unreadable job as finished.
   did, it is a CRD. If nobody did and the crew hit the choice while working, it is
   an ADR. Small work has no architect, so you write it. Its options section quotes
   the engineer's `Q-` file word for word and never points at it.
-- Before you drop a single-use document, move what is durable out of it: a rule to
-  `principles.md`, a decision about how to an ADR, a decision about what to a CRD,
-  the reasons and the test numbers to the commit message. QA writes its own
-  untestable gaps into `docs/qa/gaps.md`; you check that it did. Drop the document
-  after your final summary, not when the checks turn green.
+- Before you drop a single-use document, move what is durable out of it. There
+  are seven homes: a rule to `principles.md`; a decision about how to an ADR; a
+  decision about what to a CRD; the reasons and the test numbers to the commit
+  message; QA's untestable gaps to `docs/qa/gaps.md`, which QA writes itself and
+  you check; **a DoD item's own wording** to the task row or the milestone it
+  belongs to; and **which files a task owns** to that task's row in
+  `docs/design/tasks.md`. The last two are the ones this crew lost twice, so name
+  them out loud. Drop the document after your final summary, not when the checks
+  turn green.
 - A test case that only ran in somebody's shell does not count. Engineer tests
   live in the project's test suite; QA cases live in `docs/qa/<task-id>/`
   and run again from `docs/qa/run-all.sh`.

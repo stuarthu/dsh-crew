@@ -1,12 +1,14 @@
 # Changelog
 
-What changed in each released version of `dsh-crew`, newest first.
+What changed in each released version of `dsh-crew`, newest first. The top
+section is marked `unreleased`: it is the next version, written as the work
+lands, and it has no date until the release goes out.
 
 Every version bump rewrites `$DSH_HOME/.agent-presets/crew`. Files you edited
 there are kept as `<name>.bak` and named in the boot log, but your settings do
 **not** come back on their own. Copy them into the new file after an upgrade.
 
-## 0.7.0 — 2026-08-20
+## 0.7.0 — unreleased
 
 ### Added
 
@@ -28,11 +30,10 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
   the candidates with a source per claim, what the machine already has, and what
   each one costs, and is **not** allowed to recommend one. The PM then recommends
   one, names the runner-up and why not, and writes a **Language and stack** section
-  into the PRD: language and version, package manager, framework, database,
-  and the test framework with its exact test command. *(Correction, 2026-08-21:
-  this line said "the PRD or DoD". There is no DoD file any more — the section goes
-  into `docs/design/prd.md`, which now opens both lanes.)* You confirm it together
-  with the document. After that it moves only through a CRD.
+  into `docs/design/prd.md`, the one opening document of both lanes: language and
+  version, package manager, framework, database, and the test framework with its
+  exact test command. You confirm it together with the document. After that it
+  moves only through a CRD.
 - **One test framework for the whole crew.** Engineers write their tests with the
   framework that section names, and QA writes its cases with the same one, so the
   tests cannot split in two on an empty repository.
@@ -58,24 +59,27 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
   `crew_researcher` for what the two plans contain for *your* project type, with a
   source and a date per claim, and reads what your repository already does first:
   the workflows, the changelog, the tags, any release script.
-- **A milestone you are not shipping gets no plan** — it gets one honest paragraph
-  naming what is still missing before it could ship (a version scheme, release
-  notes, an untested rollback, a missing token, an unwritten migration). That list
-  shortens as milestones pass, so the first real release is not a surprise.
+- **A milestone you are not shipping gets no plan** — it gets a **shipping gap
+  list** at `docs/release/<milestone>-gaps.md`: one honest paragraph naming what
+  is still missing before it could ship (a version scheme, release notes, an
+  untested rollback, a missing token, an unwritten migration). The next milestone
+  shortens that same file, so the first real release is not a surprise. The name
+  keeps it apart from `docs/qa/gaps.md`, QA's standing list of what no test can
+  check.
   Approving a plan is not approving a push: every push and publish still needs its
   own yes.
 - **Change request documents (CRDs).** When anyone — you, a crew role, or the PM
-  itself — asks for something that changes what you get (the scope, an acceptance
-  check, the milestone list) or how two modules talk (a boundary contract), the PM
+  itself — asks for something that changes what you get (the scope, a DoD
+  item, the milestone list) or how two modules talk (a boundary contract), the PM
   writes `docs/decisions/crd/NNNN-<short-name>.md` first: who asked, what they want,
   why, which documents and tasks it touches, the cost, and the decision with its
   reason. Nothing is built from an undecided CRD, and a rejected one is kept.
   Small questions and code review findings deliberately do **not** get a CRD.
 - **Who decides a CRD.** A contract fix that changes nothing you can see is the
   PM's call — it writes the CRD, sends the architect to change the contract file,
-  and names it in the next milestone report. Anything that changes scope, an
-  acceptance check or the milestone list needs your yes: the PM stops and asks,
-  and raises no version until you answer.
+  and names it in the next milestone report. Anything that changes scope, a DoD
+  item or the milestone list needs your yes: the PM stops and asks, and raises no
+  version until you answer.
 - **The state file tracks CRDs**, so a session that picks the job up after a crash
   knows which change requests are still undecided.
 - **A bug with more than one real fix now comes back as a question.** Before an
@@ -138,6 +142,38 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
   the branch. That slug is pasted into a file path and into almost every git
   command the PM runs in your own trusted session, so a name carrying a space, a
   `;` or `..` is no longer used as it stands.
+- **Every finished task now records its four reviews in your repository.** The
+  PM writes one **Verdicts** line at the top of each task section in
+  `docs/design/tasks.md`: `code`, `security`, `qa`, `doc`. A review that did
+  not happen is written `not run — <the reason>`, never left out and never a
+  bare `not run`; a skip carries its own reason on its own value; a
+  `changes needed` names the task that carries the fix. A task with no
+  Verdicts line is not finished and is not committed. So a skipped review is
+  visible in your repository the same day, instead of only when you ask.
+- **`npm test` ends with a new check that guards the crew's own record
+  keeping.** In this repository `scripts.test` is now the four project checks,
+  then `bash docs/qa/run-all.sh`, then `node tools/verify-tasks.mjs`. That last one
+  reads `docs/design/tasks.md`, where every task section carries a
+  **Verdicts** line — the PM's report of the four reviews. It turns **red** when:
+
+  - a task section has no Verdicts line, or has more than one;
+  - any of the four values (`code`, `security`, `qa`, `doc`) is missing;
+  - a `not run` or `skipped` value carries no reason of its own after the dash;
+  - a `changes needed` value names no task id to carry the fix.
+
+  Every run prints the totals out loud.
+
+  **Passing is not the same as clean.** The PM writes that line,
+  and reviewers cannot write files by design, so the gate proves the line was
+  written and every skip carries a reason — it **cannot** prove a review
+  happened, because a `code: pass` typed by the PM passes it. Nothing automated
+  can close that hole. It exists because the PM of this repository's own job
+  skipped code review on about 20 tasks and doc review on most of the job,
+  nothing went red, and nobody knew until the user asked. The gate makes
+  the next such skip visible the same day instead of twenty tasks later. The rule
+  it enforces is honesty, not effort: a skip is allowed, a silent skip is not.
+  The change request is
+  `docs/decisions/crd/0011-verdicts-gate-in-npm-test.md`.
 
 ### Fixed
 
@@ -163,6 +199,20 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
 
 ### Changed
 
+- **The three checks of a finished task now start together by default.** The code
+  review, the security review (when the change earns one) and QA used to run one
+  after another, so each one read code that had stopped moving. That fixed order is
+  now the **named exception**, not the default: the PM starts all three in one
+  message, serializes them only for a risky change, and says in its summary which
+  of the two it picked and why. Both ways cost something. If you do not wait and
+  the review then reports a blocking finding, that round of QA is wasted. If you
+  do wait and it reports nothing, you spent your own time for nothing — and that
+  cost shows up in no report at all.
+- **The README step now covers the other files a reader meets.** As well as
+  `README.md` and its language copies, the PM writes a `CHANGELOG.md` entry when a
+  user would notice the change, and edits `CLAUDE.md` when the repository's own
+  rules or layout moved. Both were files the crew already changed with no rule
+  saying so.
 - **There is no `dod.md` any more. "What done means" is a section, and it lives in
   your repository.** Both lanes now open with one document, `docs/design/prd.md` —
   for a small job as much as for a real product, because the weight belongs in the
@@ -187,10 +237,10 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
   `dod.md` in the job folder, which the rules said to drop at the end of the job,
   and the closing migration step named five destinations that a DoD item's own
   wording fits none of. Four change requests were left pointing at check numbers no
-  document defined any more, and 22 pushed commit subjects named a task whose
-  defining document had been deleted. Of the 75, 48 were recovered with their
-  wording, 7 with only a number and a topic, and 20 are gone; 46 of the 48 came out
-  of the header comments QA's own case files happen to write. The recovered table
+  document defined any more, and more than twenty pushed commit subjects named a
+  task whose defining document had been deleted. Of the 75, 48 were recovered with
+  their wording, 7 with only a number and a topic, and 20 are gone; 46 of the 48
+  came from the header comments QA's own case files happen to write. The recovered table
   is in this repository at `docs/design/tasks.md`, with every lost item marked as
   lost. The migration step now has **seven** destinations, the two new ones being a
   DoD item's own wording and the list of files a task owns, both going to
@@ -232,12 +282,16 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
   problem the PM brings to you, not somewhere it may stop. QA never edits your
   project's config and never moves its files into your test folder.
 - **QA's cases now run from `npm test`, and CI runs the tests on every push.**
-  In this repository `scripts.test` ends with `bash docs/qa/run-all.sh`, so the
-  42 cases QA has written are part of the default test command instead of a
+  In this repository `scripts.test` runs `bash docs/qa/run-all.sh`, so every QA
+  case in the repository is part of the default test command instead of a
   command somebody has to remember. The new `.github/workflows/test.yml` runs
   `npm test` on **every push**; publishing is still a separate workflow that only
   a `v*` tag starts, and it runs `npm test` again before it publishes, so a
-  release never trusts an earlier push's green. It checks out with
+  release never trusts an earlier push's green. A check now keeps that shape:
+  `tools/verify-mount.mjs` reads **every** file under `.github/workflows/`, and
+  any workflow that carries a live `npm publish` must be tag-only on push (a `v*`
+  tag filter and no branches filter) and must run `npm test`, unconditionally and
+  in the same job, before it publishes. It checks out with
   `fetch-depth: 0` on purpose: some cases read this repository's own commits, and
   the default shallow clone has no history to read. The cost, written down rather
   than discovered: **`npm test` gets slower**, and it keeps getting slower as jobs
@@ -252,15 +306,13 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
   something was done, `crd/` for change requests), `docs/qa/` (QA's runnable cases
   and its standing list of what no case can check), `docs/research/` (a
   researcher's answers) and `docs/release/` (the
-  release and upgrade plan per shipped milestone). *(Correction, 2026-08-21: this
-  entry also said the DoD moved into the job folder as
-  `~/.dsh/crew/jobs/<job-slug>/dod.md`. That was true for a day and it cost 75
-  acceptance checks. There is no `dod.md` at any path now — see the entry at the
-  top of this section.)* Every role writes to the new paths. If you have a job in
+  release and upgrade plan per shipped milestone). There is no `dod.md` at any
+  path, and never was in a released version: "what done means" is a section, which
+  is the entry at the top of this section. Every role writes to the new paths. If you have a job in
   flight with files under `docs/crew/`, move them to the matching new folder — nothing
   reads the old path any more.
 - **A decision about *how* now gets an ADR, whatever the size of the job.** The
-  rule used to depend on who was staffed: PRD work wrote an ADR, and small work
+  rule used to depend on who was staffed: big work wrote an ADR, and small work
   wrote a **Decisions** section inside its DoD. So where you had to look for a
   decision depended on whether that job happened to have an architect. Now there
   is one home — `docs/decisions/adr/NNNN-<short-name>.md` — and one question tells
@@ -275,17 +327,17 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
   they live. Single-use documents stay in the job folder outside your repository
   and go when it goes: `state.json`, QA's test plans (`<task-id>-plan.md`), the `Q-`
   question files in `inbox/`, and a test run's output, which is printed and never
-  written to a file. *(Correction, 2026-08-21: the DoD headed that list. It does
-  not any more, and taking it off is the entry at the top of this section.)* Durable ones are in your repository: the ADRs and CRDs, the
-  PRD and design, QA's runnable cases, the release plans, the researcher's
-  answers. **Before anything is dropped, the durable half moves out** — a rule the
+  written to a file. The DoD is **not** on that list: it is a section of a file
+  that stays, which is the entry at the top of this section. Durable documents are
+  in your repository: the ADRs and CRDs, the PRD and design, QA's runnable cases,
+  the release plans, the researcher's answers. **Before anything is dropped, the durable half moves out** — a rule the
   crew must keep to `principles.md`, a decision about how to an ADR, a decision
   about what or a contract to a CRD, this change's reasons and its real test
   numbers to the commit message. And QA's "what I could not test here, and why"
   now has a standing home in **`docs/qa/gaps.md`**, written by QA itself, grouped
   by the thing that cannot be checked rather than by task id, and shortened by
   later jobs. That move happens **after** the PM's closing summary, not when the
-  acceptance checks turn green — this crew's own job carried five more rounds of
+  DoD items turn green — this crew's own job carried five more rounds of
   decisions after every check was already green.
 - **An engineer no longer chases a red that another running task caused.** Two
   tasks whose file lists do not overlap still meet inside the same test suite,

@@ -206,7 +206,7 @@ files the live tasks own when you cannot tell.
 Never report a pass because the code looks right. If you did not run it, say you
 did not run it.
 
-## Step 6: feed the standing gap list
+## Step 6: feed the standing testability list
 
 Your plan is dropped with the job folder, but one part of it must not be lost:
 **"what I could not test here, and why"**. Its home is `docs/qa/gaps.md`, which

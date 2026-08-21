@@ -14,12 +14,13 @@ There is no build step and no bundler. The package ships plain ES modules (`"typ
 ## Commands
 
 ```sh
-npm test                            # the four checks and then QA's cases; this is what CI runs
+npm test                            # six commands: the four project checks, QA's cases, the Verdicts gate
 node tools/verify-guard.mjs         # git-guard rules, replayed against fake commands
 node tools/verify-jobs.mjs          # the unfinished-job notice, using throwaway job folders
 node tools/verify-mount.mjs         # package shape, preset shape, role table, real mount
 node tools/verify-preset-install.mjs # installing and upgrading the crew preset
 bash docs/qa/run-all.sh             # every crew job's QA cases, past and present
+node tools/verify-tasks.mjs         # the Verdicts line of every task section in docs/design/tasks.md
 ```
 
 Every check runs against temporary folders and a throwaway `DSH_HOME`. None of
@@ -27,13 +28,31 @@ them may read or write the real `~/.dsh` — keep it that way when adding cases.
 
 Run one check on its own by calling its file directly — that is the "single test" here.
 
-`npm test` ends with `bash docs/qa/run-all.sh`, so QA's cases are part of the default test command
-and not a thing you have to remember. `.github/workflows/test.yml` runs `npm test` on **every
-push**; `.github/workflows/publish.yml` runs on a `v*` **tag** only and runs `npm test` again before
-it publishes — a release never trusts an earlier push's green. Expect `npm test` to get slower as
-jobs add cases; when that starts to hurt, split it into a fast check and a full one rather than
-dropping the cases. `test.yml` checks out with `fetch-depth: 0` on purpose: some QA cases read this
-repository's own commits, and the default shallow clone has no history.
+`npm test` runs six commands in order: the four project checks above, then
+`bash docs/qa/run-all.sh`, then `node tools/verify-tasks.mjs`. QA's cases and the Verdicts gate are
+part of the default test command and not things you have to remember. `npm test` is what CI runs:
+`.github/workflows/test.yml` runs it on **every push**; `.github/workflows/publish.yml` runs on a
+`v*` **tag** only and runs `npm test` again before it publishes — a release never trusts an earlier
+push's green. Expect `npm test` to get slower as jobs add cases; when that starts to hurt, split it
+into a fast check and a full one rather than dropping the cases. `test.yml` checks out with
+`fetch-depth: 0` on purpose: some QA cases read this repository's own commits, and the default
+shallow clone has no history.
+
+`verify-tasks.mjs` is the last of the six, and it reads no code — it reads `docs/design/tasks.md`.
+Only headings of the form `## T-<number>` are task sections; `## T-23 / T-24` is one heading with
+two ids and counts as one section. A section turns the check **red** when:
+
+1. it has no `- **Verdicts**：` line, or more than one;
+2. any of the four values `code`, `security`, `qa` and `doc` is missing;
+3. a `not run` or `skipped` value carries no reason of its own after the dash;
+4. a `changes needed` value names no `T-<number>` to carry the fix.
+
+Every run also prints the totals out loud — how many values are `not run` and how many are `skipped` across all task sections.
+**Passing is not the same as clean**: the check proves the Verdicts line was written and every skip
+carries a reason, and it **cannot** prove a review happened — a `code: pass` typed by the PM passes
+it. Nothing automated can close that hole. It exists because the PM of this repository's own job
+skipped code review on about 20 tasks and doc review on most of the job, nothing went red, and
+nobody knew until the user asked (`docs/decisions/crd/0011-verdicts-gate-in-npm-test.md`).
 
 `verify-mount.mjs` has two levels. `@deepseek-ai/dsh-tool-subagent` cannot be installed from the
 public npm registry (its peer `@deepseek-ai/dsh-tasks` is not published), so on a plain machine the
@@ -107,6 +126,18 @@ because a live test showed the weaker version failing.
    instead.
 6. **Role files are read at mount time**, not when a role is first used, so a broken or empty file
    breaks startup loudly rather than halfway through someone's job.
+7. **A workflow that publishes must be tag-only and must run `npm test` first.** `verify-mount.mjs`
+   reads **every** file under `.github/workflows/`, and treats any file with a live `npm publish`
+   command as a publisher. Each publisher must be tag-only on push (a `v*` tag filter and no
+   `branches:` filter) and must run `npm test` before it publishes — unconditionally, in the same
+   job. It reads by content, not by file name, because `host/git-guard.js`'s
+   `branchPushTriggers()` reads the folder too: a `release.yml` the pin could not see would let
+   the guard wave a branch push through into a repository that publishes on it. The pin knows one
+   publishing vocabulary — the words `npm publish` — while the guard also knows
+   `pnpm`/`yarn`/`bun publish`, `semantic-release`, `release-please`, `gh release create` and the
+   `JS-DevTools/npm-publish` action. So a release moved to any of those is a publisher the guard
+   sees and this pin does not: that is `docs/qa/gaps.md` item 11, open and waiting on a decision,
+   not a bug to fix here.
 
 ## Adding or changing a role
 
@@ -178,7 +209,7 @@ is**, never who made it:
 | `docs/design/` | `prd.md` — the opening document of **both** lanes, holding a **DoD section** per milestone on big work; `tasks.md` — the one task table of both lanes, holding a **DoD section** per task row; `hld.md`; and one module boundary contract per pair of modules that talk (`docs/design/api/<caller>-<callee>.md`) |
 | `docs/decisions/` | `adr/NNNN-<short-name>.md` (how it was done, whatever the size of the job) and `crd/NNNN-<short-name>.md` (one change request per scope-or-contract change) |
 | `docs/qa/` | QA's **runnable** cases — `<task-id>/case-*`, a `run.sh` per task and one `docs/qa/run-all.sh` that finds them all — plus `gaps.md`, the standing list of what no case can check |
-| `docs/release/` | a release and an upgrade plan for each milestone the user ships: `<milestone>-release.md` and `<milestone>-upgrade.md` |
+| `docs/release/` | a release and an upgrade plan for each milestone the user ships: `<milestone>-release.md` and `<milestone>-upgrade.md`; plus `<milestone>-gaps.md`, the **shipping gap list**, for a milestone that does not ship (not to be confused with `docs/qa/gaps.md`) |
 | `docs/research/` | one answer per question the PM sent to a researcher: `<short-name>.md` |
 
 Today this repository has `docs/decisions/`, `docs/qa/`, and `docs/design/tasks.md` — the task table
@@ -196,7 +227,7 @@ Seven rules there are load-bearing, and `principles.md` 8, 13, 14, 15, 19 and 20
   becomes a task row whose DoD section the **PM** writes before the fix starts, never the engineer
   doing the fix. `principles.md` 20 carries the reasons and the measured cost.
 - **Dropping a single-use document requires moving its durable half out first**, and only after
-  the PM's final summary — not when the acceptance checks turn green. There are **seven**
+  the PM's final summary — not when the DoD items turn green. There are **seven**
   destinations, not five: a rule goes to
   `principles.md`, a decision about **how** to an ADR, a decision about **what** or a contract to
   a CRD, this change's reasons and its real test numbers to the commit message, QA's "what I
@@ -218,7 +249,7 @@ Seven rules there are load-bearing, and `principles.md` 8, 13, 14, 15, 19 and 20
   the repository, in the job folder. If a runner cannot see that folder, QA asks
   the PM and the PM edits the config — that keeps "one task owns its files" true. The PM **adds
   that line**; "the cases are not runnable" is a blocking finding for the user, not an ending the PM
-  may settle for. Here the line is `bash docs/qa/run-all.sh` at the end of `scripts.test`.
+  may settle for. Here the line is `bash docs/qa/run-all.sh` inside `scripts.test`.
 - **The PM settles the language and stack in step 3, the user confirms it, and it
   then changes only through a CRD.** An existing repository's stack is detected, not
   chosen. A real choice goes through a researcher that lists options and may not
@@ -229,8 +260,9 @@ Seven rules there are load-bearing, and `principles.md` 8, 13, 14, 15, 19 and 20
   from memory** (`principles.md` 15). The plans differ by project type — a
   published npm version cannot be pulled back, a store app waits for review, a
   service redeploys to roll back — so the PM asks a researcher for the shape, with
-  a source and a date per claim. A milestone that is not shipping gets a gap list,
-  not a plan. Approving a plan is never approving a push.
+  a source and a date per claim. A milestone that is not shipping gets a **shipping
+  gap list** — `docs/release/<milestone>-gaps.md` — not a plan. Approving a plan is
+  never approving a push.
 - **A CRD is written by the PM for scope or contract changes only**, whoever asked. Scope needs the
   user's yes; a contract fix the user cannot see is the PM's call, reported at the milestone review.
   Questions, review findings and internal design changes are deliberately *not* CRDs — widening
@@ -255,3 +287,9 @@ not published to npm (the `files` list does not name it).
 whenever user-visible behaviour changes; write the English first, then match the Chinese. Keep the
 plain, short-sentence style already in both files, and keep the version line near the top of the
 README in step with `package.json`.
+
+Step 14 of a job produces **all** the reader-facing files, not the README alone: the two READMEs, a
+`CHANGELOG.md` entry when a user would notice the change, and an edit to **this file** when the
+repository's own rules or layout moved. That is `principles.md` 20's table — the row used to name
+the README only, so `CHANGELOG.md` and `CLAUDE.md` were files the crew changed with no rule saying
+so.

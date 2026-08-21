@@ -451,9 +451,9 @@ notes, exact steps, who approves, how to check, how to undo) and
 versions, rollback, downtime). Their **shape is researched, not remembered**: the
 PM asks a `crew_researcher` what those plans contain for this project type, with a
 source and a date per claim, and reads what the repository already does first. A
-milestone that is not shipping gets no plan — it gets a **gap list**: one honest
-paragraph naming what is still missing before it could ship, carried forward and
-shortened as milestones pass.
+milestone that is not shipping gets no plan — it gets a **shipping gap list**,
+`docs/release/<milestone>-gaps.md`: one honest paragraph naming what is still
+missing before it could ship. The next milestone shortens that same file.
 
 **Why.** The milestone stop already asks the user to judge direction (principle 5).
 Shipping is the one part of that judgement the crew was silently leaving out, and
@@ -469,9 +469,9 @@ none of them. The researcher lists what that type really needs, with dates,
 because release habits go stale fast.
 
 **Why not for every milestone.** A plan for a milestone nobody will ship is
-fiction, and fiction that a reader may mistake for a decision. The gap list gives
-the same early warning at a fraction of the cost, and turns into the real plan
-when shipping starts.
+fiction, and fiction that a reader may mistake for a decision. The shipping gap
+list gives the same early warning at a fraction of the cost, and turns into the
+real plan when shipping starts.
 
 **Lives in** `roles/pm.md` (step 12 **Milestone review** and step 13 **Release and
 upgrade plans**), `roles/researcher.md`.
@@ -719,8 +719,9 @@ outlive the job?**
   `docs/design/tasks.md`, the design and the boundary contracts, all in
   `docs/design/`; QA's runnable cases and `gaps.md`, its standing list of what no
   case can check, in `docs/qa/`; a
-  researcher's answers in `docs/research/`; the release and upgrade plans in
-  `docs/release/`; a rule the crew must keep, here in `principles.md`. **Every DoD
+  researcher's answers in `docs/research/`; the release and upgrade plans, plus a
+  shipping gap list for a milestone that does not ship, in `docs/release/`; a rule
+  the crew must keep, here in `principles.md`. **Every DoD
   section rides in one of those two `docs/design/` files** — that is principle 20,
   and it is the correction this principle needed most.
 - **Single-use, in the job folder** (`~/.dsh/crew/jobs/<job-slug>/`, outside the
@@ -744,10 +745,11 @@ outlive the job?**
   the reason.
 
 **Why not by who was in the room (ours).** The old rule sent a decision to an ADR
-when there was an architect and to a **Decisions** section of the DoD when there
-was not — back when a DoD was still a file of its own. So where a reader had to look depended on who happened to be staffed on
-the job, which tells them nothing about the decision. An ADR does not need an
-architect to exist; it needs a decision to exist.
+when there was an architect, and to a **Decisions** section of the DoD when there
+was not. A DoD was still a file of its own back then. So where a reader had to
+look depended on who happened to be staffed on the job, which tells them nothing
+about the decision. An ADR does not need an architect to exist; it needs a
+decision to exist.
 
 **Why not by the size of the job.** That was the first alternative, and it repeats
 the same mistake one step along: a year later, finding a decision would mean first
@@ -755,10 +757,14 @@ knowing whether that job was big or small. It also collides with the shapes of t
 two file types. A CRD is built around changing something already agreed — who
 asked, the scope, the cost, whether the user must say yes — and "there are two ways
 to write this fix" has none of that: nobody asked, and nothing the user sees
-changes. The proof is this crew's own job. It was **small work** and it wrote nine
-CRDs (`0001`–`0009`), every one a real change to what was already agreed, and every
-one decided by the user. Had small work's CRD folder been taken over by design
-decisions, two completely different kinds of file would be lying in one folder.
+changes. The proof is this crew's own job. It was **sized as small work** at the
+start and it has written eleven CRDs (`0001`–`0011`), every one a real change to
+what was already agreed, and every one decided by the user. The label stopped
+being true long before the job ended — and it kept growing: 11 CRDs, 67 QA cases
+and 45 task sections as of 2026-08-21, up from 9, 42 and 29 when this paragraph
+was first written. That is the point: nothing about the size of a job decides where a record
+goes. Had small work's CRD folder been taken over by design decisions, two
+completely different kinds of file would be lying in one folder.
 
 **Why the record outlives the negotiation.** `state.json` is job progress wearing
 a document's clothes: it lives outside the repository so the user's `git status`
@@ -775,10 +781,10 @@ nothing in the rules asked it to. Now something does.
 
 **Why "not needed any more" has to be earned.** The cheap reading of "single-use"
 is "delete it and move on", and that quietly means "lost". The migration step is
-what makes the word honest. It also runs late on purpose: not when the acceptance
-checks all turn green, but after the PM's final summary. This job's own DoD — a
-file of its own at the time — had every check green at version 19 and then carried
-five more rounds of decisions, up to version 26.
+what makes the word honest. It also runs late on purpose: not when the DoD items
+all turn green, but after the PM's final summary. This job's own DoD — a file of
+its own at the time — had every check green at version 19 and then carried five
+more rounds of decisions, up to version 26.
 
 **The known cost.** Every job now ends with a step that produces files somebody
 has to read — and a PM in a hurry can do it badly, which is worse than not having
@@ -788,7 +794,8 @@ up. It has already been paid once: see principle 20.
 
 **Lives in** `roles/pm.md` (step 4 **Write the opening document**, step 10c **QA**,
 step 11 **Commit**, step 18 **Finish**, and the hard rules),
-`roles/qa.md` (the plan's home, and its step 6 **Feed the standing gap list**),
+`roles/qa.md` (the plan's home, and its step 6 **Feed the standing testability
+list**),
 `roles/engineer.md`,
 `roles/architect.md`, `roles/doc-reviewer.md`, `docs/qa/gaps.md`,
 `docs/decisions/crd/0006-split-by-lifetime.md` (the change request that settled
@@ -824,7 +831,7 @@ repeating a row that all three share.
 | --- | --- | --- | --- | --- | --- |
 | all | Step 1 of the lane rules, **Pick a lane** | PM | one line naming the lane (`[lane: team]`) | the reply to the user | No — and nothing needs it. Only the `team` lane runs the steps below |
 | team | Step 1, **Language** | PM asks, user answers | the language every crew document is written in | the documents themselves; `state.json` names it | The documents, yes. `state.json`, no |
-| team | Step 2, **Grill** | PM asks, user answers | settled answers, one question per turn | nothing of its own — they become the content of step 4, **Write the opening document** | No. Step 4 is where they land |
+| team | Step 2, **Grill** | PM asks, user answers; a `crew_researcher` when the digging is bigger than a quick look | settled answers, one question per turn; plus the researcher's answer, with a source per claim | the answers become the content of step 4, **Write the opening document**; the researcher's answer is `docs/research/<short-name>.md` | The answers, no — step 4 is where they land. The researcher's answer, yes |
 | team | Step 3, **Language and stack** | PM decides, user confirms; a `crew_researcher` when the choice is real | the **Language and stack** section: language and version, package manager, framework, database, test framework with its exact command. Plus the researcher's answer, with a source per claim | the section in `docs/design/prd.md`; the answer in `docs/research/<short-name>.md` | Yes, both |
 | team | Step 4, **Write the opening document** | PM | `docs/design/prd.md`. Small work: goal, out of scope, Language and stack. Big work: the same file with the problem, the users, success, risks, open questions and the **milestones, each with a DoD section** | `docs/design/prd.md` | Yes |
 | small, bug | Step 4, **Write the task table** | PM, because small work has no architect | `docs/design/tasks.md`: one row per task with an id, one sentence of work, the exact files it owns, the test file it must write, and its **DoD section** | `docs/design/tasks.md` | Yes |
@@ -836,15 +843,15 @@ repeating a row that all three share.
 | big | Step 8, **Doc review before any code** | `crew_doc_reviewer` | findings, each blocking or optional — including "this row has no DoD section" | its report to the PM; the fix lands in the document | The report, no. The corrected documents, yes |
 | team | Step 9, **Run the tasks** | PM starts one `crew_engineer` per task | the code and its test file, both named in the task row, with the failing run shown before the passing one | the project's own source and test folders | Yes |
 | team | Step 9 or 10, **a question the files cannot answer** | engineer, QA or architect | `inbox/Q-<number>.md`: the cause, every way found, the files each one changes, its cost, and the way it recommends | `<job folder>/inbox/` | **No** — which is why the ADR below **quotes** it word for word and may never point at it |
-| team | Step 10a, **Code review** | `crew_code_reviewer` | findings with file and line, each blocking or optional | report to the PM; fixes land in the code | The report, no. The code, yes |
-| team | Step 10b, **Security review** | `crew_security_reviewer`, when the change earns one | findings, or the PM's stated reason it was skipped | report to the PM; the skip reason goes into step 12 **Milestone review** or step 18 **Finish** | The report, no. The reason, yes, in the summary |
+| team | Step 10a, **Code review** | `crew_code_reviewer` | findings with file and line, each blocking or optional | report to the PM; the fixes land in the code; the verdict becomes the `code` value of that task's **Verdicts** line, written at step 11, **Commit** | The report, no. The code, yes. The verdict, yes — it survives as one value on the Verdicts line in `docs/design/tasks.md`. That line is the PM's report of what the reviewer said, not the reviewer's own signature: reviewers cannot write files (principle 12) |
+| team | Step 10b, **Security review** | `crew_security_reviewer`, when the change earns one | findings, or the PM's stated reason it was skipped | report to the PM; the verdict becomes the `security` value of that task's **Verdicts** line, and a skip carries its reason there, on its own value; the skip reason also goes into step 12 **Milestone review** or step 18 **Finish** | The report, no. The verdict and its skip reason, yes — on the Verdicts line in `docs/design/tasks.md`, and in the summary. Same limit as 10a: the PM writes the line |
 | team | Step 10c, **QA** | `crew_qa` | the test plan, written from the document before it reads the code; then runnable cases, a `run.sh` per task and `docs/qa/run-all.sh`; then what no case can check | plan in `<job folder>/<task-id>-plan.md`; cases in `docs/qa/<task-id>/`, with any helper they share in `docs/qa/lib/`; gaps in `docs/qa/gaps.md` | Plan, no — the cases say the same thing in a form that runs. Cases and gaps, yes |
 | team | Step 10, **two ways to fix — the PM decides** | PM; the user when they can see the difference | an ADR: the cause, **every** option with its cost and why it lost, the choice, who decided, and the reason | `docs/decisions/adr/NNNN-<short-name>.md` | Yes |
 | team | Any step, **a change to scope, a DoD item, the milestone list or a contract** | PM, whoever asked | a CRD — and the DoD items it adds are written into the task row or the milestone it changes, with a note in the CRD of where they went and how many | `docs/decisions/crd/NNNN-<short-name>.md`, plus `docs/design/tasks.md` or `docs/design/prd.md` | Yes |
-| team | Step 11, **Commit** | PM, the only one who uses git | the commit: the task's files, QA's cases, its `gaps.md` entries, any ADR or CRD — and the message, which carries this change's reasons and its real test numbers | git history | Yes |
+| team | Step 11, **Commit** | PM, the only one who uses git | the commit: the task's files, QA's cases, its `gaps.md` entries, any ADR or CRD — and the message, which carries this change's reasons and its real test numbers. **Plus that task's Verdicts line**: one bullet at the top of the task's section carrying all four values (`code`, `security`, `qa`, `doc`), a reason of its own on every `not run` and every `skipped`, and a task id on every `changes needed` | git history for the commit and its message; `docs/design/tasks.md` for the Verdicts line. In this repository `node tools/verify-tasks.mjs` reads that line as the last stage of `npm test`, so every push checks it and a release checks it again before publishing; the check itself writes no file — its counts go to stdout, like every other test run in this table | Yes, both. The commit message is the only timestamped copy of the four values; the Verdicts line is the copy a check can read |
 | big | Step 12, **Milestone review** | PM reports, user answers | what works now, how to try it, what is missing, the real test numbers, every CRD and every ADR of that milestone, one line each | the reply to the user; whatever the user decides becomes a CRD | The report, no. Its decisions, yes |
-| big | Step 13, **Release and upgrade plans**, for a milestone that really ships | PM plus a `crew_researcher`, with a source and a date per claim | `<milestone>-release.md` and `<milestone>-upgrade.md`; or, when nothing ships, a gap list naming what is still missing | `docs/release/` | The plans, yes. The gap list travels in the review and is carried forward by hand |
-| team | Step 14, **README** | PM | `README.md` in English, plus `README-<lang>.md` when the job's language is not English | the repository root | Yes |
+| big | Step 13, **Release and upgrade plans**, for a milestone that really ships | PM plus a `crew_researcher`, with a source and a date per claim | `<milestone>-release.md` and `<milestone>-upgrade.md`; or, when nothing ships, a **shipping gap list** naming what is still missing | `docs/release/` — the two plans when the milestone ships; `docs/release/<milestone>-gaps.md` when it does not; the researcher's answer in `docs/research/<short-name>.md` | Yes — the two plans or the shipping gap list, and the researcher's answer, all stay. The shipping gap list is a file, not a paragraph in a message: the next milestone shortens that same file instead of copying it forward by hand |
+| team | Step 14, **README and the other reader-facing files** | PM | `README.md` in English, plus `README-<lang>.md` when the job's language is not English; a `CHANGELOG.md` entry when a user would notice the change; a `CLAUDE.md` edit when the repository's own rules or layout moved | the repository root | Yes |
 | team | Step 15, **Last doc review** | `crew_doc_reviewer` | findings on every document this job produced or changed, the README included | report to the PM; fixes land in the documents | The report, no. The documents, yes |
 | team | Step 16, **Push and CI** | PM, with the user's yes every single time | the pushed commits, and `merge.publishCheck` — the CI files that were read and whether this push would publish | the remote; `state.json` | The commits, yes. `publishCheck`, no, and it is re-read after a restart |
 | team | Step 17, **Merge and clean up** | PM, three separate yeses | the merge commit on `main`, never squashed, so every task's commit and its test-first proof stay readable; then the deleted branch | git history | Yes |
@@ -857,13 +864,90 @@ step side means a step writes something nobody can find; a surplus on the docume
 side means a file exists that no rule asked for. Either way the rules and the
 repository have come apart, and the table is the thing to fix first.
 
-Run on this repository, it already finds one: **`CHANGELOG.md` exists and no step
-produces it.** Step 13 writes "the release notes a user will read" into a release
-plan, and a changelog is where those notes actually live in a package like this
-one, but no step says so, and a changelog is written per change rather than once
-per release. That is a real hole, written down here rather than left to be
-discovered — which is the whole point of running the rule in the second
-direction.
+**Run properly, it found four things.** The first doc review that covered every
+document of a job ran the rule in both directions, and came back with four
+misalignments nobody had recorded:
+
+- **`CHANGELOG.md` existed and no step produced it.** Step 13 writes "the release
+  notes a user will read" into a release plan, and a changelog is where those
+  notes live in a package like this one, but no step said so, and a changelog is
+  written per change rather than once per release. It is also in `package.json`'s
+  `files` list, so it ships to users — which makes it need a step more than the
+  README does.
+- **`CLAUDE.md` was the same case, and worse, because this principle pointed at
+  it.** The **Lives in** line below names `CLAUDE.md`, so the rule expected that
+  file to be kept up to date while the table had no row that produced it.
+- **The researcher's answer had no home in the table.** Step 2 said "nothing of
+  its own", and step 13's "where" named only `docs/release/`, while
+  `roles/researcher.md` has always written `docs/research/<short-name>.md`.
+- **The shipping gap list had no home in the repository.** The table said it
+  "travels in the review and is carried forward by hand". That contradicts this
+  principle's own rule — a record that survives is a record in the repository —
+  and principle 14, which says nothing important lives only in a message.
+
+The first two were closed by widening step 14 from "README" to the reader-facing
+files, so one row now produces `README.md`, the language copies, a `CHANGELOG.md`
+entry when a user would notice the change, and a `CLAUDE.md` edit when the
+repository's own rules or layout moved. The other two were closed by giving each
+output a named file: `docs/research/<short-name>.md` and
+`docs/release/<milestone>-gaps.md`. An earlier run had already closed a fifth,
+QA's shared helper `docs/qa/lib/qa.mjs`, which step 10c's row now names. Run
+again after those fixes, both directions came back clean.
+
+**Run a third time, after the Verdicts gate landed, it found one more — the sixth
+this rule has caught.** CRD 0011
+put a gate on the Verdicts line inside `npm test` (`node tools/verify-tasks.mjs`),
+so the rule was due again. It was run on 2026-08-21 over the repository as that
+run found it, with every count made by hand rather than copied from an older
+paragraph:
+`docs/design/tasks.md` holding **43** task sections, `docs/decisions/crd/`
+holding **11** change requests, `docs/decisions/adr/` holding **7**, `docs/qa/`
+holding **5** task folders with **67** cases between them plus `run-all.sh`,
+`gaps.md` and the shared `lib/qa.mjs`, `principles.md`, both READMEs,
+`CHANGELOG.md`, `CLAUDE.md`, and two new files under `tools/`.
+
+- **Document side — every crew document in the repository has a step that
+  produces it.** All of them do. The misalignment was one line *inside* a
+  document: the **Verdicts line**. The table produced `docs/design/tasks.md` at
+  step 4, **Write the task table** (or step 8, **Design**, on big work), but the
+  Verdicts line is written by a different role at a different step — the PM, at
+  step 11, **Commit** — and no row said so. That is the shape the rule exists to
+  catch, and it is a harder one to see than a missing file: the document was
+  claimed, so nothing looked wrong. The larger counts changed nothing on their
+  own; more task sections, more CRDs and more QA cases are only more of what step 4,
+  the CRD row and step 10c already produce.
+- **Step side — every step that produces a document has a named home for it.**
+  Clean. The two new files under `tools/` — `verify-tasks.mjs` and the shared
+  `lib/boot-log.mjs` — are step 9's output, and step 9's home reads "the
+  project's own source and test folders", which is general enough to hold them.
+  That is the difference from `docs/qa/lib/qa.mjs`: step 10c's home *enumerates*
+  paths, so a file outside the list fell through, and a row that names a folder
+  needs widening where a row that names a kind of folder does not. The gate's own
+  output is not a document either: it prints its counts to stdout and writes
+  nothing, like every other test run in this table.
+
+The fix was to name the Verdicts line in step 11's row, with the file it lands in
+and the check that reads it, and to correct rows 10a and 10b. Those two said the
+review report does not survive. That is still true of the report — but the
+**verdict** now does, as one value on that line, and `npm test` is red without
+it. Run once more after those edits, both directions come back clean.
+
+**What that gate proves is narrower than it looks, and the table must not
+overclaim it.** The PM writes the Verdicts line, and reviewers cannot write files
+by design (principle 12), so no value on it is a reviewer's own signature. The
+check proves **the line was written and every skip carries a reason**. It
+**cannot** prove a review happened: a `code: pass` typed by the PM passes it, and
+nothing automated can close that hole. It exists because the PM of this
+repository's own job skipped code review on about 20 tasks and doc review on most
+of the job, nothing went red, and nobody knew until the user asked. What it
+buys is timing — a missing review is visible the same day instead of twenty tasks
+later. The rule it enforces is honesty, not effort: a skip is allowed, a silent
+skip is not.
+
+The paths the table
+names but this repository does not hold yet — `docs/design/prd.md`,
+`docs/design/hld.md`, `docs/design/api/`, `docs/release/`, `docs/research/` — are
+steps no job here has run, and that is not a misalignment.
 
 **Why (ours): 75 acceptance checks were lost in an hour.** The closing migration
 step named five destinations — a rule to `principles.md`, a decision about how to
@@ -874,14 +958,21 @@ scope decision, not a test number, not a gap. So when this crew's own job folder
 was dropped, all 75 of its acceptance checks went with it — they fell between all
 five destinations at once. Four change requests still pointed at check numbers that
 no document defined any more (CRD `0001`'s 18-21, `0002`'s 44-46, `0005`'s 33,
-`0006`'s 67), and 22 pushed commit subjects named a task whose defining document
-had been deleted.
+`0006`'s 67), and **24** commit subjects in `6963cc8..8f2339d` named a task whose
+defining document had been deleted. That count was first written as 22, with the
+range's far end left as a moving `HEAD`; the job kept committing and it went stale
+in hours. Recounted with both endpoints written as real commits: 43 commits in the
+range, 27 carrying `(crew T-NN)`, 3 of those belonging to two other jobs, so 24.
+The word "pushed" is gone from the sentence for the same reason — it changes with
+every push.
 
 **The recovery, measured.** Digging the checks back out of the repository got
 **48 of 75 back with their wording**, **7 back with only a number and a topic**,
 and **20 lost outright**. 46 of those 48 came from one place nobody had planned as
-an archive: the header comment each of the 42 QA cases writes about which check it
-covers. The lesson is not "we were lucky". It is that the only parts that survived
+an archive: the header comment each QA case writes about which check it covers —
+all 42 cases that existed on the day of the recovery, covering 46 distinct numbers
+between them. (`docs/qa/` holds 67 cases in 5 task folders today. 42 is the count
+at that moment, not a count of the folder now.) The lesson is not "we were lucky". It is that the only parts that survived
 were the parts that had been written into the repository for another reason.
 
 **Why the root cause was an asymmetry, not a location.** Big work's opening
@@ -946,7 +1037,10 @@ the list is complete — the next thing to leak will be the next thing nobody th
 to name. And the step is still done by a PM in a hurry, after the folder's contents
 are the only copy. The matching rule above is the cheapest defence there is: if a
 document exists that no step produces, or a step produces something no destination
-holds, that is the leak, before it happens.
+holds, that is the leak, before it happens. The Verdicts gate does not change
+that. It is the one part of this flow a check can read, and what it reads is one
+line of one file — it says nothing about whether the migration ran, and nothing
+about whether a review happened.
 
 **Lives in** `roles/pm.md` (**A bug becomes a task row, and you write its DoD
 section first**, step 4 **Write the opening document**, step 8 **Design**, step 9
@@ -957,8 +1051,11 @@ DoD section), `roles/doc-reviewer.md` (check 1),
 `docs/design/tasks.md` (this job's own rebuilt table, with every recovered check
 and every lost one marked as lost),
 `docs/decisions/crd/0010-dod-is-a-section.md` (the change request that settled it,
-with its own corrections at the end), `CLAUDE.md` (**State and documents**), both
-READMEs.
+with its own corrections at the end),
+`docs/decisions/crd/0011-verdicts-gate-in-npm-test.md` (the change request that
+put the gate on the Verdicts line, and killed the `pre-push` hook first),
+`tools/verify-tasks.mjs` (the gate itself, and its own comment on what it cannot
+prove), `CLAUDE.md` (**State and documents**), both READMEs.
 
 ---
 
@@ -979,7 +1076,7 @@ READMEs.
 | The architect chooses the stack | It is the most technical decision in the job, so this looked right. Rejected: small work has no architect, the design already depends on the stack, and the user has to approve it — and only the PM talks to the user. The architect designs inside the stack instead, and must say so if the stack cannot carry the design. |
 | Each engineer picks its own libraries in a new repository | This is what the old principle 8 implied. Rejected once the crew met an empty repository: roles cannot talk, so two engineers pick two languages and two test frameworks and nobody notices until the halves are joined. QA's cases would split the same way. |
 | The researcher recommends a stack | It has the sources in front of it. Rejected: a researcher that recommends is deciding, and its findings are then read as a verdict nobody approved. It lists candidates and costs; the PM decides and the user confirms. |
-| A full release and upgrade plan at every milestone | The user asked for exactly this first, then chose the narrower rule with the cost in front of them. A plan for a milestone nobody ships is written from guesses, and a reader cannot tell a guessed plan from an agreed one. The gap list carries the warning instead. |
+| A full release and upgrade plan at every milestone | The user asked for exactly this first, then chose the narrower rule with the cost in front of them. A plan for a milestone nobody ships is written from guesses, and a reader cannot tell a guessed plan from an agreed one. The shipping gap list carries the warning instead. |
 | The PM writing the release plan from what it knows | Faster, and it would look right. Rejected: the plans differ so much by project type that a remembered one is an average of all of them — it would tell an npm package to roll back by redeploying, and a mobile app to un-publish. A researcher with dated sources answers for the actual type. |
 | The release plan doubling as permission to push | It would save a round trip. Rejected: a plan is written once and a push happens many times. Approving the plan is not approving each run of it, and the push rule (ask every single time) is the one that has kept a wrong push from happening. |
 | A squash merge, so `main` gets one tidy commit per job | Rejected: the crew's one commit per task, each with its test-first proof, is the record. A squash keeps the code and deletes the record. |
@@ -993,6 +1090,7 @@ READMEs.
 | Folding the DoD into a CRD, as a section of it | The user's first shape, and it keeps every check in the repository. Rejected after the PM pushed back, and the user then tightened it further himself: a CRD is the record of one decision at one moment and must never be rewritten, while a DoD is a living document — this job's went through 26 versions. One file cannot be both. What replaced it is not another file but **no file**: the DoD grows inside the thing it belongs to. |
 | Keeping a `dod.md`, but moving it into `docs/design/` so it survives | The one-line fix, and it would have saved this job's 75 checks. Rejected: it fixes one case and leaves the class. Two names for the same position in the flow is what produced the asymmetry in the first place — big work opened with a PRD, small work with a DoD — so the shape that holds is one opening document for both lanes, with the checks living in the task or milestone they belong to. |
 | A global, numbered list of acceptance checks | It reads well in a review and gives every check a short name. Rejected on this crew's own evidence: three of its 75 checks failed *as checks* because they sat far from the work they governed (11 contradicted 48-52, 67 was too literal, 70 pointed at a renamed folder), and four CRDs still point at numbers no document defines. A check now lives in the DoD section of its task or milestone and is named that way. |
+| A git `pre-push` hook that refuses a push when a review gate was skipped | The user's first idea for an unskippable gate, and it went to review before it was built. Rejected on two grounds the PM re-checked, both of which hold. One: **`pre-push` cannot see the commits a tag push carries**, and a `v*` tag is this repository's one irreversible action — it triggers `.github/workflows/publish.yml` and publishes to npm — so the hook missed the only push that matters. Two: **a hook does not travel with the repository**; `git clone` does not bring `.git/hooks/`, and `--no-verify` walks past it. (The same review corrected the PM on a detail: `git push -n` is `--dry-run`, not `--no-verify`.) What replaced it is a check inside `npm test`, `node tools/verify-tasks.mjs`: push CI runs it and the publish workflow runs it again before it publishes, which covers exactly the push the hook could not see, and it travels with the repository. The hook never landed, so nothing was undone. `CRD 0011`. |
 | Every ADR stops and waits for the user to pick | Rejected: one design often holds several ADRs, so the job would stop once per ADR and the user would be interrupted with choices about the inside of the code. The architect marks a recommendation and the design keeps moving; the user sees every option at the milestone review and may overturn one. Options the user can see are still asked on the spot. |
 
 ---

@@ -11,11 +11,20 @@ starts an **architect** to design the work, **engineers** to write the code, and
 **reviewers** to judge both. The roles never talk to each other — they share work
 through files on disk, and the PM passes messages.
 
-> **Version 0.7.0.** PM, researcher, architect, engineer, QA, code reviewer,
-> security reviewer, doc reviewer — plus a language and stack you approve before
-> any work starts, a QA suite that stays on disk and runs again, a written change
-> request for every scope or contract change, pushing with your permission, CI
-> watching, and picking a job up after a crash.
+> **Version 0.7.0.**
+>
+> - **"What done means" is a section of your own repository**, not a file that
+>   gets dropped.
+> - The **language and stack** are settled first, and you approve them before any
+>   work starts.
+> - QA's cases **stay on disk** and run again on every later task.
+> - Every finished task **records its four reviews** in your repository, on one
+>   line at the top of its task section.
+> - Every change to scope or to a contract gets a **written change request**.
+> - Pushing happens **only with your permission**, and the PM then watches CI.
+> - A job can be **picked up again after a crash**.
+> - The roles: PM, researcher, architect, engineer, QA, code reviewer, security
+>   reviewer, doc reviewer.
 
 ## Two planes
 
@@ -49,9 +58,12 @@ dsh has three hard rules about agents, and the design follows them:
 | Two children **cannot** talk to each other at all | Roles share work through files, not chat |
 
 If the architect started the engineers, the PM could not reach the engineers at
-all. So only the PM starts agents. Two independent guards enforce that: every
-role is denied the delegation tools, and each role tool has `maxDepth: 1`, so a
-crew child cannot start another crew child.
+all. So only the PM starts agents. Three independent guards enforce that:
+
+- every role is denied the crew delegation tools;
+- each role tool has `maxDepth: 1`, so a crew child cannot start another crew
+  child;
+- the crew preset removes every other way to start an agent.
 
 ## What a role really is
 
@@ -82,7 +94,8 @@ A deny list cannot name what a deployment has not installed yet. An allow list
 does not have to. The PM pastes the diff into the review task and runs any
 command the reviewer asks for.
 
-Two more guards sit under the filters:
+Two of those three guards sit under the tool filters, and both are worth a
+closer look:
 
 - **`maxDepth: 1`** on every role tool — only the root PM can start a role, and
   it names no tool at all, so no preset change can weaken it.
@@ -162,23 +175,28 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    the high level design, the decision records and the task table
    `docs/design/tasks.md`, with a DoD section on every row. On a small job there
    is no architect, so the PM writes that same table itself, in the same place and
-   the same shape — only the typist changes. The architect also
-   splits the system into
+   the same shape — only the typist changes.
+
+   **Modules, and a contract per boundary.** The architect splits the system into
    modules — reusing what the repository already has before it invents anything
    new — and when two or more modules talk to each other it writes one contract
    file per boundary in `docs/design/api/`: how the two sides talk (in-process
    call, HTTP, gRPC, events, and so on), the data format, every call with its
    inputs, output and errors, and how the shape stops a caller getting it wrong.
-   It picks the style, not the library. Those contracts are what let two
-   engineers build the two sides at the same time, because crew roles cannot talk
-   to each other, so each contract also names one **test per side** — the callee
-   proves it answers what the file says, the caller tests against a stub built
-   from the file. And when there is a boundary, the first task is a **walking
-   skeleton**: one engineer builds the thinnest real path across the riskiest
-   boundary, alone, before anything runs in parallel. A contract that does not fit
-   is cheapest to fix there. It also puts every task under one of your
-   milestones — it cannot add, rename or reorder them. Then `crew_doc_reviewer`
-   must pass all of it before a single line of code is written.
+   It picks the style, not the library.
+
+   **Why the contracts matter.** They are what let two engineers build the two
+   sides at the same time, because crew roles cannot talk to each other. So each
+   contract also names one **test per side** — the callee proves it answers what
+   the file says, the caller tests against a stub built from the file. And when
+   there is a boundary, the first task is a **walking skeleton**: one engineer
+   builds the thinnest real path across the riskiest boundary, alone, before
+   anything runs in parallel. A contract that does not fit is cheapest to fix
+   there.
+
+   Every task goes under one of your milestones — the architect cannot add,
+   rename or reorder them. Then `crew_doc_reviewer` must pass all of it before a
+   single line of code is written.
 7. It runs one `crew_engineer` per task, one milestone at a time. Two engineers
    run together only when their file lists do not overlap, and never across a
    milestone line. Every
@@ -189,24 +207,34 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    row and committed with the code — never a command someone ran once in a shell.
    An engineer that believes a test cannot come first must ask the PM before it
    writes any code.
-8. Each finished task is checked in order: **code review** (correctness, then the
-   tests that drove the change, then reuse, simpler code, readability and this
-   repository's own style — the reviewer may hold up a task on those, but only if
-   it shows the exact replacement it wants; otherwise the finding is optional) → **security review**, only when the change touches
-   the network, login, secrets, files outside the project, the shell, user input,
-   customer data or a new dependency → **QA**, which writes its test plan from
-   the document *before* reading the code, then turns every case into a real test
-   file under `docs/qa/<task-id>/`, in your project's own test framework,
-   with a `run.sh` beside it. The plan itself is single-use and stays out of your
-   repository — once the cases exist they say the same thing in a form that runs,
-   so the plan is dropped with the job. The one part of it that must not be lost
-   is "what I could not test here, and why": QA writes that into
+8. Three roles check every finished task. By default all three start together:
+
+   - **code review** — correctness first, then the tests that drove the change,
+     then reuse, simpler code, readability and this repository's own style. The
+     reviewer may hold up a task on those last four, but only if it shows the
+     exact replacement it wants. Otherwise the finding is optional.
+   - **security review** — only when the change touches the network, login,
+     secrets, files outside the project, the shell, user input, customer data or
+     a new dependency.
+   - **QA** — it writes its test plan from the document *before* it reads the
+     code.
+
+   For a risky change the PM may run them one after another instead, so each one
+   reads code that has stopped moving. It says which of the two ways it picked,
+   and why.
+
+   QA then turns every case into a real test file under `docs/qa/<task-id>/`, in
+   your project's own test framework, with a `run.sh` beside it. The plan itself
+   is single-use and stays out of your repository — once the cases exist they say
+   the same thing in a form that runs, so the plan is dropped with the job. The
+   one part of it that must not be lost is "what I could not test here, and why":
+   QA writes that into
    `docs/qa/gaps.md`, a standing list about your product's testability that later
    jobs shorten. `bash docs/qa/run-all.sh` runs every task's cases,
    and QA runs it on every task it checks — so a case written in an earlier task
    guards the new one. An old case that starts failing is a blocking regression,
-   and nobody is allowed to edit it green. Your QA suite grows with the project
-   and outlives the job — and the PM wires that command into your project's own
+   and nobody is allowed to edit it green. Your QA suite grows with the project and
+   outlives the job. The PM also wires that command into your project's own
    default test command, so it runs without anyone remembering it. If your test
    runner cannot see the folder, the PM adds the one line that makes it visible;
    "the cases are not runnable" is a problem the PM brings to you, not a place to
@@ -219,8 +247,8 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    milestone has passed those checks and is committed, the PM reports what works
    now, the exact commands to try it yourself, what is deliberately not there
    yet, the test results, and where shipping stands. Then you say: ship this
-   milestone, go on without shipping, change something, or stop — one question,
-   four answers. A change that touches the PRD sends the plan back through the
+   milestone (release it to real users), go on without shipping, change
+   something, or stop — one question, four answers. A change that touches the PRD sends the plan back through the
    architect and the doc reviewer before code starts again. No milestone begins
    until you have answered the one before it. A small job has no milestones —
    it is one piece of work with one report at the end.
@@ -244,14 +272,17 @@ come back by themselves. After an upgrade, copy your changes into the new file.
      someone who skips a version, how to go back and what data that loses, how long
      it takes, and what goes offline while it runs.
 
-   A milestone you are **not** shipping gets no plan. It gets a **gap list**
-   instead: one honest paragraph naming what is still missing before it could ship.
-   That list gets shorter as milestones pass. And approving a plan is not approving
+   A milestone you are **not** shipping gets no plan. It gets a **shipping gap
+   list** instead, in your repository at `docs/release/<milestone>-gaps.md`: one
+   honest paragraph naming what is still missing before it could ship. The next
+   milestone shortens that same file. And approving a plan is not approving
    a push — every push and publish still needs its own yes, every time.
-12. The PM updates the repository README to match what was built. `README.md` is
-   always English. If you chose another language for the job, it keeps a second
-   file beside it — `README-zh.md`, `README-ja.md` — saying the same thing. If
-   nothing a reader would notice changed, it leaves the README alone and tells
+12. The PM updates the reader-facing files to match what was built. `README.md`
+   is always English. If you chose another language for the job, it keeps a second
+   file beside it — `README-zh.md`, `README-ja.md` — saying the same thing. It
+   also adds a `CHANGELOG.md` entry when a user would notice the change, and edits
+   `CLAUDE.md` when your repository's own rules or layout moved. If
+   nothing a reader would notice changed, it leaves those files alone and tells
    you so.
 13. A last `crew_doc_reviewer` pass over every document the job produced, the
     README included. It checks that the documents can be worked from, that they
@@ -378,7 +409,8 @@ module boundary in `docs/design/api/`) — and with them every DoD section, so w
 requests in
 `docs/decisions/` (`adr/` and `crd/`), QA's runnable cases and its standing list
 of what no test can check in `docs/qa/`, the release and upgrade plans for each milestone you ship in
-`docs/release/`, and the researcher's answers in `docs/research/`.
+`docs/release/` (with a shipping gap list there for a milestone you do not ship),
+and the researcher's answers in `docs/research/`.
 
 What belongs to this one job is outside the repository, in
 `~/.dsh/crew/jobs/<job-slug>/`, so your `git status` stays clean: the job state
@@ -396,8 +428,8 @@ past that point. A rule the crew must keep next time goes into `principles.md`, 
 decision about how into an ADR, a decision about what or a contract into a CRD,
 this change's reasons and its real test numbers into the commit message, QA's
 "what I could not test here, and why" into `docs/qa/gaps.md`, and — the two the
-crew learned the hard way — a DoD item's own wording and the list of files a task
-owns into `docs/design/tasks.md`. "Not needed any
+crew added after losing them once — a DoD item's own wording and the list of
+files a task owns into `docs/design/tasks.md`. "Not needed any
 more" has to be earned. It is the same reason an ADR copies the engineer's options
 in instead of pointing at the file they came from.
 
@@ -455,24 +487,26 @@ Set `trustRootAgent: false` to guard your own session exactly like every child.
 would leave `crew` as the protected name, so the guard refuses to load and the
 message tells you to name the file itself.
 
-Three honest limits, and each one is a real hole, not a caveat. **It reads
-command text**, so it is a strong seat belt, not a locked door: a command
-hidden inside a script file could still slip past, and so does a file name the
-shell builds from pieces. It cuts the other way too — a command that only
-*mentions* the approval file by name is refused as well, your own session
-included, so a commit message with `push-ok` in it will not run. **And it reads
-`bash` and `pwsh` only.** A role that can write files — the engineer can —
-could create the approval file as a plain file write, and the guard never sees
-that call. Nothing here stops that; dsh's own approval prompt for writing a
-file is what stops it. Your dsh approval prompts stay the real gate.
+Three honest limits. Each one is a real hole, not a caveat.
 
-**And the publishing scan is GitHub-only.** The guard reads `.github/workflows`
-and understands GitHub's `on: push:` shape. GitLab, CircleCI, Jenkins and Azure
-Pipelines are outside it, on purpose: stretching GitHub's trigger rules
-half-way onto another CI system would produce false alarms, and a false alarm
-is worse than no alarm, because it teaches you to say yes without reading. So
-the guard is a GitHub-only backstop for child agents. The wider check is the
-PM's own judgement: in step 17 it also reads `.gitlab-ci.yml`,
+1. **It reads command text**, so it is a strong seat belt, not a locked door. A
+   command hidden inside a script file could still slip past, and so does a file
+   name the shell builds from pieces. It cuts the other way too: a command that
+   only *mentions* the approval file by name is refused as well, your own session
+   included, so a commit message with `push-ok` in it will not run.
+2. **It reads `bash` and `pwsh` only.** A role that can write files — the
+   engineer can — could create the approval file as a plain file write, and the
+   guard never sees that call. Nothing here stops that; dsh's own approval prompt
+   for writing a file is what stops it. Your dsh approval prompts stay the real
+   gate.
+3. **The publishing scan is GitHub-only.** The guard reads `.github/workflows`
+   and understands GitHub's `on: push:` shape. GitLab, CircleCI, Jenkins and
+   Azure Pipelines are outside it, on purpose: stretching GitHub's trigger rules
+   half-way onto another CI system would produce false alarms, and a false alarm
+   is worse than no alarm, because it teaches you to say yes without reading.
+
+So the guard is a GitHub-only backstop for child agents. The wider check is the
+PM's own judgement: in the merge step (15 above) it also reads `.gitlab-ci.yml`,
 `.circleci/config.yml`, `Jenkinsfile` and `azure-pipelines.yml` when they
 exist, and tells you what it found before it pushes `main`.
 
@@ -489,7 +523,7 @@ alone). Pick the **Crew** preset for a session to get the roles.
 To check the plugin without dsh:
 
 ```sh
-npm test        # replays the guard rules and the mount, then runs every QA case; no dsh needed
+npm test        # the guard rules, the mount, every QA case, then the Verdicts gate; no dsh needed
 ```
 
 This repository's own CI runs `npm test` on every push, and publishes only when a
@@ -497,6 +531,28 @@ This repository's own CI runs `npm test` on every push, and publishes only when 
 skips its role-tool half on any machine without `@deepseek-ai/dsh-tool-subagent`
 installed, and CI is such a machine. It says out loud which half it skipped, so a
 green run means "everything a public runner can check", not "everything".
+
+The last thing `npm test` runs is a gate on the crew's own record keeping.
+`node tools/verify-tasks.mjs` reads `docs/design/tasks.md`, where every task
+section carries a **Verdicts** line — the PM's report of the four reviews
+(`code`, `security`, `qa`, `doc`). It turns **red** when:
+
+- a task section has no `- **Verdicts**：` line, or has more than one;
+- any of the four values is missing;
+- a `not run` or `skipped` value carries no reason of its own after the dash;
+- a `changes needed` value names no task id to carry the fix.
+
+Every run prints the totals out loud: how many values are still `not run` and
+how many are `skipped`.
+
+**Passing is not the same as clean.** The PM writes that line, and reviewers
+cannot write files by design. So the gate proves the line was written and every
+skip carries a reason. It **cannot** prove a review happened: a `code: pass`
+typed by the PM passes it, and no automated check can close that hole. It exists
+because the PM of this repository's own job skipped code review on about 20
+tasks and doc review on most of the job, nothing went red, and nobody knew
+until the user asked. The gate does not stop that; it makes the next such skip
+visible the same day instead of twenty tasks later.
 
 ## Configuration
 

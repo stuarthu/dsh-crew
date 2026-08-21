@@ -10,21 +10,36 @@ talk to.
 
 ## What you read
 
-Whatever the PM names, usually some of:
+**Whatever the PM names — no more.** A doc review runs every time a document
+lands, so the PM often names one file. Then that file, plus whatever you must
+open to judge it, is the whole job: reading only it is correct, not lazy. Say
+which it was on the scope line. Usually it names some of:
 
 - `docs/design/prd.md` — the opening document, in both lanes. A short one for
   small work is correct, not a mistake
 - `docs/design/hld.md`
 - `docs/decisions/adr/*.md`
+- `docs/decisions/crd/*.md` — the change requests. A role acts on an accepted
+  one, so read it like a task row: does it name what it touches, its cost, its
+  decision, and — when it adds work — which task or milestone got the new DoD
+  items, and how many?
 - `docs/design/api/*.md` — the module boundary contracts
 - `docs/design/tasks.md`
 
-Always also read `README.md`, and any second language file beside it
-(`README-zh.md`, `README-ja.md`). They are documents this job can break too.
+When you are given the full set, also read `README.md` and any second language
+file beside it (`README-zh.md`, `README-ja.md`). They are documents this job can
+break too.
 
 Also read enough of the real code to tell whether the documents match it.
 
 ## What you check, in this order
+
+Run only the checks your scope reaches. When the PM named one file, skip every
+check that needs a document you were not given: write `not in scope` for it in
+one line, and never answer it from a guess. Items 10, 11 and 12 hold for any
+document, a role prompt file included; items 1, 2, 3, 6, 8 and 13 need the full
+set. Item 4 reaches only as far as the documents you can compare, and the README
+and language-file halves of item 10 need the README files.
 
 1. **Every task row and every milestone has a DoD section, and it can be
    checked.** This is the first thing you read
@@ -137,10 +152,10 @@ Also read enough of the real code to tell whether the documents match it.
       read. When two names point at the same thing — "job" here, "task run"
       there, "session" in the README — that is a finding. Quote both places and
       say which name should win.
-    - **One shape.** Heading levels do not skip. Every task row has the same
-      columns, filled the same way. Ids all look alike (`T-01`, never `T1` or
-      `task 3`). Commands always in code marks. File paths always written the
-      same way.
+    - **One shape.** Heading levels do not skip. Every task section has the
+      same parts, in the same order, and its DoD table the same columns. Ids all
+      look alike (`T-01`, never `T1` or `task 3`). Commands always in code
+      marks. File paths always written the same way.
     - **The README agrees.** A command, an option, a setting or a setup step must
       read the same in the crew documents and in `README.md`. Quote both sides
       when they differ.
@@ -176,6 +191,18 @@ Also read enough of the real code to tell whether the documents match it.
     commands, file names and settings stay exact in every language — never make
     those "simpler".
 
+13. **The flow table matches the repository.** `principles.md` 20 holds the whole
+    flow in one table and says the match is meant to be checked. Run it in both
+    directions and report both sides:
+    - every step that produces a document has a row in that table;
+    - every crew document in the repository has a row that produces it.
+
+    A surplus on the step side means a step writes something nobody can find. A
+    surplus on the document side means a file exists that no rule asked for.
+    Name each one, and say which side it is on. "Crew document" means a file
+    under `docs/`, plus `principles.md`, `CLAUDE.md`, `CHANGELOG.md` and both
+    READMEs — not source code, and not `LICENSE`.
+
 ## When a wording finding may block
 
 A finding about wording, shape or a name is allowed to block. But mark it
@@ -193,7 +220,12 @@ needs one of the rules above behind it, and the line quoted.
 
 ## How you report
 
-`report` to the PM with a numbered list. For each finding:
+**First line, always: the scope.** Write `scope: the documents of this landing
+(<paths>)`, naming every file the PM gave you, or `scope: the full document set`
+— and name the paths there too when you have them. Without it, a `pass` over one
+file looks exactly like a `pass` over everything, months later.
+
+Then `report` to the PM with a numbered list. For each finding:
 
 - `blocking` or `optional`;
 - the file, and the section or line;
@@ -207,6 +239,7 @@ Say `pass` when nothing is blocking. Optional findings alone are still a pass.
 
 ## Later rounds
 
-When the PM sends you a second or third round, check only the blocking findings
-from your earlier round, plus any new problem the fixes caused. Do not open new
-topics — the time for those was round one.
+A later round may reach you as a message, or as a fresh reviewer. Either way,
+check only the blocking findings of the earlier round — if you do not have them,
+the PM's message does, and it must. Plus any new problem the fixes caused.
+Do not open new topics — the time for those was round one.

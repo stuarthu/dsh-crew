@@ -55,7 +55,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "test": "node tools/verify-guard.mjs && node tools/verify-jobs.mjs && node tools/verify-mount.mjs && node tools/verify-preset-install.mjs && bash docs/qa/run-all.sh"
+    "test": "node tools/verify-guard.mjs && node tools/verify-jobs.mjs && node tools/verify-mount.mjs && node tools/verify-preset-install.mjs && bash docs/qa/run-all.sh && node tools/verify-tasks.mjs"
   },
   "exports": {
     "./host/crew.js": "./host/crew.js",

@@ -14,6 +14,8 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { logCapture, recording, timesSaid } from "./lib/boot-log.mjs";
+
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const { version } = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8"));
 
@@ -26,29 +28,20 @@ const crew = await import("../host/crew.js");
 /**
  * Fake Cordis context that captures the boot log.
  *
- * `logs` is every boot-log line, whichever path wrote it. The two lists beside
- * it record WHICH path took each line, which is how a line said twice — once
- * through the logger and once through the console — is caught. Same shape as the
- * fake context in tools/verify-mount.mjs, on purpose: two check scripts solving
- * the same problem two ways is how they drift apart.
+ * The boot-log half — `logs`, `loggerLogs`, `consoleLogs`, `effect`, `logger`,
+ * and the `logger` option — comes from tools/lib/boot-log.mjs, shared with
+ * tools/verify-mount.mjs, so the two scripts cannot drift apart. This file
+ * checks the installer, not the prompt, so it records nothing else: the prompt
+ * section and the mounted plugins are thrown away.
+ *
+ * @param options - passed to `logCapture`; `logger: false` is a host that
+ *   registers none, any other value is put in `ctx.logger` as it is
  */
-function fakeContext() {
-  const logs = [];
-  const loggerLogs = [];
-  const consoleLogs = [];
+function fakeContext(options) {
   return {
-    logs,
-    loggerLogs,
-    consoleLogs,
-    effect: (fn) => fn(),
+    ...logCapture(options),
     systemPrompt: { section: () => {}, context: () => {} },
     plugin: () => {},
-    logger: () => ({
-      info: (line) => {
-        loggerLogs.push(String(line));
-        logs.push(String(line));
-      },
-    }),
   };
 }
 
@@ -56,34 +49,26 @@ function fakeContext() {
  * Run the plugin against a throwaway harness home and collect every boot-log
  * line it wrote, through `ctx.logger` or through the `console.log` fallback.
  *
- * Capturing the console half matters here: a deployment hands the plugin a
- * logger, so a note said twice would send its second copy to the real terminal,
- * where no case in this file could count it.
+ * `DSH_HOME` is put back the way it was, in a `finally`, exactly as
+ * tools/verify-mount.mjs does it: nothing in these checks may leave the real
+ * ~/.dsh in reach of the next line of code.
  *
  * @param home - the throwaway DSH_HOME to install into
  * @param config - plugin config for this mount
- * @param logger - `true` for the recording logger, `false` for a host that
- *   registers none, or any other value to put in `ctx.logger`
+ * @param options - `{ logger }`, as `fakeContext` above
  * @returns the fake context, with `logs` holding both paths' lines and
  *   `loggerLogs` / `consoleLogs` saying which path each line took
  */
-function installCapturingLogs(home, config = {}, { logger = true } = {}) {
-  const ctx = fakeContext();
-  if (logger === false) delete ctx.logger;
-  else if (logger !== true) ctx.logger = logger;
-  const realLog = console.log;
-  console.log = (...args) => {
-    const line = args.map(String).join(" ");
-    ctx.consoleLogs.push(line);
-    ctx.logs.push(line);
-  };
+function installCapturingLogs(home, config = {}, options) {
+  const ctx = fakeContext(options);
+  const previous = process.env.DSH_HOME;
   process.env.DSH_HOME = home;
   try {
-    crew.apply(ctx, config);
+    return recording(ctx, (context) => crew.apply(context, config));
   } finally {
-    console.log = realLog;
+    if (previous === undefined) delete process.env.DSH_HOME;
+    else process.env.DSH_HOME = previous;
   }
-  return ctx;
 }
 
 /** Run the plugin against a fresh throwaway harness home. */
@@ -200,7 +185,6 @@ try {
   //    written on this file's code path, so the count has to be taken here —
   //    with a logger in place, the second copy goes to the real terminal, and a
   //    case that only reads the logger's lines would never see it.
-  const timesSaid = (ctx, marker) => ctx.logs.filter(line => line.includes(marker)).length;
   const INSTALL_NOTE = `installed the "crew" agent preset`;
 
   const freshLogged = installCapturingLogs(makeHome());
