@@ -75,6 +75,8 @@ A role is not a prompt the PM pastes in. It is a real delegation tool built from
 | Researcher | `crew_researcher` | `roles/researcher.md` | **only** `read`, `glob`, `grep`, `write`, `web_search` — no shell |
 | Architect | `crew_architect` | `roles/architect.md` | everything **except** the crew tools |
 | Engineer | `crew_engineer` | `roles/engineer.md` | everything **except** the crew tools |
+| Test engineer | `crew_test_engineer` | `roles/test-engineer.md` | everything **except** the crew tools |
+| Code engineer | `crew_code_engineer` | `roles/code-engineer.md` | everything **except** the crew tools |
 | QA | `crew_qa` | `roles/qa.md` | everything **except** the crew tools — it must run the software |
 | Code reviewer | `crew_code_reviewer` | `roles/code-reviewer.md` | **only** `read`, `glob`, `grep` |
 | Security reviewer | `crew_security_reviewer` | `roles/security-reviewer.md` | **only** `read`, `glob`, `grep` |
@@ -82,6 +84,14 @@ A role is not a prompt the PM pastes in. It is a real delegation tool built from
 
 So a code reviewer **cannot** change a file, even if it decides it wants to. The
 persona is locked in as that child's own system prompt.
+
+Three of those nine roles build a task, and which of them the PM starts depends
+on the task's **shape**: `crew_engineer` writes one task's unit tests and its
+product code alone, which is the default, while `crew_test_engineer` and
+`crew_code_engineer` split one task in two — one writes only the unit tests, the
+other only the product code, and neither can see the other's half while it is
+being written. **The paired shape**, further down, says how that runs and what it
+proves.
 
 The reviewer uses an allow list, and two live tests are the reason:
 
@@ -207,6 +217,13 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    row and committed with the code — never a command someone ran once in a shell.
    An engineer that believes a test cannot come first must ask the PM before it
    writes any code.
+
+   **Every task row also carries a shape, and `solo` is the default.** Solo is
+   the paragraph above, and not one word of it changed when the second shape
+   arrived. A row marked `pair` is built by two engineers who never meet: one
+   writes only the unit tests, the other only the product code.
+   **The paired shape**, after this list, says what that buys, how the PM runs
+   it, and what a green run does not prove.
 8. Three roles check every finished task. By default all three start together:
 
    - **code review** — correctness first, then the tests that drove the change,
@@ -363,6 +380,177 @@ come back by themselves. After an upgrade, copy your changes into the new file.
     from every ADR of that milestone in front of you. You may overturn any of
     them; that is a CRD, and the tasks already built the old way are done
     again.
+
+## The paired shape
+
+Every task row in `docs/design/tasks.md` carries a **shape**, and `solo` is the
+default: one engineer writes the failing unit test and then the code that passes
+it, the way **How a job runs** describes above.
+
+The other shape is `pair`, and it splits one task between two engineers who never
+meet:
+
+- `crew_test_engineer` writes **only** the unit test files that task owns.
+- `crew_code_engineer` writes **only** the product code.
+- Each works in a git worktree of its own. While the two halves are being
+  written, the unit tests are not in the code half's tree at all, so it is
+  "cannot read them", not "should not".
+- Both read the same two documents and nothing else: that task row's
+  **DoD section**, and the **interface ADR** in which the architect pinned the
+  line between the two halves.
+- They cannot talk to each other. That is the platform, not manners: a sibling
+  agent is not a child, so the message is refused even if a role holds the tool.
+- The PM merges the two halves and runs the project's test command itself,
+  **exactly once**, and reports what came out.
+
+It is **independent verification**, the kind safety-critical engineering uses:
+two readings of one document, made without any talking, so the place where the
+two readings differ shows up instead of being talked away.
+
+**It is not pair programming**, and that contrast is the clearest way to say what
+it is. Two people at one keyboard talk continuously and check continuously, and
+their goal is to **converge** on one shared understanding. This shape removes the
+talking completely and wants the opposite: the two readings must not converge,
+because the place where they differ is the whole point. So it is not
+pair programming with the chat switched off — it is a different thing, and this
+repository calls it the paired shape everywhere.
+
+**What it buys.** Test first gives you a unit test that was red before the code
+existed. But in the solo shape that unit test is written by the same agent that
+is about to write the code, so it can be bent towards the code that agent already
+meant to write. The paired shape takes that possibility away by construction: the
+one who writes the check is deliberately not the one who writes the code. The
+second thing it buys is larger — **two independent readings of one document**.
+Where the document allowed two readings, the two halves do not fit, and you find
+out at the merge instead of finding out in production. A disagreement is not a
+mishap here; it is the cheapest signal there is that a document everybody had
+already agreed on is not clear.
+
+### How the PM runs one
+
+1. **Two git worktrees**, one per half, each on a branch of its own, both grown
+   from the same base point:
+
+   ```sh
+   git worktree add -b <tests branch> <tests tree path> <base>
+   git worktree add -b <code branch> <code tree path> <base>
+   ```
+
+   A fresh worktree holds only what git tracks. Whatever your project's own
+   checks need beside that goes into **both** trees in this same step, before
+   either engineer is briefed. **Leave it out and nothing fails — the checks get
+   quietly weaker**, because a check that cannot run one part of itself may say
+   so and carry on while the run still ends green. In this repository it is one
+   symbolic link per tree, and without it `tools/verify-mount.mjs` skips its
+   role-tool half while the tree still looks green.
+2. **Both halves are briefed and started in the same message**, so neither gets a
+   head start. Each briefing carries that half's own worktree path, **only that
+   half's file list** — the two lists never overlap — the task row's DoD section,
+   and the path of the interface ADR.
+3. **The first meeting.** The PM merges the two halves, runs
+   the project's test command once, and reports the output as it came out. It
+   never changes something and runs it again for a better result: repeating that
+   run turns the whole thing back into ordinary test first, with every mismatch
+   read as "the code is wrong" and edited away, and not one disagreement ever
+   reported.
+4. **A red sends each half back to check its own half, once.** Whatever is still
+   inconsistent after that is the disagreement, and it is written down: what the
+   document says, what each half read out of it, and where the two readings part.
+   The PM settles it, or brings it to you when both readings are defensible. The
+   half that wrote the unit tests may never weaken an assertion to make a
+   disagreement go away; only the PM may approve a change to what a unit test
+   demands, and that change has to trace back to the words of the DoD section.
+5. **A fix is written in the merged tree**, where the code half can now read the
+   unit tests. **The isolation ends there, on purpose**: that half's independent
+   reading is already on disk and already in the evidence, so blindfolding it
+   during the fix would buy no new signal and only make the fix harder.
+6. **The PM removes both worktrees and both branches**, and hands the code
+   reviewer three pieces of evidence: the red run from the unit-test half, the
+   single result of the first meeting, and the disagreement record — which is
+   empty when that meeting was green.
+
+### Where it exists, and where it does not
+
+- **Only in a job that has an architect.** Before either engineer writes a line,
+  both have to land on the same five things: the import path, the exported name,
+  the signature, the shape of the return value, and what happens on an error.
+  They cannot see each other, so any one of those five landing differently makes
+  the merged run red for a reason nobody learns anything from — a clash of names,
+  not a disagreement — and that would happen so often that the real signal would
+  drown in it. The architect settles those five in the interface ADR, and only
+  the architect may change it. A small job has no architect, so every row of a
+  small job is `solo`.
+- **Not where the two halves would have to change the same file.** The two file
+  lists of a paired task may not overlap, and one file cannot be in both of them.
+  The task is split until the halves own different files, or it stays `solo`.
+- **You stamp it, together with the whole table, in one yes.** The architect
+  proposes a shape for every row when it writes the task table, and you confirm
+  the shapes with the rest of it — never row by row. The PM brings a default and
+  a list of exceptions, each exception with its reason: a DoD section it could
+  not word sharply, a row sitting on a module boundary contract, a mistake that
+  would cost money, permissions or data, or an earlier defect in that part of the
+  code.
+- **It costs more, and the number is an estimate.** Reckon roughly 35% to 75%
+  more effort than the same task done solo: the writing is split in two, but the
+  reading of the document is done twice, and on a small task the reading is often
+  the larger half. Wall time can come out shorter, because the two halves are
+  written at the same time. None of those numbers is a measurement.
+
+### The three roles that write something which checks the product
+
+They are easy to confuse now that there are three of them, and one of the names
+invites the confusion: **`crew_test_engineer` is a programmer, not QA.**
+
+| | `crew_test_engineer` | `crew_code_engineer` | `crew_qa` |
+| --- | --- | --- | --- |
+| Who it is | a **programmer** | a programmer | **QA** |
+| What it writes | **unit tests** | product code | **cases**, acceptance and black box |
+| Granularity | **one behaviour per unit test** | — | **one DoD item per case**, checked the way you would see it |
+| When | **before** the code exists | — | **after** the code is finished |
+| Home | **your project's own test suite**; a file the task owns, committed with the code | product code files | **`docs/qa/<task-id>/`, nowhere else** |
+| Can it see the code | No — its own worktree, where the code does not exist yet | — | Writes its plan first, then reads the code |
+| Scope | **this task only** | this task only | this task, **plus every earlier task's cases run again** |
+
+**Four differences, and not one of them is optional**: granularity (one unit
+behaviour against one acceptance item), timing (before the code against after
+it), home (your project's own test suite against `docs/qa/`), and scope (this
+task against every task's cases run again as a regression).
+
+### What a green run does not prove
+
+This is the half of the shape worth reading twice, so it is written out here
+rather than left as a note.
+
+**A green first meeting says exactly one thing: the two readings matched.** It
+does **not** say the document was clear, and no report — the engineers', the
+PM's, or a reviewer's — may claim that it does. A report that turns
+a green first meeting into "the DoD section was unambiguous" is a blocking
+finding for the code reviewer, because somebody would build on that sentence
+later.
+
+**A document has two kinds of ambiguity, and this shape only catches one.** One
+kind makes two readers disagree; that is the kind the paired shape was built for.
+The other kind makes two readers take the *same* wrong meaning out of one weak
+sentence, and to that kind the shape is completely blind: the halves fit, the run
+is green, and nothing at all is reported. That blind kind is common, and it is
+measured rather than feared. Across 5 harnesses, 23 models and 48
+implementations, simultaneous failures came in at 3.7 times what an independence
+model predicts (*N-Version Programming with Coding Agents*, arXiv, 2026-06), and
+they cluster where the specification is weakest — which is to say it arrives
+wearing the costume of the best possible result. Giving the two halves different
+models does not close it: perfectly correlated failure survives a change of model
+and of harness, while a weaker model on one side would bury the PM in false
+disagreements. So both halves run on the same model on purpose, and **this shape
+is not the last net.** QA — afterwards, blindfolded, writing its own cases from
+the document — is the crew's net for a shared misreading, and the code reviewer's
+job does not shrink because a first meeting came out green.
+
+**And there is a ceiling.** Everything this shape can buy is capped by the
+quality of that one DoD section, and **that DoD section has
+no second pair of eyes**: nobody produces an independent second reading of it
+the way these two engineers produce two independent readings of the code. That
+is the deepest limit of the design, written here rather than left for you to
+find out later.
 
 ## Nothing important lives in a chat message
 
@@ -580,8 +768,25 @@ profile's `cordis.patch.yml`:
 | --- | --- | --- |
 | `rolesDir` | `~/.dsh/crew/roles` | Same override folder, for the role personas |
 | `roleAllow` | reviewers: `read, glob, grep`; researcher: `read, glob, grep, write, web_search` | Only these tools for that role; everything else is closed |
-| `roleDeny` | architect, engineer, QA: the crew tools | Everything except these for that role |
+| `roleDeny` | architect, engineer, test engineer, code engineer, QA: the crew tools | Everything except these for that role |
 | `roleModels` | session model | Per-role provider and model |
+
+The key in `roleAllow`, `roleDeny` and `roleModels` is the role's tool name
+without the `crew_` prefix — `researcher`, `architect`, `engineer`,
+`test_engineer`, `code_engineer`, `qa`, `code_reviewer`, `security_reviewer`,
+`doc_reviewer`. That file's own comments list all nine.
+
+**A filter you write there has to name at least one tool, and it has to be a
+list.** An empty list makes dsh-crew **refuse to start**, and so does an empty
+string, `0`, `false`, `{}` or any other value that is not a list of tool names;
+the message names the field and the role key. Earlier versions took such a value
+quietly and dropped your line, and where it was that role's only filter the child
+was left with **no** filter at all — a read-only reviewer got every tool this
+preset registers, `bash`, `write` and `edit` included, and nothing said so. There
+is no way to spell "no filter": to widen a role, list the tools it may have. To
+go back to the shipped list, delete the line, or set it to nothing at all (a bare
+`~` in YAML), which still means "use the shipped list". See `CHANGELOG.md` for
+the version this landed in.
 
 ## License
 
