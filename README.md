@@ -62,8 +62,9 @@ all. So only the PM starts agents. Four independent guards enforce that:
 
 - every role is denied the crew delegation tools;
 - each role tool has `maxDepth: 1`, so a crew child cannot start another crew
-  child;
-- the crew preset removes every other way to start an agent;
+  child — and that guard names no tool at all, so no preset change can weaken it;
+- the crew preset removes every other way to start an agent, so a role cannot
+  route around the filters through `workflow`, `ralph` or a bare `subagent`;
 - dsh checks the family line itself when a message is sent. A sibling is not a
   child, so the message is refused even if a role holds the tool. This one names
   no tool and quotes no prompt, so no edit to a filter or a persona can weaken
@@ -89,6 +90,11 @@ A role is not a prompt the PM pastes in. It is a real delegation tool built from
 So a code reviewer **cannot** change a file, even if it decides it wants to. The
 persona is locked in as that child's own system prompt.
 
+Every persona also carries a **What you may write** section: the classes of file
+that role may write, and the ones it must refuse even when a briefing hands one
+over — the document that judges its own work, above all. **Reading is not
+restricted.** All ten of those sections are in `roles/`, readable once you install.
+
 Three of those nine roles build a task, and which of them the PM starts depends
 on the task's **shape**: `crew_engineer` writes one task's unit tests and its
 product code alone, which is the default, while `crew_test_engineer` and
@@ -108,15 +114,6 @@ A deny list cannot name what a deployment has not installed yet. An allow list
 does not have to. The PM pastes the diff into the review task and runs any
 command the reviewer asks for.
 
-Two of those four guards sit under the tool filters, and both are worth a
-closer look:
-
-- **`maxDepth: 1`** on every role tool — only the root PM can start a role, and
-  it names no tool at all, so no preset change can weaken it.
-- The crew preset itself removes every other way to start an agent, so a role
-  cannot route around the filter through `workflow`, `ralph` or a bare
-  `subagent`.
-
 ### Editing the roles
 
 Role personas are plain markdown in `roles/`. Copy one into
@@ -134,14 +131,24 @@ come back by themselves. After an upgrade, copy your changes into the new file.
 
 ## How a job runs
 
-1. The PM sorts your ask into a lane: `ask` (answer only), `quick` (do it), or
-   `team` (the full flow). If the size is unclear, it asks you.
+1. The PM sorts your ask into one of **two** lanes: `ask` (answer only) or `team`
+   (the full flow). A change of any size — a typo, a rename, a one-line fix, a
+   whole feature — takes `team`, and gets a **milestone**: at least one task, one
+   round of QA, and one round each of the code, security and doc reviews. **A
+   milestone is not a release.** It is one full cycle plus one commit; pushing and
+   tagging sit outside it and each still needs your own yes, every time. If it
+   cannot tell an answer from a change, it asks you.
 2. It asks which language to use. It never guesses.
-3. It grills you — one question per turn, each with a recommended answer. It
-   waits for your answer before it asks the next one, and never sends you a list
-   of questions. It looks up every fact it can in the repository first. For anything bigger than a
-   quick look it starts a `crew_researcher`, which writes findings with a source
-   for every answer, so you are only asked what the files cannot answer.
+3. It interviews you, and the interview has a method: **one question per turn**,
+   each with a recommended answer, waiting for that answer before the next one,
+   never a list. It picks the kind of question that fits the hole in what it
+   knows, and one of those kinds is "is this the right thing to ask for at all?" —
+   its permission to say you may be solving the wrong problem, early, while
+   changing direction is cheap. It stops the moment it could write the opening
+   document with no guess left in it. It looks up every fact it can in the
+   repository first, and for anything bigger than a quick look it starts a
+   `crew_researcher`, which writes findings with a source for every answer — so
+   you are only asked what the files cannot answer.
 4. **It settles the language and stack, and you approve it.** If the repository
    already has one, that is the stack. The PM reads the manifest, the lock file,
    the test folder and the CI workflow, says what it found, and you confirm it in
@@ -163,9 +170,14 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    through a **CRD** — a change request document, explained further down. An
    engineer may pick freely among the libraries the project
    already has; adding a brand-new dependency goes back to the PM.
-5. It writes the opening document. **There is one, and it is always
-   `docs/design/prd.md`** (a PRD, a product requirements document) — for a small
-   job as much as for a real product. The weight is in the content, not in the file
+5. It writes the opening document. **There is one per job, and its name carries
+   the job: `docs/design/prd-<date>-<job-slug>.md`** (a PRD, a product
+   requirements document) — for a small job as much as for a real product. Both
+   halves of that name are needed: two jobs can start on one day, and a fixed name
+   would silently overwrite the PRD of the job before. The design document takes
+   the same shape, `docs/design/hld-<date>-<job-slug>.md`, while
+   `docs/design/tasks.md` keeps its plain name — it is one table for the whole
+   repository, not one per job. The weight is in the content, not in the file
    name: a small job's PRD is three paragraphs, the goal, what is out of scope, and
    the Language and stack section. It says how big it judged the job, and one word
    changes that. **You confirm before any work starts.**
@@ -222,46 +234,65 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    An engineer that believes a test cannot come first must ask the PM before it
    writes any code.
 
+   **A task is finished when its own unit tests pass**, and nothing else holds it
+   open: QA and the three reviews have not run yet, so neither of them calls a task
+   done. The task row still records all four verdicts, and a check that has not run
+   is written down as `not run` with its reason, never as `pass`.
+
    **Every task row also carries a shape, and `solo` is the default.** Solo is
    the paragraph above, and not one word of it changed when the second shape
    arrived. A row marked `pair` is built by two engineers who never meet: one
    writes only the unit tests, the other only the product code.
    **The paired shape**, after this list, says what that buys, how the PM runs
    it, and what a green run does not prove.
-8. Three roles check every finished task. By default all three start together:
+8. **QA and the three reviews run once per milestone, at the end of it** — not
+   once per task. The PM starts them when the last task has landed and the coding
+   has stopped, because a blocking finding changes the code and throws an earlier
+   check away. **Only the changed part is in scope**, and nothing outside this
+   milestone, however much a reviewer dislikes what it sees elsewhere.
+
+   **One round of QA first, in two steps.** One `crew_qa` turns the **DoD
+   sections** into a list of cases, one line each, and writes nothing else — it
+   does **not read the code**, because the side being measured must not set the
+   questions. The PM reads that list, then starts **one agent per case, all in
+   parallel**; each writes its single case as a real test file under
+   `docs/qa/<task-id>/`, in your project's own test framework, with a `run.sh`
+   beside it, and runs the suite.
+
+   **Then the other three, in one message, one round each, in parallel:**
 
    - **code review** — correctness first, then the tests that drove the change,
      then reuse, simpler code, readability and this repository's own style. The
-     reviewer may hold up a task on those last four, but only if it shows the
+     reviewer may hold up the work on those last four, but only if it shows the
      exact replacement it wants. Otherwise the finding is optional.
    - **security review** — only when the change touches the network, login,
      secrets, files outside the project, the shell, user input, customer data or
-     a new dependency.
-   - **QA** — it writes its test plan from the document *before* it reads the
-     code.
+     a new dependency. That list is the whole test of the word "risky"; there is
+     no second one.
+   - **doc review** — one agent per document this milestone changed.
 
-   For a risky change the PM may run them one after another instead, so each one
-   reads code that has stopped moving. It says which of the two ways it picked,
-   and why.
+   **Only a change made because of a review's own finding brings that review
+   back**: a code change re-runs the code review, a documentation change the doc
+   review, a security change the security review. The three never re-run together,
+   and a second round re-checks only the blocking findings. If the two sides still
+   disagree, the PM stops and puts both cases in front of you.
 
-   QA then turns every case into a real test file under `docs/qa/<task-id>/`, in
-   your project's own test framework, with a `run.sh` beside it. The plan itself
-   is single-use and stays out of your repository — once the cases exist they say
-   the same thing in a form that runs, so the plan is dropped with the job. The
+   **The cost, said out loud, because it was chosen knowingly.** One round at the
+   end finds a defect later, with more work sitting on top of it, so the rework is
+   wider. What it demands in return is that the one round is a **full** one: every
+   item of every task's DoD section, whatever the test run said.
+
+   **QA's cases stay on disk, and the plan does not.** Once the cases exist they
+   say the same thing in a form that runs, so the plan is dropped with the job. The
    one part of it that must not be lost is "what I could not test here, and why":
-   QA writes that into
-   `docs/qa/gaps.md`, a standing list about your product's testability that later
-   jobs shorten. `bash docs/qa/run-all.sh` runs every task's cases,
-   and QA runs it on every task it checks — so a case written in an earlier task
-   guards the new one. An old case that starts failing is a blocking regression,
-   and nobody is allowed to edit it green. Your QA suite grows with the project and
-   outlives the job. The PM also wires that command into your project's own
-   default test command, so it runs without anyone remembering it. If your test
-   runner cannot see the folder, the PM adds the one line that makes it visible;
-   "the cases are not runnable" is a problem the PM brings to you, not a place to
-   stop. Round two of any review
-   only re-checks the blocking findings; after the round limit the PM brings the
-   disagreement to you.
+   that goes into `docs/qa/gaps.md`, a standing list about your product's
+   testability that later jobs shorten. `bash docs/qa/run-all.sh` runs every task's
+   cases, and the PM wires it into your project's own default test command, so an
+   earlier case guards later work without anyone remembering it. A case that starts
+   failing is a blocking regression, and nobody is allowed to edit it green. If
+   your test runner cannot see the folder, the PM adds the one line that makes it
+   visible; "the cases are not runnable" is a problem the PM brings to you, not a
+   place to stop.
 9. The PM commits — engineers never touch git. It stages only the files that task
    owns, never `git add -A`.
 10. **Milestone review — the PM stops and asks you.** When every task in the
@@ -271,7 +302,7 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    milestone (release it to real users), go on without shipping, change
    something, or stop — one question, four answers. A change that touches the PRD sends the plan back through the
    architect and the doc reviewer before code starts again. No milestone begins
-   until you have answered the one before it. A small job has no milestones —
+   until you have answered the one before it. A small job has no review stop —
    it is one piece of work with one report at the end.
 11. **A milestone you ship gets two plans, and their shape is looked up, not
    guessed.** These plans are not alike. An npm package cannot un-publish a
@@ -305,13 +336,15 @@ come back by themselves. After an upgrade, copy your changes into the new file.
    `CLAUDE.md` when your repository's own rules or layout moved. If
    nothing a reader would notice changed, it leaves those files alone and tells
    you so.
-13. A last `crew_doc_reviewer` pass over every document the job produced, the
-    README included. It checks that the documents can be worked from, that they
-    stay consistent (one name per idea, one shape, and the language files saying
-    the same thing), and that they read easily for someone about 14 years old
-    whose first language is not English — by counting things like sentence
-    length, idioms and unexplained terms, not by taste. It may hold up the job on
-    wording, but only if it writes the replacement sentence itself.
+13. A last `crew_doc_reviewer` pass — the **tail** of step 8's doc review, not a
+    second round of it. It reads only what landed after that round: the
+    reader-facing files above, the README included. It checks that the documents
+    can be worked from, that they stay consistent (one name per idea, one shape,
+    and the language files saying the same thing), and that they read easily for
+    someone about 14 years old whose first language is not English — by counting
+    things like sentence length, idioms and unexplained terms, not by taste. It
+    may hold up the job on wording, but only if it writes the replacement
+    sentence itself.
 14. **Push and CI, if you allow it.** The PM checks there is a remote, a
     workflow and a working `gh` first. Then it asks you — before **every** push,
     including a re-push after a fix. It pushes only what you said yes to — a
@@ -518,7 +551,7 @@ invites the confusion: **`crew_test_engineer` is a programmer, not QA.**
 | Granularity | **one behaviour per unit test** | — | **one DoD item per case**, checked the way you would see it |
 | When | **before** the code exists | — | **after** the code is finished |
 | Home | **your project's own test suite**; a file the task owns, committed with the code | product code files | **`docs/qa/<task-id>/`, nowhere else** |
-| Can it see the code | No — its own worktree, where the code does not exist yet | — | Writes its plan first, then reads the code |
+| Can it see the code | No — its own worktree, where the code does not exist yet | — | Not the agent that writes the case list; the per-case agents may |
 | Scope | **this task only** | this task only | this task, **plus every earlier task's cases run again** |
 
 **Four differences, and not one of them is optional**: granularity (one unit
@@ -615,7 +648,7 @@ What belongs to this one job is outside the repository, in
 (`state.json`), QA's test plans, and the `Q-` question files a
 role leaves for the PM. That whole folder is dropped when the job ends, and a test
 run's output was never a file at all. What "done" means is deliberately **not** in
-there any more: it is a DoD section inside `docs/design/prd.md` or
+there any more: it is a DoD section inside the job's own PRD or
 `docs/design/tasks.md`, in your repository, because a file of its own is a file
 that gets dropped.
 
