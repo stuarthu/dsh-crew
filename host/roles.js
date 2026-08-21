@@ -25,6 +25,8 @@ export const ROLE_TOOL_NAMES = [
   "crew_researcher",
   "crew_architect",
   "crew_engineer",
+  "crew_test_engineer",
+  "crew_code_engineer",
   "crew_qa",
   "crew_code_reviewer",
   "crew_security_reviewer",
@@ -84,17 +86,53 @@ export const ROLES = [
     key: "engineer",
     toolName: "crew_engineer",
     personaFile: "engineer.md",
-    // 3-5 word display description shown in the UI for the delegation tool.
-    summary: "Write code for one crew task",
+    // A short line shown in the PM's own prompt (host/crew.js:214) — it is not
+    // passed to the tool schema. It names the shape, not just the job: in that
+    // prompt this line sits two lines above `crew_code_engineer`'s, and "write
+    // the code for a task" would read as the same offer twice, while the
+    // difference is the whole point — this role writes a task's tests AND its
+    // code, alone.
+    summary: "Write one task's code and its tests (solo shape)",
     // Deny list: an engineer needs most of the tool set, so naming what it may
     // NOT have is the only workable shape here.
+    deny: [...NO_DELEGATION],
+  },
+  {
+    key: "test_engineer",
+    toolName: "crew_test_engineer",
+    personaFile: "test-engineer.md",
+    // Says both halves of what makes this role different from `crew_engineer`
+    // and from `crew_qa`: what it writes (unit tests, in the project's own test
+    // suite) and when (before the code exists). The PM's own prompt is built
+    // from these lines, so a summary that could be read as "QA" is a role the PM
+    // will call for the wrong job.
+    summary: "Write a task's unit tests before its code",
+    // Deny list, and built from NO_DELEGATION like every other maker — never a
+    // hand-written copy of the names. A copy would keep exactly the names it was
+    // typed with, so the next role added to ROLE_TOOL_NAMES would be missing
+    // from it, and this role could start that one.
+    deny: [...NO_DELEGATION],
+  },
+  {
+    key: "code_engineer",
+    toolName: "crew_code_engineer",
+    personaFile: "code-engineer.md",
+    // The other half of the pair: product code only. It never writes the unit
+    // tests for the behaviour it is building — that is the whole point of
+    // splitting the task in two.
+    summary: "Write the product code for one task",
+    // Deny list from NO_DELEGATION, for the reason given on the role above.
     deny: [...NO_DELEGATION],
   },
   {
     key: "qa",
     toolName: "crew_qa",
     personaFile: "qa.md",
-    summary: "Test the result against the document",
+    // Naming the folder is what separates this role from the test engineer now
+    // that both write checks: QA's cases stay in `docs/qa/<task-id>/`, the test
+    // engineer's unit tests live in the project's own test suite. Only the
+    // summary changed here — none of QA's behaviour did.
+    summary: "Test the result, with cases in docs/qa/",
     // QA must actually run the software, so it keeps the shell. It writes only
     // its own test plan and defect notes; the PM's commit step catches any file
     // it touched that no task owns.

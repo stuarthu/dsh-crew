@@ -18,7 +18,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { PM_PERSONA_FILE, ROLES, readRoleText } from "../host/roles.js";
+import { PM_PERSONA_FILE, ROLE_TOOL_NAMES, ROLES, readRoleText } from "../host/roles.js";
 import { logCapture, recording, timesSaid } from "./lib/boot-log.mjs";
 
 let failures = 0;
@@ -513,7 +513,14 @@ for (const fileName of [PM_PERSONA_FILE, ...ROLES.map(role => role.personaFile)]
 // That file lives in the job folder and is dropped with it, so the decision was
 // dropped too. Each file must now name the ADR folder instead. One path and one
 // absent string per file — no prose, so a rewording cannot turn this red.
-for (const fileName of ["engineer.md", "architect.md", "doc-reviewer.md"]) {
+//
+// The two new engineer personas are in this list from the day they are created
+// (T-51). The list is an explicit list of file names, so a persona that is not
+// in it has nothing watching it at all — and this file is owned by T-51, so no
+// later task may add them here. A placeholder persona has to carry the path too:
+// it is the file a real engineer will read next, and the rule it states is the
+// same one whatever milestone wrote the file.
+for (const fileName of ["engineer.md", "test-engineer.md", "code-engineer.md", "architect.md", "doc-reviewer.md"]) {
   const text = readRoleText(fileName, undefined);
   if (!text.includes("docs/decisions/adr/")) fail(`roles/${fileName} does not name docs/decisions/adr/ — CRD 0006 sends every decision about HOW to an ADR there, whatever the size of the job. Put the path back`);
   else if (text.includes("**Decisions** section")) fail(`roles/${fileName} still sends a small job's decision to a **Decisions** section of the DoD, which is dropped with the job folder. Point it at an ADR in docs/decisions/adr/ instead`);
@@ -556,7 +563,13 @@ for (const fileName of ["engineer.md", "architect.md", "doc-reviewer.md"]) {
 // in the batch that carried the rule with nothing pinning it: the old "the DoD
 // file the PM named (`docs/crew/dod.md`)" wording could come back in either of
 // them with every check in this run still green.
-for (const fileName of ["architect.md", "engineer.md", "qa.md", "doc-reviewer.md", "code-reviewer.md", "security-reviewer.md"]) {
+//
+// The two new engineer personas join this list the day they are created (T-51),
+// for the reason spelled out above the CRD 0006 list: both lists are explicit
+// lists of file names, this file belongs to T-51, and a persona missing from
+// them is a persona no check ever reads. A placeholder counts — it already
+// tells its reader where the task row and its DoD section live.
+for (const fileName of ["architect.md", "engineer.md", "test-engineer.md", "code-engineer.md", "qa.md", "doc-reviewer.md", "code-reviewer.md", "security-reviewer.md"]) {
   const text = readRoleText(fileName, undefined);
   if (text.includes("dod.md")) fail(`roles/${fileName} names a file called \`dod.md\` (at index ${text.indexOf("dod.md")}) — CRD 0010 forbids that file name anywhere, because a DoD file lives in the job folder and is dropped with it. \`DoD\` is a section of docs/design/prd.md or of a task row in docs/design/tasks.md. Point the role at those two files instead`);
   else if (!text.includes("docs/design/tasks.md")) fail(`roles/${fileName} does not name \`docs/design/tasks.md\` — CRD 0010 gives both lanes one task table in one place, with one shape; only the typist changes (the architect on big work, the PM on small work). Every task row and its DoD section live there, so a role that does not know the path cannot read its own task. Put it back`);
@@ -648,9 +661,35 @@ if (reviewer.allow === undefined) fail("the code reviewer must use an allow list
 else if (!reviewer.allow.includes("read")) fail("the code reviewer must be allowed to read");
 else ok(`code reviewer is read-only by allow list: ${reviewer.allow.join(", ")}`);
 
-if (ROLES.find(role => role.key === "engineer").deny?.includes("bash")) {
-  fail("the engineer must keep bash: it has to run the tests it writes");
+// The roles that live by the shell. Each one has to run something — the tests it
+// wrote, the code it wrote, the project's own test command — so `bash` taken out
+// of its deny list is that role unable to do its job, with nothing else saying
+// so.
+//
+// This is an EXPLICIT list of role keys, not a pattern read off `ROLES` (ADR
+// 0010). A pattern such as "every key containing engineer" would cover zero
+// roles the day one of them is renamed, and still print green — the worst
+// outcome this repository knows. The price of the explicit list is named out
+// loud: a FOURTH role that needs a shell is not covered until somebody adds it
+// here, and nothing reminds them.
+//
+// `crew_qa` is deliberately not in the list. QA needs the shell just as much,
+// but the job that widened this check from one role to three was not allowed to
+// change anything about QA's behaviour, and constraining QA here would be
+// exactly that. So the hole CLAUDE.md design rule 4 records shrank from "one of
+// three" to "QA alone" and did not close; it is written down in
+// `docs/qa/gaps.md` rather than left for somebody to find.
+const NEEDS_SHELL = ["engineer", "test_engineer", "code_engineer"];
+const shellBefore = failures;
+for (const key of NEEDS_SHELL) {
+  // The self-check, and it is not optional: without it a renamed role turns this
+  // whole block into a green that looked at nothing. The message has to say
+  // which of the two is broken — the LIST above, or the role table.
+  const role = ROLES.find(candidate => candidate.key === key);
+  if (role === undefined) fail(`the shell list in tools/verify-mount.mjs names the role key "${key}", which is not in ROLES — so this check just skipped a role it believes it is guarding. The LIST is stale, not the role table: either that role was renamed or removed (update the list in the same commit), or the name here is a typo. Keys in ROLES today: ${ROLES.map(each => each.key).join(", ")}`);
+  else if (role.deny?.includes("bash")) fail(`${role.toolName} must keep bash: it has to run what it writes. Take "bash" out of that role's deny list in host/roles.js`);
 }
+if (failures === shellBefore) ok(`these roles keep the shell they work with: ${NEEDS_SHELL.join(", ")}`);
 
 // --------------------------------------------------------------- real mount
 
@@ -805,19 +844,33 @@ function applyCapturingLogs(config, options) {
     // Proved by mutation, not assumed.
     //
     // The count closes it, on the same reasoning as the two-copies pin on
-    // `git push origin --delete`: `docs/qa/gaps.md` appears THREE times in
-    // roles/pm.md and each copy does a different job — step 11 stages the file
-    // so the standing gap list is committed, step 18 fills it before the plan is
-    // dropped, and the **Hard rules** summary states the rule. No two of them
-    // sit in the same paragraph, so dropping any one is a real hole with nothing
-    // else covering it. Counted, not eyeballed, because `includes` stops at the
-    // first copy.
+    // `git push origin --delete`: `docs/qa/gaps.md` appears FOUR times in
+    // roles/pm.md and each copy does a different job —
+    //   1. step 10's review-batching list, where a gap-list entry is named as a
+    //      document that waits for the last review round instead of blocking a
+    //      landing;
+    //   2. step 11, which STAGES the file so the standing gap list is committed
+    //      with the task that produced it;
+    //   3. step 18's closing migration step, which FILLS it before a single-use
+    //      document is dropped;
+    //   4. the **Hard rules** summary, which restates the rule on its own so the
+    //      PM meets it once more outside the numbered steps.
+    // No two of them sit in the same paragraph, so dropping any one is a real
+    // hole with nothing else covering it. Counted, not eyeballed, because
+    // `includes` stops at the first copy.
+    //
+    // The threshold below stays at 3 on purpose, and that gap is deliberate, not
+    // drift: it is a FLOOR, so roles/pm.md may legitimately grow or lose the
+    // fourth copy (M4 rewrites parts of that file) without reddening a file that
+    // is correct. What is NOT allowed is trimming this comment to match the
+    // floor: it used to say THREE while the file held four, which is exactly the
+    // kind of stale number that talks somebody into deleting a copy.
     //
     // It counts a PATH, not prose, so a reworded sentence inside the migration
     // step stays green — deliberately unlike the `Parallel by default` and `the
     // tree was moving` pins (ADR 0004, ADR 0007), which had no path or command
     // to hold on to. This one does, so it does not pay their brittleness.
-    else if (copiesOf(section.text, "docs/qa/gaps.md") < 3) fail(`PM section holds only ${copiesOf(section.text, "docs/qa/gaps.md")} copy/copies of \`docs/qa/gaps.md\`, and it needs 3 — one of them has been dropped from roles/pm.md. The three are: step 11, which STAGES the file so the gap list is committed; step 18's closing migration step, which FILLS it before a single-use document is dropped (the most likely loss: that paragraph is the only place the five destinations — principles.md, an ADR, a CRD, the commit message, the gap list — are listed, and deleting it leaves every other check green); and the **Hard rules** summary of the same rule. Put the missing copy back`);
+    else if (copiesOf(section.text, "docs/qa/gaps.md") < 3) fail(`PM section holds only ${copiesOf(section.text, "docs/qa/gaps.md")} copy/copies of \`docs/qa/gaps.md\`, and it needs 3 at least — one of them has been dropped from roles/pm.md, which carries FOUR today and gives each copy a different job. The four are: step 10's review-batching list, where a gap-list entry is named as a document that waits for the last review round instead of blocking a landing; step 11, which STAGES the file so the standing gap list is committed with the task that produced it; step 18's closing migration step, which FILLS it before a single-use document is dropped (the most likely loss: it is one of only two places all seven homes of a dropped document are listed — the **Hard rules** summary is the other — and deleting it leaves every other check green); and the **Hard rules** summary, which restates the rule outside the numbered steps. Put the missing copy back`);
     // The two strings CRD 0006 replaced, pinned as ABSENT. A how-decision on a
     // small job used to go into a **Decisions** section of the DoD — a file in
     // the job folder, dropped when the job ends, so the decision went with it.
@@ -993,6 +1046,95 @@ if (roles) {
   const engineer = custom.mounts.find(mount => mount.config.toolName === "crew_engineer");
   if (engineer?.config.toolFilter?.deny?.length !== 1) fail("roleDeny did not replace the shipped deny list");
   else ok("roleDeny replaces the shipped deny list");
+
+  // CRD 0016: an EMPTY list must refuse to start, not be waved through. An empty
+  // array is not nullish, so `??` never reached the shipped list, and
+  // `[].length > 0` was false — which used to leave `toolFilter` off the config
+  // altogether and hand that child the preset's WHOLE tool set. On the code
+  // reviewer that silently undid CLAUDE.md design rule 2, the one rule this
+  // repository paid for twice in live tests (a reviewer wrote a file with
+  // `echo hello > file`; with the shell gone as well its tool list still held
+  // `workflow`, `ralph` and desktop-control MCP tools).
+  //
+  // Refusing at mount is the same trade `readRoleText` already makes on a broken
+  // persona: break startup with a message that names the file, rather than
+  // surface halfway through somebody's job. So both halves are checked — that it
+  // throws at all, and that the message names the role key AND the field, since
+  // "some list is empty" is not something a user can act on.
+  // "Empty" is not only `[]`. Every shape below reaches the same place in the old
+  // code — `length > 0` is false for all of them — so all of them used to drop
+  // `toolFilter` and hand that child the preset's whole tool set. A user writing
+  // `roleAllow: security_reviewer: ""` in YAML has written an empty roleAllow as
+  // far as they are concerned, so refusing only the array kept the trap open in
+  // four other spellings (CRD 0016, appendix).
+  //
+  // `null` is the exception and it is not an oversight: `~` or a blank value in
+  // YAML is how a user says "use the shipped list", and `??` makes that work.
+  // That path is checked below, because a guard that swallowed it would break the
+  // documented way to turn an override off.
+  for (const [field, key] of [["roleAllow", "code_reviewer"], ["roleDeny", "engineer"]]) {
+    for (const [label, value] of [
+      ["an empty list", []],
+      ["an empty string", ""],
+      ["the number 0", 0],
+      ["false", false],
+      ["an empty map", {}],
+    ]) {
+      const tried = fakeContext();
+      let thrown;
+      try {
+        roles.apply(tried, { [field]: { [key]: value } });
+      } catch (error) {
+        thrown = error;
+      }
+      if (thrown === undefined) fail(`${field}: { ${key}: ${label} } mounted without a word — none of these values is nullish, so none of them falls back to the shipped list, and a filter built from any of them used to drop toolFilter entirely and give that child every tool the preset has. It must refuse to start (CRD 0016)`);
+      else if (!thrown.message.includes(key) || !thrown.message.includes(field)) fail(`${field}: { ${key}: ${label} } was refused, but the message names ${thrown.message.includes(key) ? "no field" : "no role key"}, so the user cannot tell which line of their config to fix — ${thrown.message}`);
+      // All or nothing. A refusal that arrives after some roles are already
+      // mounted leaves a HALF crew on any host that logs an apply error and
+      // carries on — and the role that throws is not always the last one.
+      else if (tried.mounts.length !== 0) fail(`${field}: { ${key}: ${label} } was refused only after ${tried.mounts.length} role(s) had already mounted (${tried.mounts.map(mount => mount.config.toolName).join(", ")}) — validate every role before mounting any, so a bad config gives no crew rather than half a crew`);
+      else ok(`${field}: { ${key}: ${label} } refuses to start before any role mounts, naming the role and the field`);
+    }
+  }
+
+  // The last role in the table, on purpose: with the check inside the mount loop
+  // this is the case that mounts eight roles first.
+  {
+    // Derived, never retyped: this case is only worth running on whichever role
+    // the table ends with, and a hard-coded key would quietly stop testing that
+    // the day a tenth role is added — while the message below still claimed it
+    // was the last one.
+    const lastKey = ROLES[ROLES.length - 1].key;
+    const tried = fakeContext();
+    let thrown;
+    try {
+      roles.apply(tried, { roleAllow: { [lastKey]: [] } });
+    } catch (error) {
+      thrown = error;
+    }
+    if (thrown === undefined) fail(`roleAllow: { ${lastKey}: [] } mounted without a word (CRD 0016)`);
+    else if (tried.mounts.length !== 0) fail(`roleAllow: { ${lastKey}: [] } mounted ${tried.mounts.length} role(s) before refusing (${tried.mounts.map(mount => mount.config.toolName).join(", ")}) — an empty list on the LAST role in the table must still leave no crew at all`);
+    else ok(`an empty list on the last role in the table (${lastKey}) still mounts nothing at all`);
+  }
+
+  // `null` and a missing key both mean "use the shipped list". This is the
+  // documented way to turn an override off, so the guard above must not eat it.
+  for (const [label, config] of [
+    ["roleDeny: { engineer: null }", { roleDeny: { engineer: null } }],
+    ["no roleDeny at all", {}],
+  ]) {
+    const tried = fakeContext();
+    try {
+      roles.apply(tried, config);
+    } catch (error) {
+      fail(`${label} threw instead of falling back to the shipped list — that is how a user turns an override off (CRD 0016 keeps null working on purpose): ${error.message}`);
+      continue;
+    }
+    const engineerMount = tried.mounts.find(mount => mount.config.toolName === "crew_engineer");
+    if (tried.mounts.length !== ROLES.length) fail(`${label} mounted ${tried.mounts.length} role(s), expected ${ROLES.length}`);
+    else if (engineerMount?.config.toolFilter?.deny?.length !== ROLE_TOOL_NAMES.length) fail(`${label} did not fall back to the shipped deny list (got ${engineerMount?.config.toolFilter?.deny?.length ?? "no filter"}, expected ${ROLE_TOOL_NAMES.length} names)`);
+    else ok(`${label}: falls back to the shipped list, all ${tried.mounts.length} roles mounted`);
+  }
 }
 
 // -------------------------------------------- the .bak note, said once
