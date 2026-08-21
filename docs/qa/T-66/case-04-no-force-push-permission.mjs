@@ -1,7 +1,41 @@
-// T-66 DoD item 5 and item 6 (PRD M1 DoD item 9, requirement B8).
-// Proves `roles/pm.md` no longer GRANTS a force push anywhere -- the two
-// wordings that carried the permission are gone -- while step 17's two
-// sentences that FORBID one are still there word for word.
+// T-66 DoD item 5 and item 6 (PRD M1 DoD item 9, requirement B8), and T-95 DoD
+// item 1 (CRD 0024 decision 1).
+// Proves `roles/pm.md` never lets the ORDINARY push yes cover a force push --
+// the two wordings that carried that permission are gone -- and that the three
+// sentences which used to scope the ban to `main` alone have been replaced, at
+// each of the three places they lived, by the wider rule the user approved.
+//
+// ------------------------------------------------ 2026-08-22: turned around, not deleted
+//
+// Three checks in this case were pinning the OLD wording word for word:
+//   `do not merge and never force push \`main\``
+//   `\`git push --force\` and \`--force-with-lease\` on \`main\` are never part of this step, …`
+//   `No yes covers a force push of \`main\``
+// The third of those said a force push of `main` is refused even WITH the
+// user's yes. CRD 0024 decision 1 replaced all three: the user was asked twice,
+// because it loosens a safety rule, and answered `main is ok if user approve`.
+// So a force push is now forbidden on EVERY branch, `main` included, unless the
+// user approves that one command for that one push.
+//
+// The three checks therefore went red the day T-94 landed -- not because the
+// file broke a rule, but because they were the old rule's judge. That is
+// `docs/qa/gaps.md` item 33: a superseded check does not retire itself, it is
+// green right up to the moment the new rule lands, and the cheapest thing to do
+// on that day is delete it. Each one was TURNED AROUND instead, the way
+// `crew-qa-C64` turned around T-64's numbered-pointer check: each is now a pair
+// -- the old narrow wording pinned ABSENT, and the sentence that took its place
+// at that same spot pinned PRESENT. Nothing was weakened and no check was lost;
+// the count went from 16 to 21, and the two checks that prove step 17's
+// sub-headings still divide it are part of that: an anchor that matched nothing
+// would leave the three PRESENT halves reading an empty string.
+//
+// The PRESENT halves are deliberately about each SPOT's own job -- the merge
+// stops rather than forcing past a failed fast-forward, the push paragraph is
+// force-push-free by default, the hard rules keep a force push outside the
+// ordinary push yes -- and not about the four parts of the new rule. Those are
+// checked, per part and per place, by
+// `docs/qa/T-94/case-01-force-push-needs-user-approval.mjs`, so the two cases
+// do not restate each other.
 //
 // Why this one matters more than most: reading the old file the wrong way was
 // not a documentation problem. The **Hard rules** push bullet said the PM may
@@ -15,9 +49,10 @@
 //
 // ---------------------------------------------------- method, and why it is this
 //
-// 1. THE TRAP. Step 17's two sentences are pinned as PRESENT by
-//    `docs/qa/T-01/case-08-ff-only-never-force.mjs`, and they legitimately
-//    contain `force`, `force push`, `--force`, `--force-with-lease` and
+// 1. THE TRAP. Step 17 is also read by
+//    `docs/qa/T-01/case-08-ff-only-never-force.mjs` (turned around on the same
+//    day and for the same reason), and it legitimately
+//    contains `force`, `force push`, `--force`, `--force-with-lease` and
 //    `whatever the guard allows`. So ANY pin on "the file mentions a force
 //    push" goes red on the sentence that forbids it. The two strings pinned
 //    here were chosen by T-66 for the opposite property: they carry the
@@ -176,20 +211,104 @@ for (const [phrase, where] of [[HARD_RULES_GRANT, "the **Hard rules** push bulle
   );
 }
 
-// ------------------------------------ the sentences that FORBID it are untouched
+// ------------------- the three `main`-only sentences are gone, and what replaced them
+//
+// Each spot is one PAIR: the old narrow wording ABSENT, and the sentence that
+// does that spot's job PRESENT. The absent halves are judged on the FLATTENED
+// text and WITHOUT CASE, and print all four numbers -- flat and per line, with
+// and without case -- because a wording can come back wrapped across two lines
+// (`docs/qa/gaps.md` item 21: for an absent pin the per-line 0 proves nothing)
+// or with one capital letter changed (`docs/qa/gaps.md` item 30). The present
+// halves are phrase FAMILIES: any one member satisfies the check, so a
+// legitimate reword of the passage does not go red on a file that is correct.
+
+/** flat and per-line counts of `phrase`, with and without case. */
+function counts(someText, phrase) {
+  const flattened = flat(someText);
+  const lines = someText.split("\n");
+  const copies = (haystack, needle) => haystack.split(needle).length - 1;
+  return {
+    flatCase: copies(flattened, phrase),
+    flatAny: copies(flattened.toLowerCase(), phrase.toLowerCase()),
+    lineCase: lines.filter((line) => line.includes(phrase)).length,
+    lineAny: lines.filter((line) => line.toLowerCase().includes(phrase.toLowerCase())).length,
+  };
+}
+
+/** All four numbers, for the check name. */
+const shown = (seen) => `flat ${seen.flatCase} case-sensitive / ${seen.flatAny} either case, per line ${seen.lineCase} / ${seen.lineAny}`;
+
+/** The members of `family` this text states, ignoring case, after flattening. */
+const says = (someText, family) => {
+  const flattened = flat(someText).toLowerCase();
+  return family.filter((wording) => flattened.includes(wording.toLowerCase()));
+};
+
+/**
+ * One `**Sub-heading.**` block of a flattened step, up to the next sub-heading.
+ * Anchored on the sub-heading, never on a line number (ADR 0023 shape 7), and
+ * an anchor that matches nothing returns "" so the caller reports it by name
+ * instead of passing on an empty string.
+ */
+function subBlock(flatStep, from, to) {
+  const start = flatStep.indexOf(from);
+  if (start === -1) return "";
+  const end = flatStep.indexOf(to, start + from.length);
+  return end === -1 ? flatStep.slice(start) : flatStep.slice(start, end);
+}
 
 {
-  const s17 = flat(step(text, 17));
-  check(
-    "step 17 still stops a failed fast-forward and never force pushes `main`",
-    s17.includes("do not merge and never force push `main`"),
-    s17,
-  );
-  check(
-    "step 17 still forbids `git push --force` and `--force-with-lease` on `main`, whatever the guard allows",
-    s17.includes("`git push --force` and `--force-with-lease` on `main` are never part of this step, whatever the guard allows you to do."),
-    s17,
-  );
+  const s17raw = step(text, 17);
+  const s17 = flat(s17raw);
+  const merge = subBlock(s17, "**The merge.**", "**The push of `main`.**");
+  const push = subBlock(s17, "**The push of `main`.**", "**The delete.**");
+
+  for (const [where, block] of [["the merge paragraph", merge], ["the push of `main` paragraph", push]]) {
+    check(
+      `step 17's sub-headings still divide it, so this case reads ${where} and not the whole step`,
+      block !== "",
+      "the sub-heading this case slices on was reworded or the step was split up. Fix the anchor in the same commit: an anchor that matches nothing leaves every check below reading an empty string, which passes while reading nothing at all",
+    );
+  }
+
+  // Spot 1, the merge: the old absolute is gone, and the paragraph still stops
+  // instead of forcing its way past a failed fast-forward.
+  {
+    const old = "do not merge and never force push `main`";
+    const seen = counts(s17raw, old);
+    check(
+      `step 17 no longer scopes the merge's force-push rule to \`main\` alone through \`${old}\` (${shown(seen)})`,
+      seen.flatAny === 0,
+      "CRD 0024 decision 1 widened this rule to every branch on the user's own instruction. If this wording is back, the merge paragraph is stating the pre-T-94 rule again -- reopen the decision in a new CRD before changing this check",
+    );
+    const stops = says(merge, ["tell the user and stop"]);
+    const notPast = says(merge, ["do not force push `main` to get past it", "force pushes nothing by itself", "do not force push", "never force push"]);
+    check(
+      `step 17's merge still stops on a failed fast-forward (${stops.length}) and does not force its way past it (${notPast.length})`,
+      stops.length > 0 && notPast.length > 0,
+      `a failed fast-forward has to end the step. The rule got wider, not softer: the merge may not reach for a force push to get past a moved \`main\`, and the approval CRD 0024 added is for a push the user asked for, not for tidying up a merge. merge paragraph: ${merge}`,
+    );
+  }
+
+  // Spot 2, the push of `main`: the old absolute is gone, and the paragraph is
+  // still force-push-free by default and still names both commands.
+  {
+    const old = "on `main` are never part of this step";
+    const seen = counts(s17raw, old);
+    check(
+      `step 17 no longer scopes the push's force-push rule to \`main\` alone through \`${old}\` (${shown(seen)})`,
+      seen.flatAny === 0,
+      "T-94 DoD item 2 required this wording gone: it left a force push of a work branch to the ordinary push yes, named by no rule at all, which is the step the security review walked",
+    );
+    const named = ["`git push --force`", "`--force-with-lease`"].filter((command) => flat(push).includes(command));
+    const byDefault = says(push, ["force pushes nothing", "not part of it", "never part of this step", "nothing by default"]);
+    check(
+      `step 17's push of \`main\` still names both force-push commands (${named.length} of 2) and is force-push-free by default (${byDefault.length})`,
+      named.length === 2 && byDefault.length > 0,
+      `the default has to stay off, with the user's approval as the only way in. A paragraph that names neither command cannot be read as forbidding either. push paragraph: ${push}`,
+    );
+  }
+
   // The reason the two pinned strings above are what they are: these five words
   // are legitimately in the file, so a pin on "mentions a force push" would be
   // red today, against a file that is correct. This check is the trap written
@@ -206,12 +325,29 @@ for (const [phrase, where] of [[HARD_RULES_GRANT, "the **Hard rules** push bulle
 // ------------------------- the deletion left the stricter rule behind, not silence
 
 {
-  const rules = flat(section(text, "Hard rules"));
-  check(
-    "the Hard rules carry the stricter of the file's own two readings: no yes covers a force push of `main`",
-    rules.includes("No yes covers a force push of `main`"),
-    rules,
-  );
+  const rulesRaw = section(text, "Hard rules");
+  const rules = flat(rulesRaw);
+  // Spot 3, the hard rules. The old sentence said no yes at all covers a force
+  // push of `main`. Its successor is not silence and it is not a loosening of
+  // the bar for the ORDINARY yes: the ordinary push yes still does not reach a
+  // force push -- that needs a yes of its own. This is the half that keeps the
+  // two grant pins above meaningful, so it is pinned here and not left to the
+  // wider rule's own case.
+  {
+    const old = "No yes covers a force push of `main`";
+    const seen = counts(rulesRaw, old);
+    check(
+      `the Hard rules no longer state the pre-T-94 absolute \`${old}\` (${shown(seen)})`,
+      seen.flatAny === 0,
+      "the user was asked twice and answered `main is ok if user approve` (CRD 0024 decision 1), so this sentence is the superseded rule. It going missing is the change the user asked for; it coming back is a decision that needs a new CRD, and this check changes in the same commit",
+    );
+    const ownYes = says(rules, ["a yes of its own", "its own yes", "a separate yes", "on top of that", "a yes of its very own"]);
+    check(
+      `the Hard rules keep a force push outside the ordinary push yes: it needs one of its own (${ownYes.length} wording(s))`,
+      ownYes.length > 0,
+      `without this the widened rule collapses back into the ordinary "ask before every push" bullet, and one yes for a push becomes a yes for rewriting the branch -- which is the reading the two grant pins above exist to stop. Hard rules: ${rules}`,
+    );
+  }
   check(
     "the Hard rules point at step 17 for the force push, so the two places cannot drift apart again",
     rules.includes("(step 17)"),

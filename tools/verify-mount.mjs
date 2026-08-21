@@ -1147,6 +1147,103 @@ function applyCapturingLogs(config, options) {
     else ok(`PM prompt section registered (order ${section.order}, ${section.text.length} chars), and it carries both authoritative sentences word for word`);
   }
 
+  // T-94, CRD 0024 decision 1, in the user's own words (2026-08-22): a force
+  // push is forbidden on EVERY branch, `main` included, unless the user approves
+  // that one command for that one push, and one approval never covers the next.
+  //
+  // Before T-94 the same rule was written in three places and every one of them
+  // named `main` and nothing else. So a force push of a WORK branch was covered
+  // by the ordinary "ask before every push" yes, and no sentence in the prompt
+  // named it — the step the security review walked was: a review finding, a
+  // tidy-up of the branch history, one ordinary yes for "push the fix", and the
+  // commits another session had already pushed to that branch are gone, with no
+  // rule broken. Nothing outside this prompt can close that: the guard returns
+  // early for the root agent, which IS the PM, so for the PM this rule lives
+  // only in the words it reads. That is the whole reason the wording is pinned.
+  //
+  // TWO HALVES, and they go red for opposite reasons.
+  //
+  // ABSENT — the three wordings that scoped the rule to `main` alone, byte for
+  // byte as they stood in roles/pm.md before T-94. None of them holds a regex
+  // metacharacter or a markdown marker, so they are compared with `includes`
+  // and there is no rendered form that would also have to be matched.
+  //
+  // PRESENT — the rule must still say out loud that it reaches past `main`, and
+  // it must say so in BOTH places that carry it. This is the half that actually
+  // holds the scope. A comeback that reworded the narrow rule instead of
+  // restoring it word for word would walk past the absent list; it cannot keep
+  // a wide scope while narrowing the rule, because narrowing means deleting
+  // these phrases whatever replaces them. It is a deliberately brittle prose
+  // pin, like ADR 0004's: a legitimate reword has to change this list in the
+  // same commit, and that is the price of a pin that can go red at all.
+  //
+  // COUNTED as the number of wordings from each list that appear in the
+  // flattened text — not lines, and not occurrences (ADR 0023 shape 8, which
+  // this repository met when `grep -c` and `grep -o | wc -l` disagreed and a
+  // correct change was read as a reduction). One wording appearing twice is
+  // still one wording here, which is all these lists are about: whether a
+  // wording is in the file at all.
+  //
+  // PER PLACE, because a number taken over the whole prompt cannot say WHERE
+  // the scope was narrowed, and because narrowing one of the two places while
+  // the other stayed wide would leave a whole-prompt count green. The two
+  // slices are anchored on headings, never on line numbers (ADR 0023 shape 7),
+  // and an anchor that stops matching is a named failure rather than an empty
+  // slice that quietly passes.
+  //
+  // JUDGED FLATTENED, THROUGH ONE FUNCTION. This prose wraps at 80 columns, so
+  // the narrow rule can come back with `main` ending one line and the rest of
+  // the sentence opening the next, and a line-based scan reads 0 on a prompt
+  // that plainly carries it (ADR 0023 shape 1). The self-test below and the
+  // real check both go through `narrowIn`: a self-test that flattened its own
+  // sample instead would still pass after somebody dropped `flat` from the real
+  // path, which is the likeliest way this pin would ever go blind.
+  {
+    const MAIN_ONLY = [
+      "on `main` are never yours to run",
+      "on `main` are never part of this step",
+      "No yes covers a force push of `main`",
+    ];
+    const EVERY_BRANCH = ["on every branch", "on any branch", "`main` included"];
+    // One scanner for the prompt and for the self-test alike.
+    const narrowIn = (text) => MAIN_ONLY.filter((wording) => flat(text).includes(wording));
+    const wideIn = (text) => EVERY_BRANCH.filter((wording) => flat(text).includes(wording));
+    /** From `from` up to `to`, or to the end when `to` is not there. */
+    const slice = (text, from, to) => {
+      const start = text.indexOf(from);
+      if (start === -1) return "";
+      const end = text.indexOf(to, start + from.length);
+      return end === -1 ? text.slice(start) : text.slice(start, end);
+    };
+
+    // THE SELF-TEST. The old narrow sentence, folded where this prose folds it.
+    // Two conditions, and each one can be false. `caught.length !== 1` is the
+    // live half: take `flat` out of `narrowIn` and the folded sample reads 0
+    // wordings, so this goes red — which is the point of routing both through
+    // the one function. `perLineBlind` guards the SAMPLE instead: edited so the
+    // wording lands on a single line, the sample stops exercising folding at
+    // all, and only this half notices. Both readings are in the message.
+    const FOLDED = "`git push --force` and `--force-with-lease` on `main` are never\n    part of this step, whatever the guard allows you to do.";
+    const caught = narrowIn(FOLDED);
+    const perLineBlind = !FOLDED.split("\n").some((line) => MAIN_ONLY.some((wording) => line.includes(wording)));
+
+    if (caught.length !== 1 || !perLineBlind) {
+      fail(`the force-push scope pin in tools/verify-mount.mjs no longer behaves like a flattened pin: it found ${caught.length} narrow wording(s) in a folded sample it must find exactly 1 in, and a line-by-line scan of that sample ${perLineBlind ? "correctly matched nothing" : "also matched, so the sample no longer wraps inside the wording and the folding case is untested"}. Either the flattening was dropped from \`narrowIn\`, or the sample was changed so it no longer folds. As it stands the narrow rule can come back across a line break and this check will read 0 — restore the flattened scan`);
+    } else {
+      const places = [
+        ["the **Hard rules** push bullet", slice(flat(ctx.sections[0]?.text ?? ""), "## Hard rules", "## "), "## Hard rules"],
+        ["step 17, the merge and clean-up step", slice(flat(ctx.sections[0]?.text ?? ""), "17. **Merge and clean up", "18. **Finish"), "17. **Merge and clean up"],
+      ];
+      const lost = places.filter(([, text]) => text === "");
+      const narrowed = places.map(([where, text]) => [where, narrowIn(text)]).filter(([, hits]) => hits.length);
+      const noScope = places.filter(([, text]) => wideIn(text).length === 0);
+      if (lost.length) fail(`the force-push scope pin cannot find ${lost.length} of its ${places.length} anchor(s) in the PM prompt — ${lost.map(([where, , anchor]) => `${where} (anchored on \`${anchor}\`)`).join(" | ")}. An anchor that matches nothing makes this pin read an empty string and pass while reading nothing at all, so it fails loudly instead. Either the heading was reworded in roles/pm.md, or the step was renumbered: fix the anchor in tools/verify-mount.mjs in the same commit`);
+      else if (narrowed.length) fail(`${narrowed.length} place(s) in the PM prompt scope the force-push rule to \`main\` alone again — ${narrowed.map(([where, hits]) => `${where}: ${hits.map((wording) => `\`${wording}\``).join(", ")}`).join(" | ")}. CRD 0024 decision 1 widened it to every branch on the user's own instruction, because the guard trusts the root agent and refuses the PM nothing: a force push of a work branch was covered by an ordinary push yes and named by no rule. Write the rule in roles/pm.md for every branch, \`main\` included, with the user's approval for that one command and that one push — or reopen the decision in a new CRD and change this check in the same commit`);
+      else if (noScope.length) fail(`${noScope.length} place(s) in the PM prompt state the force-push rule without saying it reaches past \`main\` — ${noScope.map(([where]) => where).join(" | ")}, none of which contains any of ${EVERY_BRANCH.map((wording) => `\`${wording}\``).join(", ")}. A rule that names only \`main\` leaves a force push of a work branch to the ordinary push yes, which is the hole CRD 0024 decision 1 closed. Say the scope out loud in roles/pm.md, or add the new wording to EVERY_BRANCH in tools/verify-mount.mjs in the same commit`);
+      else ok(`the force-push rule reaches past \`main\` in both places that carry it (${places.length} places, flattened, ${MAIN_ONLY.length} narrow wordings absent)`);
+    }
+  }
+
   // The unfinished-job notice: registered as a dynamic context, and quiet when
   // there is no job to report. A prompt must never fail because of a job file,
   // so the provider is also pointed at a folder that does not exist.

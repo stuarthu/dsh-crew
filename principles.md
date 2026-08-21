@@ -1,5 +1,23 @@
 # Crew principles
 
+> **This file ships with the npm package** (`package.json`'s `files` names it), so whoever is
+> reading it may be in **any repository**. Three things follow, and they are worth saying first.
+>
+> 1. **A generic `docs/...` path in this file means your own repository.** `docs/design/tasks.md`,
+>    `docs/qa/gaps.md`, `docs/decisions/adr/` and the rest: this crew really does write into those,
+>    in **any** repository. They are **destinations**, not pointers.
+> 2. **A numbered file is in this package's own repository, and it is written as a link**
+>    (for example `crd/0012-paired-engineers`). Those are **provenance**: why a rule exists and
+>    how many times it went red. You do not need to read them to follow the rules; open one when
+>    you want the evidence.
+> 3. **Renaming breaks those links, and no check will notice.** So the CRDs and ADRs under
+>    `docs/decisions/` are named by number and are not renamed. The links point at `main` rather
+>    than at a commit because those files are historical snapshots and never change (a rejected
+>    CRD stays too), so pinning a commit would only ever show you a stale copy.
+>
+> These three were added on 2026-08-22, the day this file stopped being contributors-only and
+> became something the package ships.
+
 This file says **why** the crew works the way it does.
 
 Every rule in `roles/*.md` is short and bossy on purpose — a role prompt is read
@@ -900,8 +918,8 @@ step 11 **Commit**, step 18 **Finish**, and the hard rules),
 list**),
 `roles/engineer.md`,
 `roles/architect.md`, `roles/doc-reviewer.md`, `docs/qa/gaps.md`,
-`docs/decisions/crd/0006-split-by-lifetime.md` (the change request that settled
-it) and `docs/decisions/crd/0010-dod-is-a-section.md` (the one that took the DoD
+[`0006-split-by-lifetime`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0006-split-by-lifetime.md) (the change request that settled
+it) and [`0010-dod-is-a-section`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0010-dod-is-a-section.md) (the one that took the DoD
 off the single-use list).
 
 ---
@@ -1126,7 +1144,7 @@ this repository keeps losing: a change nobody else looked at.
 **A milestone is not a release.** It is one full loop and one commit. Pushing a
 branch, pushing `main`, tagging a version and publishing a package each need the
 user's own yes, every time, and no milestone grants any of them
-(`docs/decisions/crd/0023-req-interview-six-decisions.md`, decision four).
+([`0023-req-interview-six-decisions`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0023-req-interview-six-decisions.md), decision four).
 
 **Why one file shape for small work and big work.** It removes a name instead of adding
 one. The
@@ -1170,7 +1188,7 @@ afterwards would be the larger mistake. Everywhere a document is alive and gets
 revised — this file, the PRD, the HLD, the task table, the role prompts,
 `CLAUDE.md` — the pointer names the section or quotes the words. The rule itself
 is older than this paragraph: it was written down while the Verdicts gate was
-being decided, in `docs/decisions/crd/0011-verdicts-gate-in-npm-test.md`, and it
+being decided, in [`0011-verdicts-gate-in-npm-test`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0011-verdicts-gate-in-npm-test.md), and it
 stayed there. A rule the crew has to keep belongs in this file, and a rule that
 lives only inside one record is a rule the next job will not find — which is the
 same failure this principle exists to record.
@@ -1200,9 +1218,9 @@ first, and the bug-fix section), `roles/qa.md` (the plan starts from the task's
 DoD section), `roles/doc-reviewer.md` (check 1),
 `docs/design/tasks.md` (this job's own rebuilt table, with every recovered check
 and every lost one marked as lost),
-`docs/decisions/crd/0010-dod-is-a-section.md` (the change request that settled it,
+[`0010-dod-is-a-section`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0010-dod-is-a-section.md) (the change request that settled it,
 with its own corrections at the end),
-`docs/decisions/crd/0011-verdicts-gate-in-npm-test.md` (the change request that
+[`0011-verdicts-gate-in-npm-test`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0011-verdicts-gate-in-npm-test.md) (the change request that
 put the gate on the Verdicts line, and killed the `pre-push` hook first),
 `tools/verify-tasks.mjs` (the gate itself, and its own comment on what it cannot
 prove), `CLAUDE.md` (**State and documents**), both READMEs.
@@ -1238,7 +1256,7 @@ road where a paired task can exist, the architect writes the table after the
 user has
 already confirmed the opening document, so the PM confirms the shapes and the
 user meets them at the milestone review
-(`docs/decisions/crd/0021-who-stamps-the-shape-on-big-work.md`).
+([`0021-who-stamps-the-shape-on-big-work`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0021-who-stamps-the-shape-on-big-work.md)).
 
 **Why (ours).** Principle 6 buys a unit test that was red first, but in the solo
 shape that unit test is written by the agent that is about to write the code, so
@@ -1340,10 +1358,10 @@ interface ADR), `roles/code-reviewer.md` (the evidence it must be handed, and th
 reversal above), `host/roles.js` and `preset/crew/agent.cordis.yml` (the two role
 tools have to exist), `docs/design/tasks.md` (the shape column, and the two file
 lists that may not overlap),
-`docs/decisions/crd/0012-paired-engineers.md` (the shape, and its own record of
+[`0012-paired-engineers`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0012-paired-engineers.md) (the shape, and its own record of
 what it does not prove),
-`docs/decisions/crd/0013-two-worktrees-per-task.md` (the isolation),
-`docs/decisions/crd/0014-pair-mode-needs-an-architect.md` (the boundary and the
+[`0013-two-worktrees-per-task`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0013-two-worktrees-per-task.md) (the isolation),
+[`0014-pair-mode-needs-an-architect`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0014-pair-mode-needs-an-architect.md) (the boundary and the
 interface ADR), `CLAUDE.md`, both READMEs. The rule that a unit test comes first
 at all is principle 6; where that file lives afterwards is principle 13; and the
 four names this principle keeps apart — a unit test, a QA case, the project's
@@ -1429,16 +1447,16 @@ The **first** is the job that added the paired shape. That interview ran more
 than a dozen turns, one question per turn, and **the user changed their own
 position three times during it**: whether the two engineers should be able to
 talk (they proposed it, then rejected it themselves — the first row of the
-rejected table in `docs/decisions/crd/0012-paired-engineers.md`), two worktrees
+rejected table in [`0012-paired-engineers`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0012-paired-engineers.md)), two worktrees
 instead of "let A run ahead a little"
-(`docs/decisions/crd/0013-two-worktrees-per-task.md`), and the paired shape
-needing an architect (`docs/decisions/crd/0014-pair-mode-needs-an-architect.md`).
+([`0013-two-worktrees-per-task`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0013-two-worktrees-per-task.md)), and the paired shape
+needing an architect ([`0014-pair-mode-needs-an-architect`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0014-pair-mode-needs-an-architect.md)).
 All three came out of being asked, not being told.
 
 The **second** is the sixth kind of question earning its place twice in that same
 job. The PM said "what you are describing is not pair programming — it works by
 staying apart, and pair programming works by converging", and a document review
-said "T-56 can be split, and this job's own `ADR 0013` proves it". Both times the
+said "one of the job's own tasks could be split in two, and this job's own [`ADR 0013`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/adr/0013-persona-ownership-handoff.md) proves it". Both times the
 request itself was judged and reworded rather than answered.
 
 The **third** is this principle's own arrival. The PM of the job that wrote it ran
@@ -1452,7 +1470,7 @@ question in the whole interview whose answer could not be found in the repositor
 job. **The most productive question was the one nearest to being skipped**, and it
 was skipped because nobody was checking the six kinds off against the holes. That
 is the whole argument for making them a list instead of an instinct
-(`docs/decisions/crd/0023-req-interview-six-decisions.md`).
+([`0023-req-interview-six-decisions`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0023-req-interview-six-decisions.md)).
 
 The counter-evidence belongs here too, because it is the same failure wearing
 different clothes. In the paired-shape job three of the PM's own briefings carried
@@ -1473,7 +1491,7 @@ user, so it is the only role that can hold an interview.
 
 **Source.** Six kinds of question, the funnel and the failure modes are not this
 crew's invention; the ten sources below are the ones the method was distilled
-from, and `docs/decisions/crd/0019-socratic-principle-deferred.md` carries the
+from, and [`0019-socratic-principle-deferred`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0019-socratic-principle-deferred.md) carries the
 same list with the distillation beside it.
 
 - [6 types of Socratic Questions — University of Michigan](https://websites.umich.edu/~elements/probsolv/strategy/cthinking.htm)
@@ -1688,11 +1706,11 @@ cannot.
 
 ## What each kind of document holds
 
-A reference list, not a rule, so it carries no principle number — the same call `ADR 0014` made for
+A reference list, not a rule, so it carries no principle number — the same call [`ADR 0014`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/adr/0014-glossary-placement.md) made for
 the glossary above. Each entry says what outside sources ask for, what they say it does **not**
 hold, and where this repository deliberately differs. Every source was read on **2026-08-21**; the
 full quotations, the confidence on each one and the sources that could not be reached are in
-`docs/research/document-types.md`.
+[`document-types`](https://github.com/stuarthu/dsh-crew/blob/main/docs/research/document-types.md).
 
 ### PRD, the opening document
 
@@ -1723,8 +1741,8 @@ the boundary with the design: a PRD is **what and why**, the design is **how**.
 
 **Where we differ, on purpose.** A task row's DoD section here carries the exact command that
 checks it, and a milestone's DoD section says what "done" means. Sources put the commands in a test
-plan. `CRD 0010` chose otherwise for a measured reason — a DoD written as its own file was dropped
-with the job folder and took 75 checks with it in one hour — and `ADR 0015` draws the line the two
+plan. [`CRD 0010`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0010-dod-is-a-section.md) chose otherwise for a measured reason — a DoD written as its own file was dropped
+with the job folder and took 75 checks with it in one hour — and [`ADR 0015`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/adr/0015-where-the-milestone-checks-live.md) draws the line the two
 sides can both live with: **the milestone's DoD says what done means, the task row says how it is
 checked.** Neither is a second copy of the other.
 
@@ -1784,7 +1802,7 @@ change-control process is the project-management side; ITIL 4's change enablemen
 IT-service-management side. Both ask for a **description**, a **reason**, an **impact or risk**
 assessment, and an **approval**. Only ITIL requires a **back-out plan** — how to undo it — and only
 PMBOK classifies a change as corrective, preventive or defect repair. The quotations and what could
-not be reached are in `docs/research/document-types.md`, section four; ISO 10007, the
+not be reached are in [`document-types`](https://github.com/stuarthu/dsh-crew/blob/main/docs/research/document-types.md), section four; ISO 10007, the
 configuration-management standard that would have been a third source, refused the fetch and is
 recorded there as unreachable rather than paraphrased.
 
@@ -1871,7 +1889,7 @@ item. What that vocabulary calls per-item conditions is **acceptance criteria**,
 individual items", varying from item to item, and about scope rather than quality.
 
 By those words, what this repository calls a DoD section is acceptance criteria. The name here is
-per-milestone and per-task on purpose (`CRD 0010`), and the reason is measured rather than
+per-milestone and per-task on purpose ([`CRD 0010`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0010-dod-is-a-section.md)), and the reason is measured rather than
 theoretical: acceptance checks kept in a numbered list of their own, in a file of their own, went
 stale and then were lost with the job folder. Keeping each check inside the thing it governs is what
 stopped that. So the name stays and the disagreement is recorded: **when reading an outside source
@@ -1915,12 +1933,12 @@ One thing the Scrum Guide gives that holds here unchanged: an item that does not
 | Folding the DoD into a CRD, as a section of it | The user's first shape, and it keeps every check in the repository. Rejected after the PM pushed back, and the user then tightened it further himself: a CRD is the record of one decision at one moment and must never be rewritten, while a DoD is a living document — this job's went through 26 versions. One file cannot be both. What replaced it is not another file but **no file**: the DoD grows inside the thing it belongs to. |
 | Keeping a `dod.md`, but moving it into `docs/design/` so it survives | The one-line fix, and it would have saved this job's 75 checks. Rejected: it fixes one case and leaves the class. Two names for the same position in the flow is what produced the asymmetry in the first place — big work opened with a PRD, small work with a DoD — so the shape that holds is one opening document for small work and big work alike, with the checks living in the task or milestone they belong to. |
 | A global, numbered list of acceptance checks | It reads well in a review and gives every check a short name. Rejected on this crew's own evidence: three of its 75 checks failed *as checks* because they sat far from the work they governed (11 contradicted 48-52, 67 was too literal, 70 pointed at a renamed folder), and four CRDs still point at numbers no document defines. A check now lives in the DoD section of its task or milestone and is named that way. |
-| A git `pre-push` hook that refuses a push when a review gate was skipped | The user's first idea for an unskippable gate, and it went to review before it was built. Rejected on two grounds the PM re-checked, both of which hold. One: **`pre-push` cannot see the commits a tag push carries**, and a `v*` tag is this repository's one irreversible action — it triggers `.github/workflows/publish.yml` and publishes to npm — so the hook missed the only push that matters. Two: **a hook does not travel with the repository**; `git clone` does not bring `.git/hooks/`, and `--no-verify` walks past it. (The same review corrected the PM on a detail: `git push -n` is `--dry-run`, not `--no-verify`.) What replaced it is a check inside `npm test`, `node tools/verify-tasks.mjs`: push CI runs it and the publish workflow runs it again before it publishes, which covers exactly the push the hook could not see, and it travels with the repository. The hook never landed, so nothing was undone. `CRD 0011`. |
+| A git `pre-push` hook that refuses a push when a review gate was skipped | The user's first idea for an unskippable gate, and it went to review before it was built. Rejected on two grounds the PM re-checked, both of which hold. One: **`pre-push` cannot see the commits a tag push carries**, and a `v*` tag is this repository's one irreversible action — it triggers `.github/workflows/publish.yml` and publishes to npm — so the hook missed the only push that matters. Two: **a hook does not travel with the repository**; `git clone` does not bring `.git/hooks/`, and `--no-verify` walks past it. (The same review corrected the PM on a detail: `git push -n` is `--dry-run`, not `--no-verify`.) What replaced it is a check inside `npm test`, `node tools/verify-tasks.mjs`: push CI runs it and the publish workflow runs it again before it publishes, which covers exactly the push the hook could not see, and it travels with the repository. The hook never landed, so nothing was undone. [`CRD 0011`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0011-verdicts-gate-in-npm-test.md). |
 | Every ADR stops and waits for the user to pick | Rejected: one design often holds several ADRs, so the job would stop once per ADR and the user would be interrupted with choices about the inside of the code. The architect marks a recommendation and the design keeps moving; the user sees every option at the milestone review and may overturn one. Options the user can see are still asked on the spot. |
 | Letting the two engineers of a paired task talk to each other | The user asked for this first and then rejected it himself. Pair programming works by **converging** on one understanding; the paired shape works by not converging, and a design cannot have both. Two agents that may talk will negotiate, the more assertive side wins, one understanding comes out — and the PM never learns that the document allowed two readings, because the signal was settled in private. Worse, the case that matters most ("both are right, the document really does permit both") can only be handled by the PM: no engineer may touch a task row. One side benefit is worth naming. Once the channel was gone, the rule "write the disagreement down before you discuss it" became unnecessary — **a rule that stops being needed because a feature was cut is usually a sign the cut was right.** |
 | Two engineers writing the unit tests and a third writing the code | The PM's idea; the user chose unit tests against code instead. It is kept here because it names a real weakness of what was built. **Unit test against unit test is a pure signal** — the same kind of output on both sides, directly comparable, so a difference can only come from a different reading. A red merge in the shape we built mixes three causes that look identical: an ambiguous document (the signal), a typo in an assertion, and an ordinary bug in the code. That is why each side re-checks its own half once before anything is reported; that step exists only to strip the two kinds of noise, and it is the busiest step in the loop. |
 | Having each engineer write a prose summary of its understanding, and comparing the two | Much cheaper, and it measures nothing. **Prose can be vague**, so both sides can walk around the very same ambiguity using the very same vague words and come out looking as if they agree. An assertion cannot be vague: nobody writes one without first deciding the value, the error and the edge. |
-| Two independent worktrees, for real isolation | **Rejected, then adopted — `CRD 0013` corrected this row, and it is the one row here that no longer holds.** It was rejected as a *platform feature*: the crew has no notion of a worktree anywhere in `host/`, and a role only has tool-level allow and deny lists, so building one would be platform work. That part still stands. The conclusion was wrong: the PM needs no platform feature, because the PM is the only role that touches git anyway, so plain `git worktree add` gives two real directories today. It is now how the paired shape works (principle 21), and it closed the one hole the shape had been shipped with. |
+| Two independent worktrees, for real isolation | **Rejected, then adopted — [`CRD 0013`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0013-two-worktrees-per-task.md) corrected this row, and it is the one row here that no longer holds.** It was rejected as a *platform feature*: the crew has no notion of a worktree anywhere in `host/`, and a role only has tool-level allow and deny lists, so building one would be platform work. That part still stands. The conclusion was wrong: the PM needs no platform feature, because the PM is the only role that touches git anyway, so plain `git worktree add` gives two real directories today. It is now how the paired shape works (principle 21), and it closed the one hole the shape had been shipped with. |
 | Requiring the code engineer to declare in its report "I did not read the unit test files" | Still unverifiable — it only turns a vague overstep into a definite lie, which is not an improvement in evidence. Overtaken as well: with two worktrees the unit test file is not in that engineer's tree while it writes, so there is nothing left to declare. |
 | Giving the two sides of a paired task different models through `roleModels` | The evidence says the gain is small: crossing an agent boundary does not remove perfectly correlated failure (principle 21's third source). And it backfires. Two sides of unequal strength produce a stream of **false disagreements**, the PM spends its attention judging noise, and the signal the shape exists to produce is buried under it. |
 

@@ -414,8 +414,7 @@ distilled from `docs/research/document-types.md`. That last one is a reference
 list, not a rule, which is why it has no number (`ADR 0021`). Role prompts are written short and bossy on purpose, so the reasoning
 has to live somewhere else. When you change a rule in `roles/*.md`, update the
 principle that carries it; when you reject an idea, add it to the table so the
-next person does not re-run the same search. The file is for contributors and is
-not published to npm (the `files` list does not name it).
+next person does not re-run the same search. **The file ships with the npm package** (`package.json`'s `files` names it), so a PM in any repository can read the reasons behind the rules it is following. That changed on 2026-08-22 (`CRD 0026`, the user's decision) — it used to be contributors-only. Two things follow. Its opening block tells the reader which `docs/...` paths mean **their own** repository (the generic destinations: `docs/design/tasks.md`, `docs/qa/gaps.md`, `docs/decisions/adr/`, and the rest) and which mean this package's own (the numbered CRDs and ADRs, now written as links to `blob/main`). And **renaming a numbered CRD or ADR breaks those links, and no check will notice** — so they are named by number and not renamed.
 
 `README.md` (English) and `README-zh.md` (Chinese) say the same thing and must be updated together
 whenever user-visible behaviour changes; write the English first, then match the Chinese. Keep the

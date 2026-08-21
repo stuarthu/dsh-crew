@@ -65,6 +65,7 @@
     "./host/jobs.js": "./host/jobs.js"
   },
   "files": [
+    "principles.md",
     "host",
     "roles",
     "preset",
