@@ -11,9 +11,11 @@ Who "the user" means in this file: whoever installed the plugin and is running
 the session. Not the person who wrote the plugin.
 
 Short names used below: **PRD** (product requirements document, the file
-`docs/design/prd.md`, which opens both lanes), **DoD** (definition of done — always
+the opening document, one per job, whose file name carries the job it belongs to),
+**DoD** (definition of done — always
 a **section** of another document, never a file of its own; see principle 20),
-**HLD** (high level design, the file `docs/design/hld.md`), **ADR** (architecture decision record),
+**HLD** (high level design, one per job under `docs/design/`, named the same way),
+**ADR** (architecture decision record),
 **CRD** (change request document), **QA** (the role that tests the result).
 
 Each principle below has:
@@ -162,6 +164,19 @@ runner that could not start. Then the smallest code that makes it pass is
 written. The report shows the failing run and then the passing run. A report
 without the failing run is not accepted.
 
+**And this is what finishes a task.** A task is done when its own unit tests pass —
+not when a reviewer has read it, and not when QA has written cases for it. QA and
+the three reviews run **once each, at the end of the milestone** (principle 18), so
+nothing waits on them task by task. Two things follow, and both matter.
+
+The **Verdicts** line of a task committed before that round says the truth about it:
+`qa: not run — <the reason>`, and the same for any review that has not happened yet.
+Never `pass` for a report nobody has read. A skip is allowed; a silent skip is not.
+
+And the bar for "done" really is lower than it was. It used to be three gates —
+code review, security review, QA — and it is now one machine-checkable gate. That is
+the trade principle 18 spells out, with what it costs.
+
 **Two shapes, one rule.** The rule above says nothing about how many agents are
 involved, and that is on purpose, because the crew has two ways of doing it:
 
@@ -232,7 +247,7 @@ item).
 
 **Rule.** Before anything is designed, the **PM** settles the language and stack
 and the **user confirms it**, as a *Language and stack* section in
-`docs/design/prd.md`, the opening document of both lanes:
+the opening document, the one small work and big work share:
 language and version, package manager, framework, database, and the test framework
 with its exact test command. If the repository already has a stack, that is the
 stack — no options, no research, just state it and confirm. Only when the choice is
@@ -356,9 +371,26 @@ has not installed yet. An allow list does not have to.
 **Rule.** An engineer's unit test is a file in the project's own test suite, named
 in its task row and committed with the code. QA's cases are files too, in the
 project's test framework, under `docs/qa/<task-id>/`, with a `run.sh` per
-task and one `docs/qa/run-all.sh` that finds and runs them all. QA runs all
-of them — including cases written for tasks that finished long ago — on every
-task it checks, and an old case that now fails is a blocking regression.
+task and one `docs/qa/run-all.sh` that finds and runs them all. Every round runs all
+of them — including cases written for tasks that finished long ago — and an old case
+that now fails is a blocking regression.
+
+**That round happens once per milestone, not once per task** (principle 18). It has
+two steps and two kinds of QA agent: one agent writes the **case list** from the DoD
+sections without reading the code, then one agent per case writes that one case, runs
+it, and reports. The PM says in the briefing which of the two a QA agent is, because
+the two produce different things and forbid different things.
+
+**Two of those files are not QA's, and the reason is a silent failure.** QA writes
+only inside `docs/qa/<task-id>/` — its case files and the `run.sh` beside them.
+`docs/qa/run-all.sh` and `docs/qa/gaps.md` belong to the PM: QA reports the lines to
+add and the PM writes them. With QA agents running side by side, two of them would
+both write those two shared files and the second write would win — and nothing would
+say so. `run-all.sh` would still run, still print a total, and still report green,
+with one task's cases no longer in it. That is test coverage lost with no error
+anywhere, which is the worst shape a failure can take in this repository. So
+`run-all.sh` is written to find every `docs/qa/*/run.sh` **by pattern**, never as a
+list of names, and then a new task needs no edit and there is nothing to race over.
 
 **QA's test plan is not one of those files.** The plan is single-use: it exists to
 turn the task's DoD items into cases, and once the cases are written the cases carry
@@ -693,10 +725,24 @@ only for a real dependency: the two tasks share a file, or the later one has to
 read what the earlier one wrote. Nothing else counts. One agent that would cover
 several tasks is a signal to **split** the work, not to bundle it. Agent count
 is never a reason to serialize — if a live-agent limit really is in the way, the
-PM stops and asks the user. The three checks of step 10 **Check the finished
-task** — code review, security
-review, QA — also start together by default; running them in a fixed order is a
-named exception the PM picks out loud for a risky change.
+PM stops and asks the user.
+
+**One engineer, one code change.** The unit of an engineer is not a task, it is a
+**code change**: a task holding three independent changes is three engineers, started
+together. That is the same rule as "split, do not bundle", read one level finer. The
+exception is the one the file test already names — when several changes land in the
+same file they cannot run together, so the architect lines them up as a **serial chain**
+and writes on each task row which task it shares the file with.
+
+**QA and the three reviews run once, at the end of the milestone, not per task.** A
+task is finished when its own unit tests pass; nothing waits for a reviewer to call
+a task done. When all the coding of the milestone is finished, QA runs **one** round
+— one agent writes the case list from the DoD sections without reading the code, then
+one agent per case, all of them together — and then the code review, the security
+review and the doc review each run **once**, in parallel, on the changed part only.
+Only one thing brings a reviewer back: a change made because of **its own** finding.
+A code change re-runs the code review, a documentation change the doc review, a
+security change the security review; the three never re-run together.
 
 **Why the wording had to change (ours).** The old rule was a permission:
 engineers *may* run at the same time when their files do not overlap. A
@@ -708,12 +754,34 @@ good about saving it; the time the user waits is the resource that actually
 costs, and it shows up in no report at all. A rule that only permits parallel
 work loses that trade every time, so the default was moved.
 
-**Why the fixed order stayed, as an exception.** Step 10's old reason is still
-true for a risky change: each check should read code that has stopped moving,
-because a blocking review finding changes the code and throws that round of QA
-away. What was wrong is that this reason was doing two jobs at once — a good
-reason for some changes, and a silent default for all of them. Now it is only
-the first, and the PM has to name which of the two it picked, and why.
+**What batching the checks costs, and it is not zero.** The old reason for running
+the three checks in a fixed order is still true: each check should read code that has
+stopped moving, because a blocking finding changes the code and throws that round of
+QA away. Batching them at the end buys that, and pays for it twice.
+
+**First, defects surface later.** Running QA on every task as it landed really did
+catch real things earlier: in the job before this rule, per-task QA found an ADR that
+needed two cross-references and had only one, and a dependency ban that was wrong in
+the reverse direction. At the end of the milestone those come out after more code has
+been built on top of them, so the rework is wider. **The user chose this trade
+knowingly**, and it is not a mistake for anyone downstream to correct — nor a licence
+for a reviewer to widen its one round to make up for it. What it does demand is that
+the one round is a **full** one.
+
+**Second, the PM asks fewer questions, so the PM's own mistakes are caught less
+often.** The same job recorded three briefings that carried errors of the PM's own
+making: one said "you touch only two files" while also requiring the red light to
+appear in a test file; one treated "gets every tool" as a general consequence when it
+holds in 9 of 18 cases; one quoted text containing `roleDeny: {`, which broke a QA
+case. All three were pushed back by the engineer that received them. One fewer layer
+of asking is one fewer layer catching that kind.
+
+**So the rule that a role pushes back is load-bearing, not politeness.** A role that
+declines a briefing and says why **is right**, and the answer is to fix the briefing,
+not the role. That reaches its sharpest form in the wording every role prompt carries
+word for word: a briefing handing a role a document that **judges** its work is a
+mistake in the briefing, and the role changes nothing and says so. A rule the briefing
+enforces cannot defend against the briefing.
 
 **An honest limit: no shared file does not mean no collision.** The test asks
 about overlapping **writes** — two tasks may not own the same file. But every
@@ -749,7 +817,7 @@ outlive the job?**
 
 - **Durable, in the repository.** An ADR in `docs/decisions/adr/` for a decision
   about **how**; a CRD in `docs/decisions/crd/` for a decision about **what**, the
-  scope or a contract; the opening document `docs/design/prd.md`, the task table
+  scope or a contract; the opening document, the task table
   `docs/design/tasks.md`, the design and the boundary contracts, all in
   `docs/design/`; QA's runnable cases and `gaps.md`, its standing list of what no
   case can check, in `docs/qa/`; a
@@ -846,10 +914,11 @@ record is in the repository.** The job folder is not a record. It is progress, a
 it is dropped when the job ends.
 
 So `DoD` is the name of a **section**, never the name of a file. There is no
-`dod.md`, in any folder, including `docs/design/`. Both lanes open with the same
-document, `docs/design/prd.md`, and both keep one task table,
+`dod.md`, in any folder, including `docs/design/`. Small work and big work open with the same
+document, and both keep one task table,
 `docs/design/tasks.md`. Every milestone carries a DoD section (big work) and every
-task row carries one (both lanes), and a DoD section says two things at least:
+task row carries one (small work and big work alike), and a DoD section says two things
+at least:
 what "done" means for that one thing, and **how somebody else checks it** — which
 QA case under `docs/qa/<task-id>/`, and which exact command. A check is an item
 inside one of those sections, named that way ("item 2 of T-05's DoD"). There is no
@@ -866,27 +935,27 @@ repeating a row that all three share.
 | all | Step 1 of the lane rules, **Pick a lane** | PM | one line naming the lane (`[lane: team]`) | the reply to the user | No — and nothing needs it. Only the `team` lane runs the steps below |
 | team | Step 1, **Language** | PM asks, user answers | the language every crew document is written in | the documents themselves; `state.json` names it | The documents, yes. `state.json`, no |
 | team | Step 2, **Grill** | PM asks, user answers; a `crew_researcher` when the digging is bigger than a quick look | settled answers, one question per turn; plus the researcher's answer, with a source per claim | the answers become the content of step 4, **Write the opening document**; the researcher's answer is `docs/research/<short-name>.md` | The answers, no — step 4 is where they land. The researcher's answer, yes |
-| team | Step 3, **Language and stack** | PM decides, user confirms; a `crew_researcher` when the choice is real | the **Language and stack** section: language and version, package manager, framework, database, test framework with its exact command. Plus the researcher's answer, with a source per claim | the section in `docs/design/prd.md`; the answer in `docs/research/<short-name>.md` | Yes, both |
-| team | Step 4, **Write the opening document** | PM | `docs/design/prd.md`. Small work: goal, out of scope, Language and stack. Big work: the same file with the problem, the users, success, risks, open questions and the **milestones, each with a DoD section** | `docs/design/prd.md` | Yes |
+| team | Step 3, **Language and stack** | PM decides, user confirms; a `crew_researcher` when the choice is real | the **Language and stack** section: language and version, package manager, framework, database, test framework with its exact command. Plus the researcher's answer, with a source per claim | the section in the opening document; the answer in `docs/research/<short-name>.md` | Yes, both |
+| team | Step 4, **Write the opening document** | PM | the opening document — `docs/design/prd-<date>-<job-slug>.md`, one per job. Small work: goal, out of scope, Language and stack. Big work: the same file with the problem, the users, success, risks, open questions and the **milestones, each with a DoD section** | `docs/design/` | Yes |
 | small, bug | Step 4, **Write the task table** | PM, because small work has no architect | `docs/design/tasks.md`: one row per task with an id, one sentence of work, the exact files it owns, the test file it must write, and its **DoD section** | `docs/design/tasks.md` | Yes |
 | bug | **A bug becomes a task row** — before any engineer starts | PM, never the engineer that will do the fix | one row: **what was reported** (who reported it, the command, the input, what happened, what was expected) and its **DoD section** (the failing case that must exist and pass, and the behaviour that must change) | `docs/design/tasks.md` | Yes |
 | team | Step 5, **Confirm** | PM asks, user answers | the user's yes on the document, on the stack, and — big work — on the milestone list on its own | no file; the confirmed document is the record | No, and the document carries it |
 | team | Step 6, **Job folder** | PM | `state.json`: tasks, milestones, document versions, the CRD list, the merge result | `~/.dsh/crew/jobs/<job-slug>/state.json` | **No, on purpose.** It is progress, not a record, and it stays out of the user's `git status` |
 | team | Step 7, **Branch** | PM | the work branch `crew/<job-slug>` | git | The branch is deleted in step 17, **Merge and clean up**. Its commits stay on `main`, so the work survives |
-| big | Step 8, **Design** | `crew_architect` | `docs/design/hld.md`; `docs/design/tasks.md` with a **DoD section on every row**; one contract per boundary; an ADR per open choice, with every option and why it lost | `docs/design/`, `docs/design/api/<caller>-<callee>.md`, `docs/decisions/adr/` | Yes |
-| big | Step 8, **Doc review before any code** | `crew_doc_reviewer` | findings, each blocking or optional — including "this row has no DoD section" | its report to the PM; the fix lands in the document | The report, no. The corrected documents, yes |
+| big | Step 8, **Design** | `crew_architect` | the design, `docs/design/hld-<date>-<job-slug>.md`; `docs/design/tasks.md` with a **DoD section on every row**; one contract per boundary; an ADR per open choice, with every option and why it lost | `docs/design/`, `docs/design/api/<caller>-<callee>.md`, `docs/decisions/adr/` | Yes |
+| big | Step 8, **Doc review before any code** — one round, like every other review | `crew_doc_reviewer` | findings, each blocking or optional — including "this row has no DoD section" | its report to the PM; the fix lands in the document | The report, no. The corrected documents, yes |
 | team | Step 9, **Run the tasks** | PM starts one `crew_engineer` per task | the code and its test file, both named in the task row, with the failing run shown before the passing one | the project's own source and test folders | Yes |
 | team | Step 9 or 10, **a question the files cannot answer** | engineer, QA or architect | `inbox/Q-<number>.md`: the cause, every way found, the files each one changes, its cost, and the way it recommends | `<job folder>/inbox/` | **No** — which is why the ADR below **quotes** it word for word and may never point at it |
-| team | Step 10a, **Code review** | `crew_code_reviewer` | findings with file and line, each blocking or optional | report to the PM; the fixes land in the code; the verdict becomes the `code` value of that task's **Verdicts** line, written at step 11, **Commit** | The report, no. The code, yes. The verdict, yes — it survives as one value on the Verdicts line in `docs/design/tasks.md`. That line is the PM's report of what the reviewer said, not the reviewer's own signature: reviewers cannot write files (principle 12) |
-| team | Step 10b, **Security review** | `crew_security_reviewer`, when the change earns one | findings, or the PM's stated reason it was skipped | report to the PM; the verdict becomes the `security` value of that task's **Verdicts** line, and a skip carries its reason there, on its own value; the skip reason also goes into step 12 **Milestone review** or step 18 **Finish** | The report, no. The verdict and its skip reason, yes — on the Verdicts line in `docs/design/tasks.md`, and in the summary. Same limit as 10a: the PM writes the line |
-| team | Step 10c, **QA** | `crew_qa` | the test plan, written from the document before it reads the code; then runnable cases, a `run.sh` per task and `docs/qa/run-all.sh`; then what no case can check | plan in `<job folder>/<task-id>-plan.md`; cases in `docs/qa/<task-id>/`, with any helper they share in `docs/qa/lib/`; gaps in `docs/qa/gaps.md` | Plan, no — the cases say the same thing in a form that runs. Cases and gaps, yes |
+| team | Step 10a, **Code review** — once per milestone, at the end, in parallel with 10b and 10d, on the changed part only | `crew_code_reviewer` | findings with file and line, each blocking or optional | report to the PM; the fixes land in the code; the verdict becomes the `code` value of that task's **Verdicts** line, written at step 11, **Commit** | The report, no. The code, yes. The verdict, yes — it survives as one value on the Verdicts line in `docs/design/tasks.md`. That line is the PM's report of what the reviewer said, not the reviewer's own signature: reviewers cannot write files (principle 12) |
+| team | Step 10b, **Security review** — same round, same milestone, when the change earns one | `crew_security_reviewer`, when the change earns one | findings, or the PM's stated reason it was skipped | report to the PM; the verdict becomes the `security` value of that task's **Verdicts** line, and a skip carries its reason there, on its own value; the skip reason also goes into step 12 **Milestone review** or step 18 **Finish** | The report, no. The verdict and its skip reason, yes — on the Verdicts line in `docs/design/tasks.md`, and in the summary. Same limit as 10a: the PM writes the line |
+| team | Step 10c, **QA** — **once per milestone**, after all the coding and before the three reviews, in two steps | `crew_qa`, twice over: one agent writes the case list from the DoD sections without reading the code, then one agent per case | the case list; then one case file each, and the `run.sh` beside them; then the gap lines it reports to the PM | list in `<job folder>/<task-id>-plan.md`; cases in `docs/qa/<task-id>/`, with any helper they share in `docs/qa/lib/`; **`docs/qa/run-all.sh` and `docs/qa/gaps.md` are the PM's — QA reports those lines and never writes either file** | List, no — the cases say the same thing in a form that runs. Cases, yes. Gaps, yes, written by the PM |
 | team | Step 10, **two ways to fix — the PM decides** | PM; the user when they can see the difference | an ADR: the cause, **every** option with its cost and why it lost, the choice, who decided, and the reason | `docs/decisions/adr/NNNN-<short-name>.md` | Yes |
-| team | Any step, **a change to scope, a DoD item, the milestone list or a contract** | PM, whoever asked | a CRD — and the DoD items it adds are written into the task row or the milestone it changes, with a note in the CRD of where they went and how many | `docs/decisions/crd/NNNN-<short-name>.md`, plus `docs/design/tasks.md` or `docs/design/prd.md` | Yes |
+| team | Any step, **a change to scope, a DoD item, the milestone list or a contract** | PM, whoever asked | a CRD — and the DoD items it adds are written into the task row or the milestone it changes, with a note in the CRD of where they went and how many | `docs/decisions/crd/NNNN-<short-name>.md`, plus `docs/design/tasks.md` or the opening document | Yes |
 | team | Step 11, **Commit** | PM, the only one who uses git | the commit: the task's files, QA's cases, its `gaps.md` entries, any ADR or CRD — and the message, which carries this change's reasons and its real test numbers. **Plus that task's Verdicts line**: one bullet at the top of the task's section carrying all four values (`code`, `security`, `qa`, `doc`), a reason of its own on every `not run` and every `skipped`, and a task id on every `changes needed` | git history for the commit and its message; `docs/design/tasks.md` for the Verdicts line. In this repository `node tools/verify-tasks.mjs` reads that line as the last stage of `npm test`, so every push checks it and a release checks it again before publishing; the check itself writes no file — its counts go to stdout, like every other test run in this table | Yes, both. The commit message is the only timestamped copy of the four values; the Verdicts line is the copy a check can read |
 | big | Step 12, **Milestone review** | PM reports, user answers | what works now, how to try it, what is missing, the real test numbers, every CRD and every ADR of that milestone, one line each | the reply to the user; whatever the user decides becomes a CRD | The report, no. Its decisions, yes |
 | big | Step 13, **Release and upgrade plans**, for a milestone that really ships | PM plus a `crew_researcher`, with a source and a date per claim | `<milestone>-release.md` and `<milestone>-upgrade.md`; or, when nothing ships, a **shipping gap list** naming what is still missing | `docs/release/` — the two plans when the milestone ships; `docs/release/<milestone>-gaps.md` when it does not; the researcher's answer in `docs/research/<short-name>.md` | Yes — the two plans or the shipping gap list, and the researcher's answer, all stay. The shipping gap list is a file, not a paragraph in a message: the next milestone shortens that same file instead of copying it forward by hand |
 | team | Step 14, **README and the other reader-facing files** | PM | `README.md` in English, plus `README-<lang>.md` when the job's language is not English; a `CHANGELOG.md` entry when a user would notice the change; a `CLAUDE.md` edit when the repository's own rules or layout moved | the repository root | Yes |
-| team | Step 15, **Last doc review** | `crew_doc_reviewer` | findings on every document this job produced or changed, the README included | report to the PM; fixes land in the documents | The report, no. The documents, yes |
+| team | Step 15, **Last doc review** — one round | `crew_doc_reviewer` | findings on every document this job produced or changed, the README included | report to the PM; fixes land in the documents | The report, no. The documents, yes |
 | team | Step 16, **Push and CI** | PM, with the user's yes every single time | the pushed commits, and `merge.publishCheck` — the CI files that were read and whether this push would publish | the remote; `state.json` | The commits, yes. `publishCheck`, no, and it is re-read after a restart |
 | team | Step 17, **Merge and clean up** | PM, three separate yeses | the merge commit on `main`, never squashed, so every task's commit and its test-first proof stay readable; then the deleted branch | git history | Yes |
 | team | Step 18, **Finish**, and the migration inside it | PM | every DoD section re-read and confirmed item by item, the real numbers from both test commands, the closing summary — and then the durable half moved out of everything about to be dropped, to **seven** destinations | a rule to `principles.md`; a decision about how to `docs/decisions/adr/`; a decision about what, the scope or a contract to `docs/decisions/crd/`; the reasons and the test numbers to the commit message; what no case can check to `docs/qa/gaps.md`; **a DoD item's own wording to `docs/design/tasks.md`**; **which files a task owns to `docs/design/tasks.md`** | Everything it moves, yes. The job folder goes, and a test run's output was never a file at all |
@@ -979,7 +1048,7 @@ later. The rule it enforces is honesty, not effort: a skip is allowed, a silent
 skip is not.
 
 Some of the paths that table names are here and some are not, and the split
-moves as jobs run: `docs/design/prd.md` and `docs/design/hld.md` arrived with
+moves as jobs run: the opening document and the design arrived with
 the first job that needed them, while `docs/design/api/`, `docs/release/` and
 `docs/research/` are steps no job here has run, and that is not a misalignment.
 
@@ -1016,7 +1085,7 @@ document lived in `docs/design/` and survived every job. Small work's opening
 document lived in the job folder and was destroyed by design. The two are the same
 position in the flow, played by the same role, and the destroyed one was the one
 that carried the acceptance checks. Moving a file would have fixed one case; giving
-both lanes the same document, in the repository, fixes the class.
+small work and big work the same document, in the repository, fixes the class.
 
 **Why the DoD is not folded into a CRD.** That was the first shape proposed, and it
 is wrong for a reason worth keeping: a CRD is the record of one decision at one
@@ -1038,14 +1107,31 @@ fixed instead of rotting.
 produce a test — but the person doing the fix writes it. That is precisely how a
 fix for a symptom passes: the engineer writes a test for the behaviour it decided
 to fix, and before it started, nobody else had said what "fixed" means. Two people,
-two moments: the PM says what fixed means, then the engineer proves it. This is the
-`team` lane only. A `quick` fix — a typo, a one-line change — stays a well-written
-commit message, or the rule reads as "every typo needs a document" and nobody
-follows it at all.
+two moments: the PM says what fixed means, then the engineer proves it.
 
-**Why one file name for both lanes.** It removes a name instead of adding one. The
+**And this holds for every change, however small.** There used to be a third lane
+for the smallest work — a typo, a rename, a one-line fix — where the PM did it
+alone and wrote no document. That lane is gone. Two lanes are left: `ask`, where
+the user wants an answer and nothing changes, and `team`, where something changes.
+**Anything that changes gets a milestone**, and a milestone holds at least one task,
+one round of QA, and one round of each of the three reviews.
+
+The old lane existed because the full loop used to cost hours: three rounds of code
+review, two of security review, and a round of QA per task. Principles 6 and 18 now
+put QA and the three reviews **once** at the end of the milestone, in parallel, on
+the changed part only — so a typo's full loop is minutes. The lane was a workaround
+for a cost that no longer exists, and it was buying that speed with the one thing
+this repository keeps losing: a change nobody else looked at.
+
+**A milestone is not a release.** It is one full loop and one commit. Pushing a
+branch, pushing `main`, tagging a version and publishing a package each need the
+user's own yes, every time, and no milestone grants any of them
+(`docs/decisions/crd/0023-req-interview-six-decisions.md`, decision four).
+
+**Why one file shape for small work and big work.** It removes a name instead of adding
+one. The
 weight belongs in the content, not in the file name: a small job's
-`docs/design/prd.md` is three paragraphs, and that is correct rather than lazy. Two
+opening document is three paragraphs, and that is correct rather than lazy. Two
 names for the same position in the flow is what produced the asymmetry above.
 
 **Why one table and not two.** Two descriptions of one thing drift apart, and this
@@ -1289,6 +1375,122 @@ section just below.
   (Kent Beck, *Extreme Programming Explained*, **1999**) — cited for the contrast
   above, not as the origin of this shape.
   [Pair programming](https://en.wikipedia.org/wiki/Pair_programming)
+
+---
+
+## 22. Do not tell, ask — and ask the question that fits the hole in what you know
+
+**Rule.** The PM opens a job with one interview, and that interview has a method.
+Six kinds of question, picked by which kind of thing is missing rather than by
+whatever comes to mind: **clarify** ("what do you mean by X?", "can you give me
+one example?"), **probe the assumptions** ("what are you taking for granted
+here?", "is that always true?"), **reasons and evidence** ("how do you know?",
+"what have you seen that shows it?"), **other viewpoints** ("who would disagree
+with this, and why?", "is there another way?"), **implications** ("if we build it
+that way, what happens next?", "what breaks?"), and **question the question
+itself** ("is this the right thing to ask for?", "what does this ask assume?").
+
+The sixth kind is the one most often skipped and the one that saves the most
+work, because it is the permission to say "I think you may be solving the wrong
+problem." Use it early, while changing direction is still cheap.
+
+**Wide first, then narrow.** Open questions at the start, exact ones at the end.
+The order matters: starting narrow only confirms the picture already in the
+asker's head, and never reaches the thing nobody thought to ask about.
+
+**Two failure modes.** A **leading question** hides the wanted answer inside it
+("you need this to be fast, right?"). The rule that prevents it: if you think you
+already know the answer, **go and look it up** — in the code, in the files they
+gave you, in what they have already said — instead of putting a question mark on
+your own guess. And **making someone feel examined**: once a person feels judged,
+pushed, or made to look slow, they stop saying what is true and start saying
+whatever makes the questions stop. An interview like that is worse than none,
+because it produces confident wrong answers. Nobody is keeping score, and the two
+of you are looking at the problem, not at each other.
+
+**The stop rule, and this is the load-bearing part.** Stop the moment you can
+write every section of the opening document — scope, out of scope, the checks,
+the stack, the milestones — with no guess left. Not one question earlier, not one
+question later. There is no correct number of questions: five can be right,
+twenty can be right. What is never right is asking a question you already have
+the answer to.
+
+Two rules the crew already had stay exactly as they are, and they belong to this
+one: **one question per turn**, each carrying the PM's own recommended answer, and
+**never guess** — look it up before you ask. What principle 22 adds is the six
+kinds, the funnel, the two failure modes, and the stop rule. "Stop when the
+answers are settled" was the old wording and it is deliberately gone: it names no
+condition anybody can check.
+
+**Why (ours).** Three pieces of evidence, all of them from this repository's own
+history, and the third one is the strongest because it is a failure.
+
+The **first** is the job that added the paired shape. That interview ran more
+than a dozen turns, one question per turn, and **the user changed their own
+position three times during it**: whether the two engineers should be able to
+talk (they proposed it, then rejected it themselves — the first row of the
+rejected table in `docs/decisions/crd/0012-paired-engineers.md`), two worktrees
+instead of "let A run ahead a little"
+(`docs/decisions/crd/0013-two-worktrees-per-task.md`), and the paired shape
+needing an architect (`docs/decisions/crd/0014-pair-mode-needs-an-architect.md`).
+All three came out of being asked, not being told.
+
+The **second** is the sixth kind of question earning its place twice in that same
+job. The PM said "what you are describing is not pair programming — it works by
+staying apart, and pair programming works by converging", and a document review
+said "T-56 can be split, and this job's own `ADR 0013` proves it". Both times the
+request itself was judged and reworded rather than answered.
+
+The **third** is this principle's own arrival. The PM of the job that wrote it ran
+the interview and then, when the user asked whether the method was being used,
+audited itself and found **three of the six kinds had not been used once**: the
+funnel was inverted (the first question was already narrow, and no open question
+was ever asked), and clarify, reasons-and-evidence and other-viewpoints were all
+missing. The PM then asked the one clarifying question it had skipped — the only
+question in the whole interview whose answer could not be found in the repository
+— and that single question returned the two most concrete requirements of the
+job. **The most productive question was the one nearest to being skipped**, and it
+was skipped because nobody was checking the six kinds off against the holes. That
+is the whole argument for making them a list instead of an instinct
+(`docs/decisions/crd/0023-req-interview-six-decisions.md`).
+
+The counter-evidence belongs here too, because it is the same failure wearing
+different clothes. In the paired-shape job three of the PM's own briefings carried
+errors of their own making: one said "you touch only two files" while also
+requiring the red light to appear in a test file; one treated "gets every tool" as
+a general consequence when it holds in 9 of 18 cases; and one quoted text
+containing `roleDeny: {`, which broke `case-04`. Every one of the three was the
+PM believing it already knew the answer instead of looking it up first — the exact
+thing the leading-question rule forbids, only happening inside an instruction
+rather than inside a question.
+
+**Lives in** `roles/pm.md`, step 2 of the team lane. That step is the whole
+interview: the six kinds, the funnel, the two failure modes and the stop rule are
+written there, and it replaced a step called "Grill" whose ending condition was
+"stop when the answers are settled". Nothing else in the package carries this
+principle, and that is on purpose — the PM is the only role that talks to the
+user, so it is the only role that can hold an interview.
+
+**Source.** Six kinds of question, the funnel and the failure modes are not this
+crew's invention; the ten sources below are the ones the method was distilled
+from, and `docs/decisions/crd/0019-socratic-principle-deferred.md` carries the
+same list with the distillation beside it.
+
+- [6 types of Socratic Questions — University of Michigan](https://websites.umich.edu/~elements/probsolv/strategy/cthinking.htm)
+- [The Six Types of Socratic Questions (PDF)](https://www.trigonweb.com/dowload/SOCRATIC%20QUESTIONS.pdf)
+- [Socratic Questioning in Psychology: Examples and Techniques](https://positivepsychology.com/socratic-questioning/)
+- [Socratic Questioning as a requirements elicitation tool](https://masteringbusinessanalysis.com/mba180-socratic-questioning/)
+- [How to Use the Socratic Questioning Technique](https://therightquestions.co/the-socratic-method-questioning-technique/)
+- [Improve Investigative Interviews with Socratic Questioning](https://taproot.com/improve-investigative-interviews-with-socratic-questioning/)
+- [Effective questioning techniques — the funnel](https://pdf.ai/resources/effective-questioning-techniques)
+- [Towards a typology of questions for requirements elicitation interviews (PDF)](https://www.yorku.ca/liaskos/Papers/RE2021/RE2021.pdf)
+- [LLMREI: Automating Requirements Elicitation Interviews with LLMs](https://arxiv.org/pdf/2507.02564)
+- [Clarifying Agent in Dialogue Systems](https://www.emergentmind.com/topics/clarifying-agent)
+
+One requirement is this repository's own and comes from the user rather than from
+any source: **the PM is allowed to tell the user that the thing they are asking
+for may itself be wrong**, and the user asked for that in as many words. That is
+the sixth kind of question, given permission.
 
 ---
 
@@ -1703,7 +1905,7 @@ One thing the Scrum Guide gives that holds here unchanged: an item that does not
 | A new document type, `docs/decisions/fix/<task-id>.md`, for bug-fix choices | Rejected: an ADR is already the file that records one open choice, so a second type would give the same thing two homes and split the place a reader has to look. Small work writes an ADR too (principle 19), so there is no size of job left for a second folder to serve. |
 | Sending a small job's decision to a **Decisions** section of the DoD | This was the rule for one day, and principle 19 replaced it. Rejected: it made the home of a decision depend on whether the job had an architect, and the DoD was then a file of its own, single-use — the decision would have been dropped with the job folder. Principle 20 has since removed that file altogether. |
 | Folding the DoD into a CRD, as a section of it | The user's first shape, and it keeps every check in the repository. Rejected after the PM pushed back, and the user then tightened it further himself: a CRD is the record of one decision at one moment and must never be rewritten, while a DoD is a living document — this job's went through 26 versions. One file cannot be both. What replaced it is not another file but **no file**: the DoD grows inside the thing it belongs to. |
-| Keeping a `dod.md`, but moving it into `docs/design/` so it survives | The one-line fix, and it would have saved this job's 75 checks. Rejected: it fixes one case and leaves the class. Two names for the same position in the flow is what produced the asymmetry in the first place — big work opened with a PRD, small work with a DoD — so the shape that holds is one opening document for both lanes, with the checks living in the task or milestone they belong to. |
+| Keeping a `dod.md`, but moving it into `docs/design/` so it survives | The one-line fix, and it would have saved this job's 75 checks. Rejected: it fixes one case and leaves the class. Two names for the same position in the flow is what produced the asymmetry in the first place — big work opened with a PRD, small work with a DoD — so the shape that holds is one opening document for small work and big work alike, with the checks living in the task or milestone they belong to. |
 | A global, numbered list of acceptance checks | It reads well in a review and gives every check a short name. Rejected on this crew's own evidence: three of its 75 checks failed *as checks* because they sat far from the work they governed (11 contradicted 48-52, 67 was too literal, 70 pointed at a renamed folder), and four CRDs still point at numbers no document defines. A check now lives in the DoD section of its task or milestone and is named that way. |
 | A git `pre-push` hook that refuses a push when a review gate was skipped | The user's first idea for an unskippable gate, and it went to review before it was built. Rejected on two grounds the PM re-checked, both of which hold. One: **`pre-push` cannot see the commits a tag push carries**, and a `v*` tag is this repository's one irreversible action — it triggers `.github/workflows/publish.yml` and publishes to npm — so the hook missed the only push that matters. Two: **a hook does not travel with the repository**; `git clone` does not bring `.git/hooks/`, and `--no-verify` walks past it. (The same review corrected the PM on a detail: `git push -n` is `--dry-run`, not `--no-verify`.) What replaced it is a check inside `npm test`, `node tools/verify-tasks.mjs`: push CI runs it and the publish workflow runs it again before it publishes, which covers exactly the push the hook could not see, and it travels with the repository. The hook never landed, so nothing was undone. `CRD 0011`. |
 | Every ADR stops and waits for the user to pick | Rejected: one design often holds several ADRs, so the job would stop once per ADR and the user would be interrupted with choices about the inside of the code. The architect marks a recommendation and the design keeps moving; the user sees every option at the milestone review and may overturn one. Options the user can see are still asked on the spot. |
