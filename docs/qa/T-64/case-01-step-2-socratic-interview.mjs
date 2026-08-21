@@ -2,9 +2,9 @@
 // (PRD M1 DoD item 10).
 // Proves step 2 of `roles/pm.md` is a Socratic interview with a method — six
 // kinds of question, the funnel, both failure modes and a stop rule — that the
-// old open-ended sentence `Stop when the answers are settled` is gone, and that
-// the step carries its own reasoning instead of a numbered pointer at
-// `principles.md`.
+// old open-ended stop sentence is gone (it is written out once below, as
+// `BANNED`), and that the step carries its own reasoning instead of a numbered
+// pointer at `principles.md`.
 //
 // ONE HALF OF T-64 DoD ITEM 5 IS SUPERSEDED, and this file is where that shows.
 // The cell asks step 2 to point at principle 22 of `principles.md`; T-84, on
@@ -34,11 +34,19 @@
 //    times (`docs/qa/gaps.md` item 21). The per-line count is printed beside
 //    the flattened one so the two numbers can be compared, and a self-test
 //    below proves the matching used here really does survive a line wrap.
+//
+// 3. The banned sentence is written out ONCE, as `BANNED`, and every count goes
+//    through that one constant. It used to be written twice — once as the
+//    constant, once again inside a regular expression — so an edit to the
+//    constant would have left the counter hunting for the old wording while the
+//    check's own name printed the new one: a green light that lies about what it
+//    counted. One spelling, one place, and `grep -c` on this file finds exactly
+//    one.
 
 import { check, done, flat, pm, step } from "../lib/qa.mjs";
 
 const BANNED = "Stop when the answers are settled";
-const banned = (text) => (text.match(/Stop when the answers are settled/g) ?? []).length;
+const banned = (text) => text.split(BANNED).length - 1;
 
 const text = pm();
 const two = step(text, 2);

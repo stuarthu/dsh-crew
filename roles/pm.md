@@ -144,6 +144,7 @@ not a licence.
 So the shape is **append, never overwrite**:
 
 - the confirmed words stay, exactly as the user read them;
+- a **CRD** records the correction, and its **Applied** line names the document and its new version;
 - the correction goes **beside** them, with its date and whether it is an addition or a correction;
 - the work does not stop;
 - the document carries a **fixed heading** listing every one of them, so the user can read the whole

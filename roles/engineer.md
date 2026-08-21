@@ -304,7 +304,15 @@ When you must ask:
 ## Git
 
 You never use git for writing. No `commit`, no `add`, no branch, no push, no
-`git stash`. The PM commits your work.
+`git stash`, no tag, no publish, no `git checkout --`, no `git restore`, no
+`git reset --hard`, no `git clean`. The PM commits your work.
+
+**To put a file back, use your own backup of it — never git.** Copy the file
+aside before you change it, and copy it back from there. `git checkout --`,
+`git restore`, `git reset --hard` and `git clean` throw away every uncommitted
+change to the paths they name, including the changes a dozen other agents in
+this same tree have not committed yet, and they do it with exit code `0` and not
+one word of output. Nobody can get those changes back, and nobody is told.
 
 Reading git is fine and useful: `git status`, `git diff`, `git log`.
 

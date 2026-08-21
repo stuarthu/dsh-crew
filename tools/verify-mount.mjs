@@ -34,6 +34,17 @@ const copiesOf = (haystack, needle) => haystack.split(needle).length - 1;
 // difference between a check that can go red and a check that never can: this
 // repository has shipped checks that looked for a sentence a `grep` could never
 // find, because the file broke it over two lines.
+//
+// AND DELIBERATELY NOT IMPORTED from `docs/qa/lib/qa.mjs`, which holds the same
+// one-line function. This looks like duplication worth removing and it is not:
+// `tempRepo()` in that file copies package.json, cordis.patch.yml, host, roles,
+// preset, tools, .github and docs/design/tasks.md into a throwaway folder, and
+// it does NOT copy `docs/qa/`. Two dozen QA cases run THIS script inside such a
+// copy — most of `docs/qa/T-42/`, some of `docs/qa/T-51/` — so an import of
+// `docs/qa/lib/qa.mjs` from here kills every one of them before the first check
+// runs, with `ERR_MODULE_NOT_FOUND: Cannot find module .../docs/qa/lib/qa.mjs`.
+// Measured, not guessed: the import was added inside a copy and that is what
+// came out. Keep the two copies, and change both in one commit.
 const flat = (text) => text.replace(/\s+/g, " ");
 
 // ------------------------------------------------------------- package shape
@@ -544,10 +555,32 @@ for (const fileName of [PM_PERSONA_FILE, ...ROLES.map(role => role.personaFile)]
 // JUDGED FLATTENED, WITH A SELF-TEST ON THAT. An ABSENT pin may only be judged
 // after flattening: this prose wraps at 80 columns, so the sentence can come
 // back with the number ending one line and the name opening the next, and a
-// line-based scan reads 0 on a file that carries the pointer. The first branch
-// feeds the matcher that exact folded sample and demands the flattened scan hit
-// it while a line-by-line scan misses it — so a later rewrite back to a line
-// scan goes red here instead of quietly going blind.
+// line-based scan reads 0 on a file that carries the pointer. The self-test
+// below feeds the matcher that exact folded sample.
+//
+// WHICH HALF OF THAT SELF-TEST IS DOING THE WORK, because the two conditions
+// below are not two guards on the same thing and this comment used to read as
+// if they were.
+//
+// `pointersIn(FOLDED).length !== 1` is the live half. Take `flat` out of
+// `pointersIn` and the folded sample reads 0 pointers, so this goes red — and
+// that is the likeliest way this pin would ever go blind, which is why the
+// self-test goes through the same function the ten prompts go through.
+//
+// `perLine(FOLDED)` cannot do that job at all. The matcher's gap is
+// `[^.\n]{0,24}?`, which EXCLUDES a newline, and FOLDED wraps inside that gap,
+// so with the regex below as it stands a line-by-line scan of FOLDED matches
+// nothing whatever the file loop does — the condition restates a consequence of
+// the code beside it, which docs/qa/gaps.md names as an assertion that shares a
+// source with its implementation. What it DOES guard is FOLDED itself: a sample
+// edited so the number and the name land on one line still gives 1 pointer, and
+// only this half notices that the sample has stopped exercising folding. Both
+// readings are in the failure message.
+//
+// AND NEITHER HALF CLOSES THIS: a file loop rewritten to call `numberFirst`
+// line by line instead of calling `pointersIn` goes red on neither condition.
+// The self-test guards the flattening inside `pointersIn`, not the loop's choice
+// to use it.
 {
   const numberFirst = () => /\b(?:principles?|rules?|entr(?:y|ies)|items?|sections?)\s+\d+[^.\n]{0,24}?principles\.md/gi;
   // ONE scanner, used by the self-test and by the ten prompts alike. That is
@@ -877,7 +910,14 @@ function applyCapturingLogs(config, options) {
     // paragraph and this check goes red, so whoever rewords it edits this
     // string in the same commit. `Parallel is the default` would not do for
     // step 9 — that is step 10's own rule, which the next check pins on its own.
-    else if (!section.text.includes("Parallel by default")) fail("PM section is missing the string `Parallel by default` — step 9's parallel rule (one crew_engineer per CODE CHANGE, which is one per task when the task holds one change, all the calls in one message) has been dropped from roles/pm.md, or its heading was reworded. Put the rule back, or update this string in tools/verify-mount.mjs in the same commit");
+    //
+    // Matched on the flattened text, like the two pins below it, so the heading
+    // may wrap. It sits on one line in roles/pm.md today, which is why the raw
+    // `includes` this used to be was green — by luck, not by design. A PRESENT
+    // pin judged raw fails the day somebody reflows step 9 with the rule still
+    // there: a false red on a correct file, and whoever meets one is most likely
+    // to widen the assertion (docs/qa/gaps.md item 31).
+    else if (!flat(section.text).includes("Parallel by default")) fail("PM section is missing the string `Parallel by default` — step 9's parallel rule (one crew_engineer per CODE CHANGE, which is one per task when the task holds one change, all the calls in one message) has been dropped from roles/pm.md, or its heading was reworded. Put the rule back, or update this string in tools/verify-mount.mjs in the same commit");
     // Step 10's parallel rule is the same hole one step later, and it was left
     // open when step 9's was closed: delete the paragraph that starts the
     // milestone's reviews in one message, and all four checks stayed green. So it
@@ -1027,10 +1067,23 @@ function applyCapturingLogs(config, options) {
     //
     // Matched on the raw text, not the flattened text, on purpose: this is a
     // bullet row that begins a line, so it cannot arrive wrapped in the middle.
-    // Note the pin covers the whole PM prompt, roles/pm.md plus the runtime facts
-    // section built in host/crew.js — which is where the same cancelled lane was
-    // named a second time, in a sentence about presets that had nothing to do
-    // with lanes and was therefore easy to miss.
+    // WHAT THIS PIN DOES NOT COVER, said plainly because the comment here used
+    // to imply the opposite. The text read is the whole PM prompt — roles/pm.md
+    // plus the runtime facts section built in host/crew.js — but the anchor is
+    // the OPENING OF THE OLD LANE ROW, and host/crew.js never named the lane in
+    // that shape: its copy was a sentence about presets ("The `ask` and `quick`
+    // lanes work either way.", removed in the same commit as the lane itself),
+    // and this string does not match that sentence. A lane ROW is prose in the
+    // persona file, so unless somebody writes one into the runtime facts — which
+    // have never held one — the only file this pin can go red on is roles/pm.md.
+    // The host/crew.js half of the change is held somewhere else entirely, by
+    // docs/qa/T-64/case-04-cancelled-lane-gone-everywhere.mjs: it requires the
+    // word not to appear in that file AT ALL, and requires both surviving lane
+    // names to still be there first, so deleting the paragraph cannot pass as
+    // having fixed it. Widening THIS pin into a bare-word scan to cover crew.js
+    // would be the wrong fix: roles/pm.md says "a quick look" about a researcher,
+    // which is correct English and stays, so the widened pin would be red on a
+    // correct prompt for ever.
     else if (section.text.includes("`quick` — one small clear change")) fail("PM section brings back the cancelled third lane: the row opening \"`quick` — one small clear change with no design choice\" is in the PM prompt again. CRD 0023 decision four removed it: no matter how small a change is, it gets a milestone with at least one task, one round of QA and one round each of the code, security and doc reviews. A lane the PM drives alone is a change reaching the repository with no task row, no DoD section and nothing checking it, and the size judgement that let a change in was the PM's own. Take the lane out of roles/pm.md (and out of host/crew.js, which named it a second time), or reopen the decision in a new CRD and change this check in the same commit");
     // T-66, PRD B3, audit defect 3. The milestone review's first answer used to
     // be called `Ship this milestone`, and its body named step 13 only. Step 13

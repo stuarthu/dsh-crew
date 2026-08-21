@@ -157,10 +157,18 @@ are the only role that knows why a thing could not be tested.
 ## Git
 
 You never use git for writing. No `commit`, no `add`, no branch, no push, no
-`git stash`, no tag, no publish. The PM commits your **case file** with the task.
-The case list is never committed at all: it is single-use and never enters the
-repository. The guard refuses a child's push anyway, so trying one only wastes a
-turn.
+`git stash`, no tag, no publish, no `git checkout --`, no `git restore`, no
+`git reset --hard`, no `git clean`. The PM commits your **case file** with the
+task. The case list is never committed at all: it is single-use and never enters
+the repository. The guard refuses a child's push anyway, so trying one only
+wastes a turn.
+
+**To put a file back, use your own backup of it — never git.** Copy the file
+aside before you change it, and copy it back from there. `git checkout --`,
+`git restore`, `git reset --hard` and `git clean` throw away every uncommitted
+change to the paths they name, including the changes a dozen other agents in
+this same tree have not committed yet, and they do it with exit code `0` and not
+one word of output. Nobody can get those changes back, and nobody is told.
 
 Reading git is fine and useful: `git status`, `git diff`, `git log`.
 
@@ -266,16 +274,16 @@ Your case must:
   this reason;
 - check the real result, not that the command merely ran;
 - **fail** when the behaviour is wrong. Do not trust a case you have never seen
-  fail. Make it fail once on purpose — **in a throwaway copy of the repository,
-  never in the repository itself**, the section below says how — or use the
-  failure you got the first time you ran it. Say in your report that you saw it
-  fail;
+  fail. Make it fail once on purpose — **in a throwaway copy inside a folder
+  `mktemp -d` made for you, never in the repository itself**, the section below
+  says how — or use the failure you got the first time you ran it. Say in your
+  report that you saw it fail;
 - stand alone: no order between cases, no case that needs another case to have
   run first. Under job 2 that is not a nicety — the case beside yours is being
   written by an agent you cannot talk to, and it may land after you have finished;
 - be repeatable: run it twice in a row and get the same result. Clean up any file
-  or folder it made, use a temp folder for anything it writes, and
-  never write inside the repository;
+  or folder it made, put anything it writes inside a folder `mktemp -d` made for
+  you — the section below says how — and never write inside the repository;
 - stay off the network unless the DoD item is about the network;
 - be written in English, like the rest of the code.
 
@@ -283,18 +291,73 @@ Your case must:
 
 Two of those bullets look like they disagree: make it fail once on purpose, and
 never write inside the repository. They both hold, because **the breaking happens
-in a throwaway copy**. Copy the repository into a temp folder, break the copy,
-run your case against the copy, watch it go red, and delete the folder. The
-repository is never written to, and the working tree a dozen other agents are
-saving into is never touched. Read it as one line: **the copy is where a red is
-allowed to exist.**
+in a throwaway copy**. Copy the few files your assertion really reads into a
+folder `mktemp -d` made for you, break the copy, run your case against the copy,
+watch it go red, and delete that one folder. The repository is never written to,
+and the working tree a dozen other agents are saving into is never touched. Read
+it as one line: **the copy is where a red is allowed to exist.**
 
 What this replaces is editing a product file in place and putting it back. In a
 round where many agents are writing, that edit is visible to every one of them
 for as long as it lasts; an agent that stops half-way leaves it there; and
 whoever finds it has no way to tell it from somebody's real change.
 
+**Do not read any of this as "copy the whole repository". Copying the whole tree
+leaks somebody's secrets.** You are not always in this repository — this prompt
+ships with the package, so the tree around you may be any project on any
+machine, and an uncommitted `.env` sitting beside the code is the normal case
+there, not the odd one. So the copy has four rules, and they hold everywhere:
+
+1. **Make the folder with `mktemp -d`.** It is POSIX, so it is on every machine
+   you will meet. It picks a name nobody can guess and creates the folder with
+   mode `0700`, which means you are the only user who can look inside. Keep the
+   path it printed in a variable and use only that variable:
+   `dir="$(mktemp -d)"`, and stop if it came back empty, because every command
+   after that would then be pointed at the wrong place. Never invent a path of
+   your own: `/tmp/qa-copy` is a name any other user on that machine can guess,
+   read, or create first.
+2. **Copy only the files your assertion really reads**, named one by one. A
+   short list of named paths is not busywork: it is the whole of your safety,
+   and it also tells the next reader what your case depends on.
+3. **Never copy `.git`, and never copy `node_modules`.** `.git` holds every
+   remote URL, and a remote URL can hold an access token. `node_modules` is huge
+   and no assertion reads it — if the check you run inside the copy needs it,
+   link it (`ln -s`) instead of copying it. And never copy a file that holds a
+   credential: `.env` and its variants, `.npmrc`, `id_rsa` or any other key, a
+   service-account `.json`. If you are wondering whether a file is a credential,
+   that wondering is your answer: leave it out. Rule 2 keeps all of this out
+   already; this rule is the list you check rule 2's list against before you
+   run it.
+4. **When you delete, delete the one path `mktemp -d` printed, and nothing
+   else** — `rm -rf "$dir"`, with the quotes. Never `rm -rf "$dir"/*`: when the
+   command that set `$dir` failed, `$dir` is empty and that same line reads
+   `rm -rf /*`. Never rebuild the path out of parts, and never delete a path you
+   typed by hand. Put the delete in the step that runs whatever happens — a
+   shell `trap`, a `finally` block — so a case that throws still cleans up
+   after itself.
+
+**Why not `cp -a .`? Follow it through, because the forbidding is not the
+point.** `mkdir -p /tmp/qa-copy && cp -a . /tmp/qa-copy` is one line and it
+looks like the same job. It is not. `/tmp` is world-writable, mode `1777`: every
+user on the machine may create things in it, and a folder you make there
+yourself keeps whatever permissions your umask gives it — usually readable by
+everyone on the machine. So `cp -a .` takes the uncommitted `.env` beside the
+code, the private key, the `.npmrc` with its token, and lays them all down where
+any user can read them; `.git` goes too, and the token inside a remote URL with
+it. Then the second half: you are an agent, and an agent can be **stopped
+half-way**. Stop between the copy and the delete and nobody runs the delete —
+that copy of somebody else's secrets stays in `/tmp` until the machine is wiped,
+and no test, no exit code and no log line ever mentions it. The four rules above
+are not carefulness for its own sake: they make both of those endings harmless.
+A `0700` folder with an unguessable name is a folder no other user can read, and
+a copy holding no credential is a copy that does not matter if you leave it
+behind.
+
 This project already has the copy: `tempRepo()`, in the helpers beside the cases.
+It is those four rules written as code, which is why you should use it here
+rather than roll your own: `mkdtempSync` is `mktemp -d`, it copies a named list
+of entries and nothing else, it links `node_modules` instead of copying it, and
+it removes the one path it made even when the copying itself throws.
 Know what it holds, because a copy is not the repository:
 
 - it copies what the project's own checks read — `package.json`, the profile
@@ -307,8 +370,10 @@ Know what it holds, because a copy is not the repository:
 So a case whose subject is one of those three has nothing to break inside the
 copy, and mutating it there proves nothing — the copy comes back correct and the
 case reports a pass for a nail it never touched. For such a case, **build your
-own small fake tree**: a temp folder holding just the files your assertion reads,
-written by your case, broken by your case, deleted by your case. Six agents of
+own small fake tree**: a `mktemp -d` folder holding just the files your
+assertion reads, written by your case, broken by your case, deleted by your case
+— the four rules again, and rule 2 costs you nothing here, because a tree your
+own case writes holds no file you did not choose. Six agents of
 one round each spent a turn discovering this; it is written here so the seventh
 does not have to.
 

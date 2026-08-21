@@ -140,14 +140,18 @@ console.log(
 );
 
 // Count-it-twice (gaps.md item 21), on this case's other anchor.
+//
+// PRINTED, NOT ASSERTED — AND THAT IS A FIX, NOT A RELAXATION. This used to carry
+// `check(flatCount >= lineCount)`, and that could not fail. The anchor is the
+// two words `version history` with one single space between them, so a line that
+// matches still matches after `flat()` has collapsed that file's whitespace, and
+// joining two lines can only ADD a match. The inequality was a restatement of the
+// two lines above it, not a claim about `roles/pm.md` — `docs/qa/gaps.md` item 21,
+// the `crew-qa-C42` note: an assertion that only restates the necessary result of
+// the code above it is not an assertion. What a reader needs is the two numbers,
+// and the two numbers are still printed.
 const flatCount = flatStep.split(/version history/i).length - 1;
 const lineCount = raw.split("\n").filter((line) => /version history/i.test(line)).length;
-
-check(
-  "count-it-twice: the flattened count of \"version history\" is never lower than the line-based count",
-  flatCount >= lineCount,
-  `flattened ${flatCount} vs line-based ${lineCount} — a line-based count above the flattened one means the counter is broken`,
-);
 
 console.log(
   `note  "version history" appears ${flatCount} time(s) flattened and ${lineCount} time(s) on a single line`

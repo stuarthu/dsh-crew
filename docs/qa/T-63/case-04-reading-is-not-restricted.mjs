@@ -148,11 +148,17 @@ const namedFiles = [...new Set(
   [...wording.matchAll(/`(roles\/[a-z-]+\.md)`/g)].map((match) => match[1]),
 )].sort();
 
+// A FLOOR, NOT AN EXACT COUNT. This is the premise the loop below rests on — that
+// the authoritative section really does list the prompts — and the crew growing an
+// eleventh role must not turn a correct repository red here. The check right below
+// keeps the floor honest: the names must be EXACTLY the prompts on disk, so eleven
+// named and ten on disk is still red. `case-01` is the case that pins the count at
+// exactly ten, and that is where a changed head count belongs.
 check(
-  `principles.md names ten role prompts as carrying this wording (found ${namedFiles.length})`,
-  namedFiles.length === 10,
+  `principles.md names at least ten role prompts as carrying this wording (found ${namedFiles.length})`,
+  namedFiles.length >= 10,
   `the section names: ${namedFiles.join(", ") || "(none)"}.`
-    + " The crew is ten roles, and the authoritative section is where the ten are listed.",
+    + " The crew is ten roles today, and the authoritative section is where they are listed.",
 );
 
 const onDisk = readdirSync(join(REPO, "roles"))
@@ -224,23 +230,27 @@ for (const relative of namedFiles) {
       + " subsection that follows, it no longer reads as part of the write set at all.",
   );
 
-  // Count it twice. The flattened count is the one that decides; this records the
-  // line-based count beside it, so the day the sentence wraps in one of the ten
+  // Count it twice. The flattened count is the one that decides; the line-based
+  // count is recorded beside it, so the day the sentence wraps in one of the ten
   // files it is visible here instead of silently breaking any line-based pin
   // somebody writes later against the same sentence.
+  //
+  // PRINTED, NOT ASSERTED — AND THAT IS A FIX, NOT A RELAXATION. This used to
+  // carry `check(flatHits >= lineHits)`, which could not fail. `SENTENCE` comes
+  // out of `flat()`, so every run of whitespace inside it is already a single
+  // space; flattening the file leaves each line-based hit exactly as it was and
+  // can only ADD hits, where two lines join. So the assertion was a restatement
+  // of the two lines above it, and `docs/qa/gaps.md` item 21 (the `crew-qa-C42`
+  // note) names that shape for what it is: an assertion that only restates the
+  // necessary result of the code above it is not an assertion. The numbers are
+  // what a reader needs, so both numbers stay — unconditionally now, for all ten
+  // files, where before they were printed only in the case that never happened.
   const flatHits = countIn(text);
   const lineHits = text.split("\n").filter((line) => line.includes(SENTENCE)).length;
-  check(
-    `${relative}: count-it-twice — the flattened count is never below the line-based count`,
-    flatHits >= lineHits,
-    `flattened ${flatHits} vs line-based ${lineHits}; a line count above the flattened one means the counting is broken`,
+  console.log(
+    `note  ${relative}: the line appears ${flatHits} time(s) flattened and ${lineHits} time(s) on a single line`
+    + `${flatHits > lineHits ? " — it wraps here, so any line-based pin on it would MISS it" : ""}`,
   );
-  if (flatHits !== lineHits) {
-    console.log(
-      `note  ${relative}: the line appears ${flatHits} time(s) flattened and ${lineHits} time(s) on a single line`
-      + " — it wraps here, so any line-based pin on it would MISS it",
-    );
-  }
 }
 
 done();

@@ -33,8 +33,10 @@
 // flattened section and only once on a single line. A line-based hunt for the
 // citation would therefore MISS the interface-contract entry and report it as
 // having no source at all — a false red, which is as bad as a false green. Every
-// prose read below is done on the FLATTENED text, and the count-it-twice guard at
-// the end proves the difference is real rather than assuming it.
+// prose read below is done on the FLATTENED text, and the count-it-twice note at
+// the end prints both counts, so the difference is measured rather than assumed.
+// It is a note and not an assertion, and the block at the end of the file says
+// why: the inequality between those two counts cannot fail.
 //
 // WHAT THIS CASE DELIBERATELY DOES NOT ASSERT.
 //   * It does not assert the section is NUMBERED. It is unnumbered on purpose
@@ -219,15 +221,19 @@ for (const body of bodies) {
   if (found) console.log(`note  ${heading} -> ${found[0].slice(0, 60)}`);
 }
 
-// count-it-twice, on the very reads above. A line-based count above the flattened
-// one would mean the counter is broken; a flattened count that is HIGHER is the
-// wrap, and it is the reason none of the assertions above are line-based.
-check(
-  "count-it-twice: the flattened citation count is never lower than the line-based one",
-  flatBearers >= lineBearers,
-  `flattened ${flatBearers} vs line-based ${lineBearers} — a line-based count above the flattened one means`
-    + ` this case's own counter is wrong, not the file`,
-);
+// count-it-twice, on the very reads above. A flattened count that is HIGHER is
+// the wrap, and it is the reason none of the assertions above are line-based.
+//
+// PRINTED, NOT ASSERTED — AND THAT IS A FIX, NOT A RELAXATION. This used to carry
+// `check(flatBearers >= lineBearers)`, and that could not fail. Flattening only
+// collapses runs of whitespace: a line that matched `STANDARD` or `URL` still
+// matches once its own whitespace is a single space (the gap in `STANDARD` is
+// `[^.;]{0,40}?`, which only gets shorter, and `URL` holds no whitespace at all),
+// and joining two lines can only ADD a match. So the inequality was a restatement
+// of the loop above it rather than a claim about `principles.md` —
+// `docs/qa/gaps.md` item 21, the `crew-qa-C42` note: an assertion that only
+// restates the necessary result of the code above it is not an assertion. Both
+// numbers are what a reader needs, and both are still printed, below.
 console.log(
   `note  ${flatBearers} of ${bodies.length} entries cite a source when flattened, ${lineBearers} when read line by line`
   + `${onlyFlat.length ? ` — ${onlyFlat.map((h) => JSON.stringify(h)).join(", ")} would be MISSED by a line-based pin, because the citation wraps` : ""}`,

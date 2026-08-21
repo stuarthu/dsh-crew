@@ -1620,10 +1620,11 @@ because the PM is the one who writes those documents: once the user has confirme
 document, no word of its scope, its checks, its milestone list or its stack section changes without
 the user — **and a correction is not an exception.** A check that is impossible, or contradicts
 another check, or asks for something the job has since decided against, is a finding, not a licence.
-The shape this repository uses is **append, never overwrite**: the confirmed words stay, the
-correction is written beside them with its date, the work does not stop, and a fixed heading in that
-document lists every one of them so the user can read them at a glance. A standard you may quietly
-correct is not a standard; a standard whose corrections are all visible still is.
+The shape this repository uses is **append, never overwrite**: the confirmed words stay, a CRD
+records the correction, the correction is written beside them with its date, the work does not stop,
+and a fixed heading in that document lists every one of them so the user can read them at a glance.
+A standard you may quietly correct is not a standard; a standard whose corrections are all visible
+still is.
 
 **Why append rather than ask.** Asking every time blocks every task under a broken check, which is
 what principle 20's flow is built to avoid. Splitting by severity — a wording fix is mine, a change

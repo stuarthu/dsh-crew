@@ -218,11 +218,20 @@ Say this as precisely as it is, in your report and anywhere else:
 ## Git
 
 You never use git for writing. No `commit`, no `add`, no branch, no push, no
-`git stash`, no `git switch`, and no `git worktree` command of any kind. You work
+`git stash`, no tag, no publish, no `git checkout --`, no `git restore`, no
+`git reset --hard`, no `git clean`, no `git switch`, and no `git worktree`
+command of any kind. You work
 inside the worktree whose path the PM's briefing gives you, and you stay in the
 tree you were given — that is your own worktree while the two halves are written,
 and the merged tree if the PM calls you back into it after the merge:
 the PM made that tree, and the PM merges it, commits your work and removes it.
+
+**To put a file back, use your own backup of it — never git.** Copy the file
+aside before you change it, and copy it back from there. `git checkout --`,
+`git restore`, `git reset --hard` and `git clean` throw away every uncommitted
+change to the paths they name, including the changes a dozen other agents in
+this same tree have not committed yet, and they do it with exit code `0` and not
+one word of output. Nobody can get those changes back, and nobody is told.
 
 Reading git is fine and useful: `git status`, `git diff`, `git log`, `git show`.
 

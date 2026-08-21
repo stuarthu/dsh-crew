@@ -105,10 +105,16 @@ check(
 // Read the folder rather than listing ten names, so a renamed or deleted
 // prompt cannot leave this case silently checking nine files. C-01 owns the
 // count as a claim of its own; here it is the premise the loop below rests on.
+//
+// A FLOOR, NOT AN EXACT COUNT, and the difference matters the day it matters:
+// this case is about every role prompt carrying rule A, so an eleventh role must
+// be scanned the day it arrives — the loop below already would, and only this
+// premise would have gone red on a correct repository. C-01 is the case that pins
+// the count at exactly ten, and that is where a changed head count belongs.
 const roles = readdirSync(join(REPO, "roles")).filter((name) => name.endsWith(".md")).sort();
 check(
-  "roles/ holds exactly 10 prompt files",
-  roles.length === 10,
+  "roles/ holds at least 10 prompt files",
+  roles.length >= 10,
   `found ${roles.length}: ${roles.join(", ")}`,
 );
 

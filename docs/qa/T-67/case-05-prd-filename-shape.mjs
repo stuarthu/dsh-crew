@@ -110,15 +110,20 @@ for (const [prefix, what] of [["prd", "PRD"], ["hld", "design document"]]) {
 // Count it twice (gaps.md item 21). The shape is one token today, so the two
 // counts agree; when a future edit wraps it, this prints the difference instead of
 // letting a line-based reader of this file believe the shape is gone.
+//
+// PRINTED, NOT ASSERTED — AND THAT IS A FIX, NOT A RELAXATION. This used to carry
+// `check(flatHits >= lineHits)`, which could not fail: `anchor` is cut out of
+// `pmFlat`, so every run of whitespace in it is already a single space, and
+// flattening the file keeps every line-based hit while only ADDING hits where two
+// lines join. The inequality therefore restated the two lines above it instead of
+// claiming anything about `roles/pm.md` — `docs/qa/gaps.md` item 21, the
+// `crew-qa-C42` note: an assertion that only restates the necessary result of the
+// code above it is not an assertion. The two numbers are the useful part, and
+// they are still printed.
 const anchor = shapes(pmFlat, "prd").find(carriesBoth)?.text;
 if (anchor) {
   const flatHits = pmFlat.split(anchor).length - 1;
   const lineHits = pmText.split("\n").filter((line) => line.includes(anchor)).length;
-  check(
-    "count-it-twice: the flattened count of the PRD shape is never lower than the line-based count",
-    flatHits >= lineHits,
-    `flattened ${flatHits} vs line-based ${lineHits} — a line-based count above the flattened one means the counter is broken`,
-  );
   console.log(
     `note  ${JSON.stringify(anchor)} appears ${flatHits} time(s) flattened and ${lineHits} time(s) on a single line`
     + `${flatHits > lineHits ? " — it wraps, so a line-based grep on it would MISS a hit" : ""}`,

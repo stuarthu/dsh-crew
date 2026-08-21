@@ -38,21 +38,37 @@
 // written as if it were a quotation (which makes a pin that can never pass). The
 // six names in EXPECTED_KINDS are the strings `principles.md` really uses.
 //
-// TO BREAK IT ON PURPOSE: copy `principles.md` somewhere, edit the copy, and run
-// `QA_PRINCIPLES_FILE=/that/copy node docs/qa/T-68/case-02-principle-22-content.mjs`.
-// `tempRepo()` in `docs/qa/lib/qa.mjs` does not copy `principles.md`, so a
-// mutation proof for this file needs its own copy — hence the override. With the
-// variable unset the case reads the repository and writes nothing, anywhere.
+// WHICH FILE THIS CASE JUDGES IS NOT AN INPUT, AND THAT IS DELIBERATE.
+// The file is read through `repoFile()`, whose root is `docs/qa/lib/qa.mjs` up
+// three levels. Nothing outside the process can move that. An earlier version of
+// this case took the path from the environment instead, and that was a hole
+// rather than a convenience: anything exported in a shell or in CI moved the
+// judgement onto another file — anywhere on disk, inside this repository or not —
+// and the run stayed green, because the path it had switched to was only printed
+// and never asserted. It was the one case of the whole suite that let an outsider
+// choose the file under test.
+//
+// TO BREAK IT ON PURPOSE, THEN, THE TREE IS COPIED AND NOT THE PATH REDIRECTED.
+// `tempRepo()` in `docs/qa/lib/qa.mjs` copies neither `principles.md` nor
+// `docs/qa/lib/`, so the shared mutation helpers cannot reach this file. The
+// mutation is done by hand instead, KEEPING THE DIRECTORY LAYOUT, so that
+// `repoFile()` resolves inside the copy:
+//
+//   <throwaway>/principles.md
+//   <throwaway>/docs/qa/lib/qa.mjs
+//   <throwaway>/docs/qa/T-68/case-02-principle-22-content.mjs
+//
+// Edit the copy's `principles.md`, run the copy's case file, and the root it read
+// is on the first `note` line of the output — so which tree was judged is never a
+// guess. The repository itself is untouched: this case only ever reads.
 
-import { readFileSync } from "node:fs";
-import { check, done, flat, REPO } from "../lib/qa.mjs";
 import { join } from "node:path";
+import { check, done, flat, repoFile, REPO } from "../lib/qa.mjs";
 
 // ------------------------------------------------------------------ the file
 
-const file = process.env.QA_PRINCIPLES_FILE || join(REPO, "principles.md");
-const text = readFileSync(file, "utf8");
-console.log(`reading ${file}`);
+const text = repoFile("principles.md");
+console.log(`note  reading ${join(REPO, "principles.md")}`);
 
 // ------------------------------------------------------- slicing the section
 //
