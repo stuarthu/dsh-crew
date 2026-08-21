@@ -1172,3 +1172,516 @@ grep -o -E '检查 [0-9、]+' docs/qa/gaps.md | grep -o -E '[0-9]+' | sort -n -u
 
 （那次搜索跑的时候仓库里是九份 CRD。今天是十一份，所以重跑一次会比当时覆盖得更多——
 上面这个「没有出处」的结论只对当时那九份成立。）
+
+---
+
+# 本作业：`paired-engineers`（T-51 起）
+
+- **依据**：`docs/design/prd.md`（版本 6）、`docs/design/hld.md`（版本 2）、
+  `docs/decisions/crd/0012-paired-engineers.md`、`docs/decisions/crd/0013-two-worktrees-per-task.md`、
+  `docs/decisions/crd/0014-pair-mode-needs-an-architect.md`。
+- **写这一节的人**：crew architect，2026-08-21。**上面那一整份是 `pm-merge-step` 作业的事后
+  重建，本节一个字都没有改动它。**
+- **任务号**：T-51 到 T-62，一共 12 个。**T-56 在第二轮被拆成两个任务：T-56 和 T-62**
+  （`roles/pm.md` 的两半）。**编号不用 `T-56a` / `T-56b`**：`tools/verify-tasks.mjs` 的正则是
+  `/^##\s+(T-\d+(?:\s*\/\s*T-\d+)*)\b/`，`## T-56a` 完全不匹配，那一节不会被认成任务小节，
+  Verdicts 那道门会**静静地**跳过它——正是这个仓库反复吃过的那种失败。T-62 的小节排在 T-56
+  后面，因为它是同一个文件的第二半。
+- **形状**：**12 个全部是单人（solo）。** 理由见 `docs/design/hld.md` 第十一节：两个新角色在
+  M1、M3 之前根本不存在，而让新角色第一次上场就去改 `roles/pm.md` 这种一千两百多行的文件
+  风险太高。PRD「还开着的问题」第 1 条把这件事留给用户在 M3 的里程碑评审时决定。
+  **因此本作业不写任何接口 ADR**——没有 A/B 分工，就没有接口要钉。
+- **没有边界契约**：这个仓库是一个 dsh 插件，一个模块，没有跨模块边界，所以没有
+  `docs/design/api/` 下的文件。这是对的，不是漏了。
+
+## 谁拥有哪个文件（没有任何一个文件出现两次，除了三处写明的交接）
+
+| 文件 | 归谁 | 里程碑 |
+| --- | --- | --- |
+| `host/roles.js` | T-51 | M1 |
+| `host/roles-preset.js` | T-51 | M1 |
+| `preset/crew/agent.cordis.yml` | T-51 | M1 |
+| `tools/verify-mount.mjs` | T-51 | M1 |
+| `roles/test-engineer.md` | T-51（占位）→ **交接** → T-53（写实） | M1 → M3 |
+| `roles/code-engineer.md` | T-51（占位）→ **交接** → T-54（写实） | M1 → M3 |
+| `principles.md` | T-52 | M2 |
+| `roles/engineer.md` | T-55 | M3 |
+| `roles/pm.md` | T-56（第 4、5 步那一段）→ **交接** → T-62（执行那一段与小作业那条路） | M4 |
+| `roles/code-reviewer.md` | T-57 | M4 |
+| `roles/architect.md` | T-58 | M4 |
+| `README.md` | T-59 | M5 |
+| `README-zh.md` | T-59 | M5 |
+| `CLAUDE.md` | T-60 | M5 |
+| `CHANGELOG.md` | T-61 | M5 |
+
+**同一个文件被两个任务先后拥有的地方一共三处，全部写在这里，没有第四处**
+（理由、选项和护栏都在 `docs/decisions/adr/0013-persona-ownership-handoff.md`）：
+
+| 文件 | 先 | 后 | 护栏 |
+| --- | --- | --- | --- |
+| `roles/test-engineer.md` | T-51（占位） | T-53（写实） | 占位那一行记号 `M1-PLACEHOLDER`：T-51 必须有，T-53 之后必须没有 |
+| `roles/code-engineer.md` | T-51（占位） | T-54（写实） | 同上，T-54 之后必须没有 |
+| `roles/pm.md` | T-56（第 4、5 步） | T-62（执行那一段） | **不是记号**（记号只对 persona 占位有效）：T-56 交工时在报告里写下这个文件的行数，T-62 从那个数接着，并且不动 T-56 改过的那几段 |
+
+**前两处任何时刻只有一个活着的任务拥有那个文件**：T-51 是 walking skeleton，别的任务全部
+等它；M3 在 M2 之后，而里程碑一个一个跑。**第三处在同一个里程碑里面**，所以它多一条硬要求：
+**T-56 和 T-62 必须串行**，T-62 等 T-56 交工，见两个任务行里的理由。
+
+**明确不属于任何任务的文件**：`roles/qa.md`（本作业一个字不改，PRD「不在范围内」）、
+`package.json`（不发版）、`docs/design/*` 与 `docs/decisions/*`（PM 和 architect 的文件）。
+
+**`docs/qa/*` 是 QA 的家，engineer 不碰它**，包括 `docs/qa/gaps.md`。但有两条「必须进
+`docs/qa/gaps.md`」的要求需要一个承载点，否则它们会像 `CRD 0010` 记的那次事故一样——检查离
+它管的工作太远，然后没了。所以它们各自变成**一格 DoD**，写在拥有那件活的任务里
+（T-51 的第 17 条、T-52 的第 18 条）：**活由 QA 做，那一格是它的承载点**，没有它任务不算做完。
+
+## 跑的顺序
+
+```
+T-51                                    （M1，一个人做，别的全部等它）
+ └─ T-52                                （M2）
+     └─ T-53 ‖ T-54 ‖ T-55              （M3，三个同时跑，文件不重叠）
+         └─ T-56 ‖ T-57 ‖ T-58          （M4，三个同时跑）
+             └─ T-62                    （M4，**必须等 T-56 交工**：两个任务共有 `roles/pm.md`）
+                 └─ T-59 ‖ T-60 ‖ T-61  （M5，三个同时跑）
+```
+
+## 一件贯穿全程的事：用词
+
+PRD v3 定了一张四条的用词表（单元测试 / QA 用例 / 项目的测试命令 / 契约测试）。
+**清理是有边界的**：只清理本作业本来就要动的文件，每一处都由**已经拥有那个文件的那个任务**
+顺手做，**不新开「全库用词清理」任务**。全库改字明确不在范围内。见
+`docs/decisions/adr/0014-glossary-placement.md`。
+
+---
+
+## T-51 — 两个新角色名字端到端接通（walking skeleton）
+
+- **Verdicts**：code: pass（第三轮，2026-08-21，只看增量；它看的是工程第六轮之前的代码，第六轮只改注释与报错措辞加一处 derive，PM 自核并重跑全套） ｜ security: pass（第二轮，2026-08-21；它看的是工程第三轮之后的代码。此后第五、六轮只让那道校验**更严**——被拒的值形状变多、从不变少——方向不可能开洞，所以 PM 判断不再送审，这一句是 PM 的判断不是评审的） ｜ qa: pass（第三轮，2026-08-21，25 个用例 864 条断言 7 次变异；它看的是第五轮之后的代码，第六轮之后 PM 重跑 `docs/qa/T-51/run.sh` 25/25 全绿） ｜ doc: not run — 文档评审那两轮针对的是设计阶段文档（PRD、HLD、六份 ADR、五份 CRD、12 条任务行），T-51 自己没有产出面向读者的文档；用户可见的文档在 T-59、T-60、T-61）
+
+- **里程碑**：M1
+- **形状**：单人（solo）
+- **拥有的文件**：`host/roles.js`、`host/roles-preset.js`、`preset/crew/agent.cordis.yml`、
+  `tools/verify-mount.mjs`、`roles/test-engineer.md`（新建，占位）、
+  `roles/code-engineer.md`（新建，占位）
+- **测试文件**：`tools/verify-mount.mjs`（它就是这个项目的测试形状：可以直接跑的检查脚本）
+- **依赖**：无。**它是 walking skeleton，别的任务全部等它。**
+- **要求来源**：PRD 的 M1 DoD 第 1-6 条；PRD v2「因此本作业必须做到」第 1、2 条；
+  CRD 0012「它动到什么」表里 `host/roles.js`、`preset/crew/agent.cordis.yml`、
+  `tools/verify-mount.mjs` 三行；`ADR 0010`（bash 检查的形状，以及它不管 `crew_qa` 这件事
+  必须进 `docs/qa/gaps.md`）、`ADR 0013`（占位记号，以及为什么它不许有常驻用例）。
+- **为什么它是第一个**：按 `CLAUDE.md` 设计规则 3，deny 列表里一个 preset 没有的名字，
+  dsh 会在子 agent 启动时拒绝它——那是**那个角色的全面瘫痪**。而 `host/roles.js:48` 的
+  `NO_DELEGATION = [...ROLE_TOOL_NAMES]` 让每条 deny 列表**自动**变宽，所以只要名字加进去、
+  preset 没跟上，**`crew_architect`、`crew_engineer`、`crew_qa` 会一起起不来**。
+  改一行数组炸掉三个现有角色，这是最便宜也最狠的翻车点，先撞它。
+- **它不做什么**：persona 只写占位版本，真实行为规则在 M3（T-53、T-54）。
+- **DoD（PM 写，在简报发出之前）**：
+
+| # | 怎么算做完 | 别人怎么验 |
+| --- | --- | --- |
+| 1 | `ROLE_TOOL_NAMES` 有 `crew_test_engineer` 和 `crew_code_engineer`；`ROLES` 有对应两项，每项**只有** `deny` 一个 | `node tools/verify-mount.mjs` 绿；`grep -n 'crew_test_engineer\|crew_code_engineer' host/roles.js` |
+| 2 | 两项的 `deny` 都写成 `[...NO_DELEGATION]`，**不手写名字清单**——手写的那份不会随 `ROLE_TOOL_NAMES` 变宽 | 读那两项 |
+| 3 | `const NO_DELEGATION = [...ROLE_TOOL_NAMES];` 这一行**一个字符都不改** | `docs/qa/T-42/case-11-counter-roles-block.mjs` 按精确文本改这一行做 mutation，改了它这个已有用例就红。验法：跑 `bash docs/qa/T-42/run.sh` |
+| 4 | 每一条 deny 列表都真的拦住这两个新名字 | `node tools/verify-mount.mjs`；再在**副本**里把一个新名字从 `NO_DELEGATION` 里过滤掉，必须变红并点名那个名字 |
+| 5 | `preset/crew/agent.cordis.yml` 的「role key」注释清单（今天第 221-223 行）补上 `test_engineer`、`code_engineer`；`roleDeny` 示例（今天第 237 行）补上两个新工具名 | 读那两处。注释是这些配置项**唯一**的文档，过期的清单会让用户照抄出一条缺名字的 deny 列表 |
+| 6 | bash 检查从一个角色扩到**三个**：`engineer`、`test_engineer`、`code_engineer`，逐个判，失败信息**点名是哪一个** | 在副本里分别给三个角色的 `deny` 加上 `bash`，跑 `node tools/verify-mount.mjs`：三次都必须红，而且每次都点名那一个角色 |
+| 7 | 那份清单**外加一道自检**：清单里每个名字都必须能在 `ROLES` 里找到，找不到就红，并说清「清单过期了，不是角色坏了」（`ADR 0010`） | 在副本里把清单里一个名字改成不存在的，必须红，且错误信息里有「清单」这层意思 |
+| 8 | 那一段有一个 `ok()`，把三个名字打出来——今天那一段**只会失败、从不报到**（`tools/verify-mount.mjs:651`），读者分不清它通过了还是没跑到 | 跑 `node tools/verify-mount.mjs`，输出里能看到那一行 `ok` 和三个角色名 |
+| 9 | 两份 persona 文件存在，各超过 500 字符，不含 `{{`，**写明只跟 PM 说话**，并各自点明自己写的是**单元测试**还是**产品代码** | 长度和 `{{` 由 `node tools/verify-mount.mjs` 验（**不要用 `grep -c .` 数长度**：那个命令数的是非空行数，不是字符数）。写明只跟 PM 说话：`grep -n 'is the only one you talk to' roles/test-engineer.md roles/code-engineer.md` 两个文件各至少一处命中——这是现有**六份** persona 里的英文原话（`architect`、`engineer`、`qa`、`code-reviewer`、`researcher`、`security-reviewer`；`doc-reviewer.md` 和 `pm.md` 没有这一句。出处：`roles/architect.md:6`、`roles/engineer.md:4`、`roles/qa.md:6`、`roles/code-reviewer.md:9`）。哪一半：`grep -n 'unit test' roles/test-engineer.md` 有命中，`grep -n 'product code' roles/code-engineer.md` 有命中 |
+| 10 | 两份 persona 各带**一行占位记号**，原话固定，**英文**（`roles/*.md` 八份今天 0 个中文字符，而且这两个文件随 npm 包发到用户手里）：<br>`M1-PLACEHOLDER: the real behaviour rules for this role arrive in M3.` | `grep -n 'M1-PLACEHOLDER' roles/test-engineer.md roles/code-engineer.md` 两个文件都必须有命中。<br>**这一格只在 M1 的里程碑评审时由人跑一次；QA 不许为它写常驻用例。** 理由：`docs/qa/run-all.sh` 每次把过去所有作业的用例全跑一遍，所以一条「占位必须在」的常驻用例在 M3 之后会**永久变红**，而 T-53、T-54 的 DoD 又要求 `npm test` 全绿——两条要求在时间上互相打架。常驻用例只写在 `docs/qa/T-53/`、`docs/qa/T-54/`，断言这行记号**已经消失**（`ADR 0013`） |
+| 11 | 三行 `summary` 写成**最终版本**：`crew_test_engineer` 的 summary **必须同时含 `unit test` 和 `before`**；`crew_code_engineer` 点明产品代码；**`crew_qa` 的 summary 改掉**，**必须含 `docs/qa/`**。**QA 的行为一个字不改** | `grep -n 'summary' host/roles.js` 逐行读，并逐字确认那三个串：`crew_test_engineer` 那行含 `unit test` 和 `before`，`crew_qa` 那行含 `docs/qa/`。三行两两相比必须能分开。这一条同时收 M3 的 DoD 第 6 条——**活在 M1 落地，检查在 M3 收** |
+| 12 | `roles/qa.md` 一个字不改 | `git diff --name-only` 里没有它 |
+| 13 | `verify-mount.mjs` 的真挂载那一段通过，**而且不是 skip**（这台机器有软链接） | 跑 `node tools/verify-mount.mjs`，输出里**不许**出现 role-tool 那一半的 skip；且能看到两个新工具真的被挂上 |
+| 14 | `npm test` 六条全绿，已有的 67 个 QA 用例一个不少、一个不红 | `npm test` 跑两次，贴整段输出；`bash docs/qa/run-all.sh` 的总数行 |
+| 15 | 报告里说清这个任务**不证明**什么：它只证明两个名字接通了，**不证明**双人形状好不好用，也**不证明**第四个靠 bash 活的角色以后会被守着 | 读报告 |
+| 16 | `tools/verify-mount.mjs` 里那**两份显式文件名清单**各加上 `test-engineer.md` 和 `code-engineer.md`：CRD 0006 那一份（今天 `["engineer.md", "architect.md", "doc-reviewer.md"]`，要求 `docs/decisions/adr/` 在、`**Decisions** section` 不在）和 CRD 0010 那一份（今天六个文件，要求 `docs/design/tasks.md` 在、`DoD section` 在、`dod.md` 不在）。因此两份**占位** persona 自己就要带上 `docs/decisions/adr/`、`docs/design/tasks.md`、`DoD section` 三个串，且不含 `dod.md`、不含 `**Decisions** section`（占位本来要凑够 500 字符，不难）。<br>**为什么这条落在 T-51**：那两份清单是显式的文件名清单，新 persona 不在里面就没有任何检查看着它们；而 `tools/verify-mount.mjs` 归 T-51，交工之后别的任务不许再碰它。T-53 的第 11 条、T-54 的第 12 条声称这四件事「`verify-mount.mjs` 会验」，只有这一格做了它们才成立 | 在**副本**里从两份 persona 之一删掉其中一个串，`node tools/verify-mount.mjs` 必须变红**并点名那个文件**；两个文件 × 三个串（`docs/decisions/adr/`、`docs/design/tasks.md`、`DoD section`），**共 6 次删除**；再给两份 persona 各加一次 `dod.md`、各加一次 `**Decisions** section`，**共 4 次添加**，也都必须红。**三个串在每份占位 persona 里各只写一次**，否则删一处不算删掉——`docs/qa/lib/qa.mjs` 的 `edit()` 只换第一处，要删干净就用 `editAll()`。`docs/qa/lib/qa.mjs` 的 `tempRepo` / `edit` / `expectRed` 直接用 |
+| 17 | `docs/qa/gaps.md` 多一条：bash 检查扩到三个 engineer 角色之后，**`crew_qa` 仍然没有被它守着**，理由是本作业不许改 QA 的行为（`ADR 0010`「它不证明什么」、`hld.md` 第五节）。`CLAUDE.md` 规则 4 记着的那个洞因此从「三个里的一个」缩到「QA 一个」，**不许悄悄留着**。<br>**活由 QA 做**（`docs/qa/` 是 QA 的家，engineer 不碰），**这一格是它的承载点**：没有它，T-51 不算做完 | `grep -n 'crew_qa' docs/qa/gaps.md` 有命中，且那一条明写本作业**故意**不管它、以及要满足什么条件才该关掉 |
+| 18 | `tools/verify-mount.mjs:808` 那条注释今天写着 `` `docs/qa/gaps.md` appears THREE times in ``，**而实际是四处**（`roles/pm.md` 的 586、640、1043、1206）。把次数改成四处，并**逐处点名它们各自干什么活**：评审批次清单、第 11 步（把文件 staged 进提交）、第 18 步（在单次文档被丢掉之前填它）、**Hard rules**（重述那条规则）。<br>为什么这一条落在 T-51：那个文件归 T-51，交工之后别的任务不许再碰；而一条说 THREE、实际 FOUR 的注释正是让一个人「顺手把 4 改回 3」的那种漂移——门槛是 `< 3`，删掉一处**不会变红** | 读那一段注释：数字是四，四处各有一句话；`grep -c 'docs/qa/gaps.md' roles/pm.md` 的真实数字（今天 **4**）和注释说的对得上 |
+| 19 | **空的 `roleAllow` / `roleDeny` 必须在挂载期拒绝启动**（`CRD 0016`）。`host/roles-preset.js:31-36` 和 `:48` 今天的写法是 `...allow?.length > 0 ? { allow } : {}` 加 `...Object.keys(filter).length > 0 ? { toolFilter: filter } : {}`——**空数组不是 nullish，`??` 兜不住它**，所以 `roleAllow: { code_reviewer: [] }` 会让 `filter = {}`，`toolFilter` 整个不传，那个**只读**的审阅者拿到 preset 的全部工具，含 `bash`、`write`、`edit`。这静默推翻 `CLAUDE.md` 设计规则 2，而仓库自己记着那条规则是**两次实测**换来的。<br>不许静默回落到出厂列表（用户会以为自己的配置生效了），不许静默去掉 `toolFilter`（那就是今天的洞）：**报错**，信息里点名**哪个角色键**、**哪个字段**，并说明正确做法是把名字列出来而不是给空数组。形状照同一个文件第 45-46 行现成的先例——`readRoleText` 遇到坏的 persona 就在挂载期抛错。<br>**为什么这条落在 T-51**：`host/roles-preset.js` 归 T-51，交工之后别的任务不许再碰它。这是唯一的机会 | 在**副本**里分别设 `roleAllow: { code_reviewer: [] }` 和 `roleDeny: { engineer: [] }`，两次**都必须**在挂载期报错，且信息里出现那个角色键；再确认**没有**空数组时挂载照旧成功（`node tools/verify-mount.mjs` 绿）。QA 写成 `docs/qa/T-51/` 的常驻用例——这是单向断言，M3 之后不会翻转 |
+| 20 | **两份 persona 的依赖禁令必须三半齐全**：不许加项目还没有的包、**不许 install**、**不许改 manifest 或锁文件**。`roles/test-engineer.md` 这一轮补齐了三半，`roles/code-engineer.md` 只有第一半——而它**同样有 shell，而且它才是写产品代码、最可能想要一个包的那个**。QA 指出的那一点是关键：**改 `package.json` 塞一个依赖，根本不需要跑 `npm install`**，所以「不许加」这一半单独挡不住。<br>**为什么这条现在才出现**：它是本轮安全评审 blocking 的修复，而 QA 发现那个修复**没有任何 DoD 承载**——T-53/T-54 在 M3 重写这两份 persona 时可以整段删掉它，而 `verify-mount.mjs` 照样全绿 | `grep -ci 'never install' roles/test-engineer.md roles/code-engineer.md` 两份都 ≥1；`grep -ci 'manifest or the lock' roles/test-engineer.md roles/code-engineer.md` 两份都 ≥1；`bash docs/qa/T-51/run.sh` 绿（`case-12` 钉着它） |
+| 21 | **四行 summary，不是三行。** 第 11 条只点了三行，但 `crew_engineer` 的 summary 也改了（`Write code for one crew task` → `Write one task's code and its tests (solo shape)`），因为 PM 的提示词里它紧挨着 `crew_code_engineer`，而 PM 看到的是四行。`host/roles.js` 归 T-51，交工之后没有任何任务能再动它。<br>这一条把那个决定写进任务行——今天它唯一的承载点是 QA 的 `case-10` | `grep -n 'summary:' host/roles.js` 四行两两不同；`crew_engineer` 那行含 `solo`；`crew_test_engineer` 含 `unit test` 和 `before`；`crew_code_engineer` 含 `product code`；`crew_qa` 含 `docs/qa/` |
+
+---
+
+## T-52 — `principles.md`：改原则 6、加原则 21、加用词表、否决表加六行
+
+- **Verdicts**：code: not run — 尚未开工 ｜ security: not run — 尚未开工 ｜ qa: not run — 尚未开工 ｜ doc: not run — 尚未开工
+
+- **里程碑**：M2
+- **形状**：单人（solo）
+- **拥有的文件**：`principles.md`
+- **测试文件**：无——纯文档任务，项目里没有可以断言散文的测试形状。检查由 `docs/qa/T-52/`
+  的 grep 用例做（QA 写），加上 doc reviewer 读。**这一条按 PRD 的规矩写在这里：
+  一个真的不能被自动测试的任务，要在自己的 DoD 里说出理由。**
+- **依赖**：T-51
+- **要求来源**：PRD 的 M2 DoD 第 **1–9** 条（v6 起编号连续；其中**第 8 条**是「三种写测试的
+  角色那张表进原则 21」，**第 9 条**是「仓库里没有任何地方把这套东西叫结对编程」。v5 那份短命的
+  编号——跳过 8、那两条排在 9 和 10——已经作废，别按它读）；PRD 的 M5 DoD「三角色表进
+  `principles.md`」那一半；
+  CRD 0012「它动到什么」表第一行与「看过又否掉的六个想法」；CRD 0013 第 3 条（原则 21 要写
+  真隔离，不是自觉）；CRD 0014（原则 21 要写边界）；`ADR 0011`、`ADR 0014`。
+- **为什么它排在 M1 之后、persona 之前**：后面每一份 persona 的依据都是原则 21 和用词表。
+  先写规则，再写按规则干活的人。
+- **DoD（PM 写，在简报发出之前）**：
+
+| # | 怎么算做完 | 别人怎么验 |
+| --- | --- | --- |
+| 1 | **原则 6 原地改写，编号不变**，说清「测试先于代码」有两种形状（同一个人写两半 / 两个人各写一半），并指向原则 21（`ADR 0011`） | `grep -n '^## 6\.' principles.md` 仍在；`grep -n 'principle 21' principles.md` 在原则 6 那一节里有命中（**`principles.md` 全文 0 个中文字符**，所以中文串在这个文件上钉不到任何东西） |
+| 2 | **不新增、不重排任何已有编号。** 这个文件到处被按号引用（`CLAUDE.md` 的「`principles.md` 8, 13, 14, 15, 19 and 20」、`principles.md:589`、多份 CRD 和 ADR） | `grep -nE '^## [0-9]+\.' principles.md` 列出来核对：1-20 一个不动，只多一个 21 |
+| 3 | **原则 21 存在**，按这个文件的四段格式：规则、为什么存在、承载它的文件（**Lives in**）、外部来源 | 读它；四段都在 |
+| 4 | 四份外部来源**都带日期**：Cockburn & Williams（1999/2001）、Knight & Leveson（1986）、arXiv *N-Version Programming with Coding Agents*（2026-06）、XP 结对编程的来源 | 读那四行，每行都有年份 |
+| 5 | 原则 21 明写**它不证明什么**：首次会合全绿只等于「两份理解对上了」，**不等于**「文档是清楚的」；相关性误读它完全抓不住，而证据说那很常见 | `grep -n 'the two readings matched' principles.md` 有命中；读上下文。这是一个**故意脆**的散文钉，和 `ADR 0004`、`ADR 0007` 同一个交易：正当的改措辞要在同一个提交里同时改这一格 |
+| 6 | 原则 21 写上两条边界：**双人形状只在有 architect 的作业里**（CRD 0014 第 1 条）；写代码阶段的独立性是**真隔离**（两棵工作树），不是自觉（CRD 0013 第 3 条） | 读它；`grep -n 'architect' principles.md` 在原则 21 一节里有命中 |
+| 7 | 「看过又否掉的想法」表加上 CRD 0012 的**六行**：两个 engineer 互相对话、两个都写测试第三个写代码、各写一份理解摘要来比对、两个独立 worktree 做真隔离、要求 B 申报「我没读测试文件」、`roleModels` 配不同模型 | 数那张表新增的行：必须是 6 行，每行都有「为什么否掉」 |
+| 8 | 「两个独立 worktree 做真隔离」那一行**必须带 CRD 0013 的更正**：它在「做成插件功能」这个意义上被否，但 PM 用普通 `git worktree add` 不需要任何平台功能 | 读那一行 |
+| 9 | **用词表**写成一节**不编号**的独立小节，标题是英文 `Words we use`（`principles.md` 是英文文件，现有的两节不编号小节也是英文：`What we looked at and did not take`、`Keeping this file honest`），放在原则 21 之后、`What we looked at and did not take` 之前（`ADR 0014`） | `grep -n '^## Words we use' principles.md` 有命中；`grep -nE '^## [0-9]+\.' principles.md` 里没有 `## 22.` |
+| 10 | 用词表四条齐全：单元测试（unit test）、QA 用例（case）、项目的测试命令、契约测试（contract test），每条都写「指什么 / 谁写 / 住在哪」 | 数那张表：4 行 |
+| 11 | 用词表带那条规则：一句话如果可能指其中两样，必须用精确名词；光写「test / 测试」只允许出现在**故意**指「任意一种」的地方 | 读它 |
+| 12 | 用词表**明写禁令：不要写「QA test」**，并说清理由（它把「test」这个字又放回来） | `grep -n 'QA test' principles.md` 只在那条禁令里命中 |
+| 13 | **三种写测试的角色那张对照表**进原则 21，四条区别一条都不少：粒度（单元 vs 验收）、时机（代码之前 vs 之后）、家（项目套件 vs `docs/qa/`）、范围（本任务 vs 全部回归）。这一条同时收 M5 的 DoD 那一半 | 数那张表的列和行；四条区别逐条对着 PRD v2 那一节读 |
+| 14 | 原则 6 和原则 21 里凡是**可能同时指两样**的「test / 测试」都换成精确名词 | 逐行读这两节 |
+| 15 | **清理只到原则 6、原则 21 和用词表本身。** 文件其他一千多行的 bare「test」一个不改 | `git diff principles.md` 的每一块都落在这三节里 |
+| 16 | 本任务写下的字里**没有一处**把这套东西叫「结对编程」，除了明确说它**不是**结对编程的对比语境 | `grep -n -i 'pair programming' principles.md` 的每一处命中都读一遍（这个文件是英文的，中文串在这里钉不到东西） |
+| 17 | `npm test` 全绿，跑两次；`principles.md` 里那些引用任务数、用例数的数字没被这次改动弄错 | 那条命令；`grep -n 'task sections' principles.md` 逐处核对 |
+| 18 | `docs/qa/gaps.md` 多一条：**没有任何检查能证明一句散文里的「test / 测试」用词正确**。用词表能被检查的只有存在性（表在、四条齐全、`roles/qa.md` 里没有「QA test」、`roles/test-engineer.md` 说的是单元测试），**一句散文用得对不对，检查不了**（`ADR 0014`「它可以被检查」那一段）。<br>**活由 QA 做**（`docs/qa/` 是 QA 的家），**这一格是它的承载点**：没有它，T-52 不算做完 | `grep -n 'ADR 0014' docs/qa/gaps.md` 有命中，且那一条说的是用词这件事 |
+
+---
+
+## T-53 — `roles/test-engineer.md` 写实：A 的行为规则
+
+- **Verdicts**：code: not run — 尚未开工 ｜ security: not run — 尚未开工 ｜ qa: not run — 尚未开工 ｜ doc: not run — 尚未开工
+
+- **里程碑**：M3
+- **形状**：单人（solo）
+- **拥有的文件**：`roles/test-engineer.md`（T-51 建的占位版本，**所有权在这里交接**，
+  见 `ADR 0013`）
+- **测试文件**：无——纯 persona 文档。检查由 `docs/qa/T-53/` 的 grep 用例做（QA 写），
+  加上 `verify-mount.mjs` 的长度与 `{{` 检查。
+- **依赖**：T-51、T-52
+- **要求来源**：PRD 的 M3 DoD 第 1、3、5、7 条；PRD v2「因此本作业必须做到」第 3 条；
+  PRD v3「它可以被检查」第 3 条；CRD 0012 第 1、6、7、9 条；CRD 0013 第 1、2 条；
+  CRD 0014 第 3、4 条；`ADR 0009`（为什么这份文件要写全，不指向 `roles/engineer.md`）。
+- **DoD（PM 写，在简报发出之前）**：
+
+| # | 怎么算做完 | 别人怎么验 |
+| --- | --- | --- |
+| 1 | **开头就写明它是程序员，不是 QA**：它写的是**单元测试**，住在项目自己的测试套件里，是这个任务拥有的文件；**QA 是另一个角色**，在它之后跑，用例写在 `docs/qa/` 下面 | `grep -n 'unit test' roles/test-engineer.md` 在**前 20 行**里有命中；`grep -n 'docs/qa/' roles/test-engineer.md` 有命中。（这个文件是英文的——`roles/*.md` 八份今天 0 个中文字符——所以钉的是英文名词） |
+| 2 | **没有任何一句声称自己写 QA 用例**，也不出现「QA test」这种写法（PRD v3） | `grep -n 'QA test' roles/test-engineer.md` **为空**；再读每一处提到 QA 的话，必须都是在说那是**别人**的活（英文里用的名词是 case，不是 test） |
+| 3 | 它**只写测试文件**，不写产品代码。文件路径**由 PM 的简报给**，不自己猜 | 读那一节 |
+| 4 | 它**在自己那棵 git 工作树里**干活，路径由简报给；**不碰 git**（不 commit、不 add、不切分支、不 stash） | `grep -n 'worktree' roles/test-engineer.md` 有命中（今天 `roles/*.md` 里这个词 0 处，所以它一定是这次写下的）；git 那一节和 `roles/engineer.md` 一样严 |
+| 5 | 它**跑一次拿红灯**，报原样输出，并且要说清红得对不对（不是编译错、不是别的任务在动那棵树） | 读那一节 |
+| 6 | **不许为消除冲突弱化断言。** 只有 PM 能批，而且改动必须能追回 DoD 一节的原话（CRD 0012 第 9 条） | `grep -n 'weaken' roles/test-engineer.md` 有命中（`roles/engineer.md:108` 已经在用这个词，沿用它，不发明新词）；读上下文，必须点明「只有 PM 能批」 |
+| 7 | **只跟 PM 说话**，不许跟另一个 engineer 通气；并说清这**不只是规矩，是平台强制的**——`send_message` 发不到兄弟身上。同一段里点明自己写的是**单元测试**，不是产品代码 | `grep -n 'is the only one you talk to' roles/test-engineer.md` 有命中（`verify-mount.mjs` 的通用循环只查「读得到、≥500 字符、无 `{{`」，**它验不了这一条**）；`grep -n 'send_message' roles/test-engineer.md` 有命中；`grep -n 'unit test' roles/test-engineer.md` 有命中 |
+| 8 | 独立性怎么说：**写代码阶段是真隔离**（两棵工作树，B 的树里没有测试文件），**合并之后独立性已经结束**。不许含糊成「大概不会看」（PRD 的 M3 DoD 第 3 条） | 读那一节；不许出现「应该不会」「尽量不」这类措辞 |
+| 9 | 简报里会带**接口 ADR** 的路径，它读自己那一半；**不许自己改那份 ADR**，觉得钉错了报 PM（CRD 0014 第 4 条） | `grep -n 'ADR' roles/test-engineer.md` 有命中；读那一段 |
+| 10 | T-51 那行**占位记号消失了** | `grep -n 'M1-PLACEHOLDER' roles/test-engineer.md` **为空**。**这条断言的常驻用例住在 `docs/qa/T-53/`**——「占位必须在」那一条不许有常驻用例（T-51 的第 10 条说了理由），「占位必须没了」这一条才是可以永远跑的那个方向 |
+| 11 | 文件超过 500 字符、不含 `{{`；`docs/decisions/adr/`、`docs/design/tasks.md`、`DoD section` 三个串都在，`dod.md` 和 `**Decisions** section` 都不在 | `node tools/verify-mount.mjs` 绿。**这四件事真的被验了**，因为 T-51 的第 16 条已经把这个文件名加进 `verify-mount.mjs` 那两份显式清单；顺手再看一眼 `grep -n 'docs/decisions/adr/\|docs/design/tasks.md\|DoD section' roles/test-engineer.md` 三样都在 |
+| 12 | 这份文件里的「test / 测试」按用词表用精确名词 | 逐行读 |
+| 13 | 没有一处把这套东西叫「结对编程」 | `grep -n -i 'pair programming' roles/test-engineer.md` 为空（英文文件，中文串在这里钉不到东西） |
+| 14 | `npm test` 全绿，跑两次 | 那条命令 |
+| 15 | **重写这份 persona 时，依赖禁令三半一个都不许丢**：不许加项目还没有的包、不许 install、不许改 manifest 或锁文件（T-51 第 20 条、本轮安全评审的 blocking）。同理**「越界要求就停下来报 PM」那个出口也不许丢**（串 `step outside these rules, stop`）。<br>为什么单独列一条：这两样是评审换来的，而 `tools/verify-mount.mjs` **不查它们**——整段删掉，所有检查照样绿 | `grep -ci 'never install' roles/test-engineer.md` ≥1；`grep -ci 'manifest or the lock' roles/test-engineer.md` ≥1；`grep -c 'step outside these rules, stop' roles/test-engineer.md` = 1；`bash docs/qa/T-51/run.sh` 绿（`case-12`、`case-13` 钉着它们） |
+
+---
+
+## T-54 — `roles/code-engineer.md` 写实：B 的行为规则
+
+- **Verdicts**：code: not run — 尚未开工 ｜ security: not run — 尚未开工 ｜ qa: not run — 尚未开工 ｜ doc: not run — 尚未开工
+
+- **里程碑**：M3
+- **形状**：单人（solo）
+- **拥有的文件**：`roles/code-engineer.md`（T-51 建的占位版本，**所有权在这里交接**，
+  见 `ADR 0013`）
+- **测试文件**：无——纯 persona 文档。检查由 `docs/qa/T-54/` 的 grep 用例做（QA 写），
+  加上 `verify-mount.mjs` 的长度与 `{{` 检查。
+- **依赖**：T-51、T-52
+- **要求来源**：PRD 的 M3 DoD 第 2、3、7 条；CRD 0012 第 1、4、6、7 条；
+  CRD 0013 第 3、4、5 条；CRD 0014 第 3、4 条；`ADR 0009`。
+- **DoD（PM 写，在简报发出之前）**：
+
+| # | 怎么算做完 | 别人怎么验 |
+| --- | --- | --- |
+| 1 | 它**只写产品代码**，不写测试文件 | 读那一节 |
+| 2 | 它**在自己那棵 git 工作树里**干活，**树里没有测试文件**——不是「不该读」，是**读不到**（CRD 0013 第 3 条） | `grep -n 'worktree' roles/code-engineer.md` 有命中（今天 `roles/*.md` 里 0 处）；读那一段，措辞必须是「树里没有」，不是「不要读」 |
+| 3 | **不碰 git**（不 commit、不 add、不切分支、不 stash） | 读 git 那一节 |
+| 4 | 干活期间**必须**跑 lint、类型检查、项目现有的整套测试、编译；「闭眼」指的是**新行为没有检查**，不是什么都不跑（CRD 0012 第 4 条——这句话不写进去，会被读成「写完直接交」，连编译不过的代码都会送到 PM 手里） | `grep -n 'lint' roles/code-engineer.md` 有命中；读那一段 |
+| 5 | 它**跑不到 A 的测试**（不在它的树里）；**首次会合那一次运行由 PM 在合并之后跑**（CRD 0013 第 4 条） | 读那一段；不许出现「你自己跑一次 A 的测试」这类旧写法 |
+| 6 | 合并后那次运行红了，**B 被叫到合并后的树里修**；并写明**独立性到那一刻结束，这是明知故犯**（CRD 0013 第 5 条） | `grep -n 'merged tree' roles/code-engineer.md` 有命中（英文名词，今天 `roles/*.md` 里 0 处）；读那一段 |
+| 7 | 被叫回来复查时，它复查的是**自己那一半一次**（CRD 0012 第 7 条），不是把 A 的断言当成答案照着改 | 读那一段 |
+| 8 | **只跟 PM 说话**，不许跟另一个 engineer 通气；并说清这是平台强制的——`send_message` 发不到兄弟身上。同一段里点明自己写的是**产品代码**，不是单元测试 | `grep -n 'is the only one you talk to' roles/code-engineer.md` 有命中（`verify-mount.mjs` 的通用循环只查「读得到、≥500 字符、无 `{{`」，**它验不了这一条**）；`grep -n 'send_message' roles/code-engineer.md` 有命中；`grep -n 'product code' roles/code-engineer.md` 有命中 |
+| 9 | 独立性怎么说：**写代码阶段是真隔离**，**合并之后已经结束**。不许含糊成「大概不会看」 | 读那一节；不许出现「应该不会」「尽量不」这类措辞 |
+| 10 | 简报里会带**接口 ADR** 的路径，它读自己那一半；**不许自己改那份 ADR**，觉得钉错了报 PM | `grep -n 'ADR' roles/code-engineer.md` 有命中 |
+| 11 | T-51 那行**占位记号消失了** | `grep -n 'M1-PLACEHOLDER' roles/code-engineer.md` **为空**。**这条断言的常驻用例住在 `docs/qa/T-54/`**，理由同 T-53 的第 10 条 |
+| 12 | 文件超过 500 字符、不含 `{{`；`docs/decisions/adr/`、`docs/design/tasks.md`、`DoD section` 三个串都在，`dod.md` 和 `**Decisions** section` 都不在 | `node tools/verify-mount.mjs` 绿。**这四件事真的被验了**，因为 T-51 的第 16 条已经把这个文件名加进那两份显式清单；顺手再看一眼 `grep -n 'docs/decisions/adr/\|docs/design/tasks.md\|DoD section' roles/code-engineer.md` |
+| 13 | 这份文件里的「test / 测试」按用词表用精确名词；没有一处把这套东西叫「结对编程」 | 逐行读；`grep -n -i 'pair programming' roles/code-engineer.md` 为空（英文文件） |
+| 14 | `npm test` 全绿，跑两次 | 那条命令 |
+| 15 | **重写这份 persona 时，依赖禁令三半一个都不许丢**，而且这份**今天只有第一半**——T-51 第 20 条会补齐它。不许加、不许 install、不许改 manifest 或锁文件。同理**「越界要求就停下来报 PM」那个出口也不许丢**。<br>为什么这份更要紧：`code_engineer` 有 shell，而且它是写产品代码、最可能想要一个包的那个；而**改 `package.json` 不需要跑 `npm install`** | `grep -ci 'never install' roles/code-engineer.md` ≥1；`grep -ci 'manifest or the lock' roles/code-engineer.md` ≥1；`grep -c 'step outside these rules, stop' roles/code-engineer.md` = 1；`bash docs/qa/T-51/run.sh` 绿 |
+
+---
+
+## T-55 — `roles/engineer.md` 开头加一句指路，行为一个字不改
+
+- **Verdicts**：code: not run — 尚未开工 ｜ security: not run — 尚未开工 ｜ qa: not run — 尚未开工 ｜ doc: not run — 尚未开工
+
+- **里程碑**：M3
+- **形状**：单人（solo）
+- **拥有的文件**：`roles/engineer.md`
+- **测试文件**：无——纯 persona 文档。检查由 `docs/qa/T-55/` 的 grep 用例做（QA 写），
+  加上现有的 `verify-mount.mjs` 钉子。
+- **依赖**：T-51、T-52
+- **要求来源**：PRD 的 M3 DoD 第 4 条；PRD「不在范围内」第 5 条（**只在开头加一句指路，
+  不动规则**）；CRD 0012「它动到什么」表 `roles/engineer.md` 那一行；PRD v3 的清理清单。
+- **这个任务最容易翻车的地方**：这个文件上挂着好几个别人的钉子。`tools/verify-mount.mjs`
+  钉着散文串 `the tree was moving`（`ADR 0004`、`ADR 0007` 说这种钉子**故意是脆的**）、
+  钉着 `docs/decisions/adr/`、`docs/design/tasks.md`、`DoD section`，并禁止 `dod.md`
+  和 `{{`。**动错一个字就是别人的用例变红。**
+- **DoD（PM 写，在简报发出之前）**：
+
+| # | 怎么算做完 | 别人怎么验 |
+| --- | --- | --- |
+| 1 | 开头加一句指路：这份文件是**单人形状**那一条路；双人形状是另外两个角色（`crew_test_engineer`、`crew_code_engineer`），由 PM 在有 architect 的作业里派 | 读前 15 行；`grep -n 'crew_test_engineer' roles/engineer.md` 有命中 |
+| 2 | **规则一条都没改。** 加的是指路，不是行为 | `git diff roles/engineer.md`：除了开头新增的那几行和第 4 条允许的用词替换，**没有删除行、没有规则被改写** |
+| 3 | 现有的散文钉子一个字不动：`the tree was moving` 原样在 | `grep -n 'the tree was moving' roles/engineer.md`；`node tools/verify-mount.mjs` 绿 |
+| 4 | 用词清理**只做真正含糊的地方**：只有一个 engineer 时「test first」是清楚的，那些地方不动。每一处改动都要在报告里写一行理由 | `git diff` 逐块读；报告里一处改动一行理由 |
+| 5 | 不含 `{{`；不出现 `dod.md`；`docs/decisions/adr/`、`docs/design/tasks.md`、`DoD section` 原样在 | `node tools/verify-mount.mjs` 绿 |
+| 6 | 没有一处把这套东西叫「结对编程」 | `grep -n -i 'pair programming' roles/engineer.md` 为空（英文文件，中文串在这里钉不到东西） |
+| 7 | `npm test` 全绿，跑两次；已有 QA 用例一个不红 | 那条命令；`bash docs/qa/run-all.sh` |
+
+---
+
+## T-56 — `roles/pm.md`：第 4、5 步长出「形状」（与 T-62 共有这个文件，必须串行）
+
+- **Verdicts**：code: not run — 尚未开工 ｜ security: not run — 尚未开工 ｜ qa: not run — 尚未开工 ｜ doc: not run — 尚未开工
+
+- **里程碑**：M4
+- **形状**：单人（solo）
+- **拥有的文件**：`roles/pm.md`（**只改第 4、5 步那一段**。同一个文件的执行那一段归 **T-62**，
+  所有权在 T-56 交工时交接，见 `ADR 0013`）
+- **测试文件**：无——纯 persona 文档。检查由 `docs/qa/T-56/` 的 grep 用例做（QA 写），
+  加上现有的 `verify-mount.mjs` 钉子。
+- **依赖**：T-53、T-54、T-55
+- **要求来源**：PRD 的 M4 DoD 第 1、2 条；CRD 0012 第 11、12、13 条；CRD 0013 第 6 条；
+  CRD 0014 第 2 条；`ADR 0012`。
+- **为什么 T-56 和 T-62 必须串行，而 `principles.md` 18 是「默认并行」**：两个任务共有
+  `roles/pm.md` 这一个文件。`principles.md` 18 要的是「并行是默认，串行要有一个真实的理由」，
+  这里的理由就是那个文件：两个 engineer 同时改同一份一千二百多行的 persona 会互相盖掉，
+  而 crew 的两个 engineer 之间**没有任何通道**，撞了也不会有人发现。所以 **T-62 等 T-56
+  交工**，不许同时跑。上一件作业里 `tools/verify-mount.mjs` 被 15 个任务先后拥有过
+  （`ADR 0013`），这类交接在这个仓库是走得通的——**先后，不是同时**。
+- **交接的护栏**：T-56 交工时在报告里写下 `roles/pm.md` 的**行数**（今天 1216 行），**T-62 从
+  那个数接着**；T-62 不许动 T-56 改过的那几段。**这个护栏不是一行会消失的记号**——那种记号只
+  对 persona 的占位有效（`ADR 0013`），`roles/pm.md` 里没有任何一行是「应该消失」的。
+- **这个任务最容易翻车的地方**：`roles/pm.md` 上挂着最多的钉子——
+  **两个**并行锚串都被钉着，两个都要原样在：第 9 步的 `Parallel by default`（`ADR 0004` 选的
+  就是它）和第 10 步的 `Parallel is the default`（`tools/verify-mount.mjs:769` 和 `:778`
+  各钉一个）。还有 `A task is finished when code review passes`、`` `scope: ``、
+  **`docs/qa/gaps.md` 今天在这个文件里 4 处，一处都不许少**（`verify-mount.mjs:820` 的门槛是
+  「PM 那一节里至少 3 处」，而 `host/crew.js:274` 把整份 `roles/pm.md` 当成 PM 那一节，
+  所以四处全在里面，**从 4 删到 3 不会变红**）、PM 那一节必须含 `crew_engineer`、
+  不许含 `{{`、不许含 `dod.md`、**不许指向本包内部**（`host/git-guard.js`、
+  `publishingWorkflow()`、`branchPushTriggers()` 必须 0 次，`docs/qa/T-01/case-16`）、
+  **第 1 行 `# Crew role: product manager (PM)` 不许被改动**（`case-06`）。
+- **DoD（PM 写，在简报发出之前）**：
+
+| # | 怎么算做完 | 别人怎么验 |
+| --- | --- | --- |
+| 1 | 第 4 步：任务行要带「形状」这一条 bullet，位置固定为**紧跟「里程碑」、在「拥有的文件」之前**；英文里这个字段写成 `**Shape**`（`roles/pm.md` 是英文文件，0 个中文字符），两个值 solo / pair；双人那一行**同时给出接口 ADR 的路径**，「拥有的文件」拆成 A 的和 B 的两栏且不许重叠（`ADR 0012`、CRD 0013 第 6 条） | `grep -n '\*\*Shape\*\*' roles/pm.md` 有命中（小写的 shape 这个文件里今天有 11 处散文，所以钉的是加粗的字段名）；读第 4 步 |
+| 2 | 第 5 步：形状**随整份文档一起**给用户盖章，不是单独一问（CRD 0012 第 11 条） | 读第 5 步那一段 |
+| 3 | PM 给的是**一个默认值加一份例外清单**，不是一行一问；并写明理由：一个作业五十个任务不等于五十个决定（CRD 0012 第 12 条） | `grep -n 'list of exceptions' roles/pm.md` 有命中（这个词组今天 0 处）；读那一段 |
+| 4 | **推荐双人的依据是 4 类**，写成一份编号清单：① 这一行的 DoD 措辞自己都写不锋利；② 这一行坐在一个模块边界契约上；③ 做错的后果是钱、权限或数据丢失；④ 这块地方以前的任务出过缺陷（CRD 0012 第 13 条） | 数那一段：**恰好 4 条**，不许有第 5 条 |
+| 5 | **那条硬约束另起一段，1 条，而且方向相反**：单元测试和产品代码必须动**同一个文件**的任务**不能**用双人形状（CRD 0013 第 6 条）。它是「**不能用**」，不是「推荐用」，所以**不许**混进上一格那 4 类里。这一段里要写下这个词组：`may not use the pair shape` | `grep -n 'may not use the pair shape' roles/pm.md` 有命中（今天 0 处），且它落在硬约束那一段、**不在**那 4 类清单里面；两者**分成两段**。这是一个**故意脆**的散文钉，和 `ADR 0004`、`ADR 0007` 同一个交易：正当的改措辞要在同一个提交里同时改这一格 |
+| 6 | 成本那句话**写成估计，不写成事实**（约 35%–75%，加两次开树、两条软链接命令、一次合并、两次清理） | 读那一句；不许出现把估计写成实测的措辞 |
+| 7 | 这两段写在**现有的第 4、5 步里面**，不新开一级小节（PRD 风险表） | `grep -c '^## ' roles/pm.md` 改前改后**一样**（今天 13） |
+| 8 | 没有一处把这套东西叫「结对编程」 | `grep -n -i 'pair programming' roles/pm.md` 的每一处命中都在对比语境里（这个文件是英文的，中文串在这里钉不到东西） |
+| 9 | **只清理第 4、5 步新长出来的那两段**里的用词，文件其余一千多行的 bare「test」一个不改（PRD v3） | `git diff roles/pm.md` 的每一块都落在第 4、5 步 |
+| 10 | **现有钉子一个不破**：两个并行锚串 `Parallel by default`（第 9 步）和 `Parallel is the default`（第 10 步）原样在；`A task is finished when code review passes` 原样在；`` `scope: `` 原样在；`docs/qa/gaps.md` 在 `roles/pm.md` 里仍然 **4 处**（`verify-mount.mjs:820` 的门槛只是「PM 那一节里至少 3 处」，而 PM 那一节就是整份 `roles/pm.md`；今天四处：评审批次清单、第 11 步、第 18 步、**Hard rules**。**不许为了凑 3 删掉任何一处**）；PM 那一节含 `crew_engineer`；不含 `{{`；不含 `dod.md`；`host/git-guard.js`、`publishingWorkflow()`、`branchPushTriggers()` 各 0 次；**第 1 行未被改动** | `node tools/verify-mount.mjs` 绿；`bash docs/qa/T-01/run.sh` 绿；`grep -c 'docs/qa/gaps.md' roles/pm.md` 改前改后一样（今天 **4**，四处都在 PM 那一节里；`verify-mount.mjs` 只查「≥ 3」，所以删掉一处不会变红——这一格才是那道保险） |
+| 11 | `npm test` 全绿，跑两次；已有 QA 用例一个不红 | 那条命令；`bash docs/qa/run-all.sh` |
+| 12 | **报告里给出 `roles/pm.md` 改动前后的行数**（改前 1216），并说清可读性由 doc reviewer 判（PRD 风险表）。**T-62 从这个数接着，这是两个任务共有这个文件的护栏**。**行数不是唯一的护栏：T-56 留下的那些 QA 用例（`docs/qa/T-56/`）是 T-62 的第二道**——T-62 把第 4、5 步改坏了，那些用例会红 | 读报告；T-62 开工前拿这个数和 `wc -l roles/pm.md` 对一次；T-62 交工时 `bash docs/qa/T-56/run.sh` 必须绿 |
+
+---
+
+## T-62 — `roles/pm.md`：双人形状的执行那一段（从 T-56 接手，必须串行）
+
+- **Verdicts**：code: not run — 尚未开工 ｜ security: not run — 尚未开工 ｜ qa: not run — 尚未开工 ｜ doc: not run — 尚未开工
+
+- **里程碑**：M4
+- **形状**：单人（solo）
+- **拥有的文件**：`roles/pm.md`（**只改执行那一段和小作业那条路**。第 4、5 步那一段是 T-56 改的，
+  **一个字不动**）
+- **测试文件**：无——纯 persona 文档。检查由 `docs/qa/T-62/` 的 grep 用例做（QA 写），
+  加上现有的 `verify-mount.mjs` 钉子。
+- **依赖**：**T-56（必须串行，不许和它同时跑）**、T-53、T-54、T-55
+- **要求来源**：PRD 的 M4 DoD 第 3、4、7 条；CRD 0012 第 5、7、8、9、15、17 条；
+  CRD 0013 第 1、4、5 条和「一个会安静出错的地方」那一节；CRD 0014 第 1 条。
+- **为什么必须串行**：和 T-56 共有 `roles/pm.md`。理由和护栏见 T-56 那一节
+  （`principles.md` 18 的「默认并行」在这里被一个真实的理由压住：同一个文件）。
+- **交接的护栏**：T-56 的报告里有 `roles/pm.md` 交工时的行数，**从那个数接着**；
+  **T-56 改过的第 4、5 步那两段一个字不动**。
+- **这个任务最容易翻车的地方**：和 T-56 完全一样的那一串钉子（见上一节），加上一条只属于它的：
+  它写的是 PM 的**执行步骤**，而 `roles/pm.md` 是给**任何**项目用的，所以这一段里不许出现只对
+  本仓库成立的命令或文件名（`npm test` 这种项目自己的测试命令要写成「项目的测试命令」）。
+  唯一的例外是那两条软链接命令——它们是 CRD 0013 点名要写进流程的，而且写的是 dsh 自己的路径。
+- **DoD（PM 写，在简报发出之前）**：
+
+| # | 怎么算做完 | 别人怎么验 |
+| --- | --- | --- |
+| 1 | 双人形状的执行顺序写成**一份编号清单，8 步**，放在第 9 步（跑任务）里面：① 开两棵工作树（`git worktree add`，同一个基点，各一个分支），**每棵树立刻补那条 `node_modules` 软链接**；② A、B **同时开工**，各自的树、各自的简报，都带接口 ADR 的路径；③ 合并两棵树；④ **PM 跑一次 A 写的那些单元测试**；⑤ 全绿 → 只报「两份理解对上了」；红 → 用 `send_message` 叫醒**同一个** A 和**同一个** B，各查自己那一半**一次**；⑥ 仍不一致 → 分歧写下来交 PM，PM 定不了 → 交用户；⑦ 要改代码 → B 回到**合并后的树**里修（独立性到那一刻结束，明知故犯）；⑧ 清理两棵工作树和两个分支，并把 A 的红灯 + B 的一次性结果 + 分歧记录交给 code reviewer | **逐步读，8 步一步不少**（不许写成一句话里的一串箭头，那种句子读的人数不清自己漏了哪一步）；`grep -n 'worktree' roles/pm.md` 有命中 |
+| 2 | 那两条软链接命令**和 `git worktree add` 写在同一步里**，不是写在「注意事项」里。并写明少了它会**安静地变弱**：`verify-mount.mjs` 会出声跳过 role-tool 那一半，工作树跑的是更弱的检查却看起来是绿的 | 读第 ① 步；`grep -n 'node_modules/@deepseek-ai' roles/pm.md` 有命中 |
+| 3 | **首次会合那一次只跑一次**：PM 报**原样**结果，**不许改了再跑、不许反复跑到绿**（CRD 0012 第 5 条，CRD 0013 第 4 条把这次运行交给 PM）。红了走的是第 ⑤ ⑥ 步那条路（各查自己那一半**一次** → 分歧写下来），**不是**「再跑一遍看看」。为什么这一条不能省：反复跑会让整套东西塌回普通 test first，而且是最坏的一种——B 会把每一次不一致都当成「我的代码错了」改掉，**分歧一次也不会上报**，PM 永远学不到文档有歧义 | `grep -n 'exactly once' roles/pm.md` 有命中（这个词组今天 0 处），且那一句说的就是这次运行；读那一段，「不许反复跑到绿」这半句必须在 |
+| 4 | **「跑什么」要有名词，不许含糊**：跑的是 **A 写的那些单元测试**；如果项目的测试命令会把它们一起跑，就跑**项目的测试命令**。只跑这一次 | 读第 ④ 步；`grep -n 'unit test' roles/pm.md` 在这一段里有命中（这个文件今天只有 1 处 `unit test`，在第 4 步里，所以数量必须变成 2 处以上） |
+| 5 | 首次会合全绿时**只能报「两份理解对上了」**，绝不能报「文档是清楚的」（CRD 0012 第 15 条） | `grep -n 'the two readings matched' roles/pm.md` 有命中。**故意脆**的散文钉（`ADR 0004`、`ADR 0007`）：正当的改措辞要在同一个提交里同时改这一格 |
+| 6 | A **不许**为消除冲突弱化断言，**只有 PM 能批**，而且改动必须能追回 DoD 一节的原话（CRD 0012 第 9 条） | `grep -n 'weaken' roles/pm.md` 有命中；读那一段 |
+| 7 | DoD 措辞被一次分歧改进之后的落点与谁批，两档写清（CRD 0012 第 17 条）：意思没变只是说清楚了 → **PM 自己改**，里程碑评审时报告；「done」的含义变了 → **是范围，当场要用户的 yes，而且它自己就该是一个新的 CRD** | 读那一段：两档都在，各带「谁批」 |
+| 8 | 小作业那条路**明写没有双人形状**（CRD 0014 第 1 条） | `grep -n 'pair shape' roles/pm.md` 有命中，且其中至少一处落在小作业那一段（这个词组今天 0 处）；读那一段 |
+| 9 | 收尾**清理两棵工作树和两个分支**写在第 ⑧ 步里；忘了清理会攒下 git 垃圾，这是 PM 的活（CRD 0013「代价」） | `grep -n 'git worktree remove' roles/pm.md` 有命中；读第 ⑧ 步 |
+| 10 | **T-56 改过的第 4、5 步那两段一个字不动** | `git diff roles/pm.md` 里没有第 4、5 步那两段的改动；开工前 `wc -l roles/pm.md` 和 T-56 报告里那个数对得上 |
+| 11 | 这一段写在**现有步骤里面**，不新开一级小节（PRD 风险表） | `grep -c '^## ' roles/pm.md` 改前改后**一样**（T-56 交工时是 13） |
+| 12 | **现有钉子一个不破**：`Parallel by default`（第 9 步）、`Parallel is the default`（第 10 步）、`A task is finished when code review passes`、`` `scope: `` 原样在；`docs/qa/gaps.md` 仍然 4 处（理由见 T-56 第 10 条）；PM 那一节含 `crew_engineer`；不含 `{{`；不含 `dod.md`；`host/git-guard.js`、`publishingWorkflow()`、`branchPushTriggers()` 各 0 次；**第 1 行未被改动** | `node tools/verify-mount.mjs` 绿；`bash docs/qa/T-01/run.sh` 绿；`grep -c 'docs/qa/gaps.md' roles/pm.md` 和 T-56 交工时一样 |
+| 13 | **只清理这一段**里的用词，文件其余一千多行的 bare「test」一个不改；没有一处把这套东西叫「结对编程」 | `git diff roles/pm.md` 逐块读；`grep -n -i 'pair programming' roles/pm.md`（英文文件） |
+| 14 | `npm test` 全绿，跑两次；已有 QA 用例一个不红；报告里给出改动前后的行数（起点是 T-56 报告里那个数） | 那条命令；`bash docs/qa/run-all.sh`；读报告 |
+
+---
+
+## T-57 — `roles/code-reviewer.md`：新的证据形状，以及那个反转
+
+- **Verdicts**：code: not run — 尚未开工 ｜ security: not run — 尚未开工 ｜ qa: not run — 尚未开工 ｜ doc: not run — 尚未开工
+
+- **里程碑**：M4
+- **形状**：单人（solo）
+- **拥有的文件**：`roles/code-reviewer.md`
+- **测试文件**：无——纯 persona 文档。检查由 `docs/qa/T-57/` 的 grep 用例做（QA 写）。
+- **依赖**：T-53、T-54、T-55
+- **要求来源**：PRD 的 M4 DoD 第 5 条；CRD 0012 第 14、15 条；PRD 风险表第一行
+  （相关性误读「不修，只说清楚」）。
+- **DoD（PM 写，在简报发出之前）**：
+
+| # | 怎么算做完 | 别人怎么验 |
+| --- | --- | --- |
+| 1 | 双人任务的证据形状写清：**A 的红灯 + B 的一次性结果 + 分歧记录**，三样都要（CRD 0012 第 14 条） | `grep -n 'disagreement' roles/code-reviewer.md` 有命中（英文名词，这个文件今天 0 处）；读那一段：三样都点名 |
+| 2 | **明写那个反转**：首次会合全绿**是最好的结果，不是可疑**——但它**只**证明两份理解对上了，**不**证明文档是清楚的（CRD 0012 第 15 条） | 读那一段。这一条两半都要有：既不许把全绿当可疑，也不许把全绿当「文档没问题」 |
+| 3 | 写清**为什么**只能报那么多：相关性误读——两个同模型的 agent 会犯同一个误读然后一致，全绿，什么都不上报；证据说同时失败是独立性预测的 3.7 倍（arXiv 2026-06） | `grep -n '3.7' roles/code-reviewer.md` 有命中 |
+| 4 | 写清**这套东西不是最后一道网**：QA（在后面、闭眼、自己写用例）和 code review 本身原样保留，它们才是相关性误读的出口 | 读那一段 |
+| 5 | 单人形状的评审规则**一个字不改**——只是多一节讲双人任务的证据 | `git diff roles/code-reviewer.md`：没有删除行，现有规则未被改写 |
+| 6 | 现有钉子一个不破：`docs/design/tasks.md` 在、`DoD section` 在、不出现 `dod.md`、不含 `{{`；它是 allow 列表角色，文件里不许出现让它写文件或跑命令的话 | `node tools/verify-mount.mjs` 绿 |
+| 7 | 这一节里的「test / 测试」按用词表用精确名词；没有一处把这套东西叫「结对编程」 | 逐行读；`grep -n -i 'pair programming' roles/code-reviewer.md` 为空（英文文件） |
+| 8 | `npm test` 全绿，跑两次 | 那条命令 |
+
+---
+
+## T-58 — `roles/architect.md`：标形状，写接口 ADR
+
+- **Verdicts**：code: not run — 尚未开工 ｜ security: not run — 尚未开工 ｜ qa: not run — 尚未开工 ｜ doc: not run — 尚未开工
+
+- **里程碑**：M4
+- **形状**：单人（solo）
+- **拥有的文件**：`roles/architect.md`
+- **测试文件**：无——纯 persona 文档。检查由 `docs/qa/T-58/` 的 grep 用例做（QA 写）。
+- **依赖**：T-53、T-54、T-55
+- **要求来源**：PRD 的 M4 DoD 第 6 条；CRD 0014 第 2、3、4 条（**`roles/architect.md`
+  是这份 CRD 新拉进范围的文件**）；CRD 0013 第 6 条；`ADR 0012`。
+- **DoD（PM 写，在简报发出之前）**：
+
+| # | 怎么算做完 | 别人怎么验 |
+| --- | --- | --- |
+| 1 | 任务表要带「**形状**」，位置固定为紧跟「里程碑」、在「拥有的文件」之前，两个值：solo、pair。英文里这个字段写成 `**Shape**`（`roles/architect.md` 是英文文件；`ADR 0012` 里那个 `- **形状**：` 的样子是中文任务表里的写法） | `grep -n '\*\*Shape\*\*' roles/architect.md` 有命中（这个文件里小写的 shape 今天有 6 处散文，所以钉的是加粗的字段名）；读那一段 |
+| 2 | **双人任务的文件清单分成 A 的和 B 的两栏，两边不许重叠**（CRD 0013 第 6 条） | 读那一段 |
+| 3 | **一个任务如果它的测试和代码必须动同一个文件，它就不能用双人形状。** 这条硬约束要写出来 | 读那一段 |
+| 4 | **每个双人任务一份接口 ADR**，写在 `docs/decisions/adr/NNNN-<short-name>.md`，钉死**五件事**：import 路径、导出名、签名、返回形状、出错行为（CRD 0014 第 3 条） | 数那五项：一项不少；`grep -n 'interface ADR' roles/architect.md` 有命中（这个词组今天全仓库 0 处。**不要钉 `import`**：`roles/architect.md:88` 今天就有 `import, HTTP/REST, gRPC…`，钉它就是「什么都没查到却打绿」） |
+| 5 | **只有 architect 能改那份 ADR。** engineer 觉得钉错了报 PM，PM 起一个新的 architect 去改，并重跑已经按旧版本开工的那一半（CRD 0014 第 4 条） | 读那一段：三件事都在——只有 architect 能改、走 PM、要重跑 |
+| 6 | 写清**接口 ADR 不是边界契约**：`docs/design/api/` 是「每一对会互相说话的**模块**一份」，而 A 和 B 不是两个模块，是同一个任务的两半（CRD 0014 被否掉的两个位置） | 读那一段 |
+| 7 | 写清**双人形状只存在于有 architect 的作业里**，以及形状由 architect 提、用户在第 5 步连整份表一起盖章（CRD 0014 第 1、2 条） | 读那一段 |
+| 8 | 写清接口 ADR 自带的风险：**它自己也可能被两边同一个误读**，但一个签名比一段散文难误读得多，净收益是正的（CRD 0014「代价」） | 读那一段 |
+| 9 | 现有钉子一个不破：`docs/decisions/adr/` 在、不出现 `**Decisions** section`、`docs/design/tasks.md` 在、`DoD section` 在、不出现 `dod.md`、不含 `{{` | `node tools/verify-mount.mjs` 绿 |
+| 10 | 新写的那几节里的「test / 测试」按用词表用精确名词；没有一处把这套东西叫「结对编程」 | 逐行读；`grep -n -i 'pair programming' roles/architect.md` 为空（英文文件） |
+| 11 | `npm test` 全绿，跑两次 | 那条命令 |
+
+---
+
+## T-59 — 两份 README 一起改，说同一件事
+
+- **Verdicts**：code: not run — 尚未开工 ｜ security: not run — 尚未开工 ｜ qa: not run — 尚未开工 ｜ doc: not run — 尚未开工
+
+- **里程碑**：M5
+- **形状**：单人（solo）
+- **拥有的文件**：`README.md`、`README-zh.md`
+- **测试文件**：无——纯文档任务。检查由 `docs/qa/T-59/` 的 grep 与小节比对用例做（QA 写）。
+- **依赖**：T-56、T-62、T-57、T-58
+- **要求来源**：PRD 的 M5 DoD 第 2、3 条和「三角色表进两份 README」那一半；
+  `CLAUDE.md`「Documentation」一节（**英文先写，再对齐中文，同一个提交**）；PRD v3 的清理清单。
+- **为什么两份 README 是一个任务而不是两个**：`CLAUDE.md` 要求它们**一起**更新、
+  **同一个提交**。拆成两个任务就是两个提交，规则当场破。
+- **DoD（PM 写，在简报发出之前）**：
+
+| # | 怎么算做完 | 别人怎么验 |
+| --- | --- | --- |
+| 1 | `README.md`（**英文先写**）说明双人形状：它是什么、怎么用、**它保证什么**、**它不保证什么** | 读那一节；「不保证什么」必须是独立的一段，不是一句附注 |
+| 2 | 「它不保证什么」至少说到：全绿只等于「两份理解对上了」；相关性误读抓不住；整套东西的收益上限是那份 DoD 一节的质量，而那份 DoD 没有第二双眼睛 | 读那一段：三条都在 |
+| 3 | 角色表加两行：`crew_test_engineer` / `roles/test-engineer.md`、`crew_code_engineer` / `roles/code-engineer.md`，工具列写「除 crew 工具外都能用」 | 数那张表：9 行 |
+| 4 | 那张 `rolesDir` / `roleAllow` / `roleDeny` / `roleModels` 配置表里，**`roleDeny` 那一行的「默认值」一栏补上两个新角色**。<br>**说准一件事**：那张表里**没有角色键清单**——`roleDeny` 的默认值一栏今天是散文（`README.md:583` 是 `architect, engineer, QA: the crew tools`，`README-zh.md:468` 是「架构师、工程师、QA：crew 工具」；582 / 467 是 `roleAllow` 那一行，别数错）。角色**键**名的完整清单不在 README 里，它在 `preset/crew/agent.cordis.yml` 的注释里（今天第 221-223 行），那一处归 T-51（它的 DoD 第 5 条） | 读两份 README 那张表的 `roleDeny` 一行，两份说同一件事；`grep -n 'test_engineer' preset/crew/agent.cordis.yml` 有命中（T-51 已经验过它） |
+| 5 | **三种写测试的角色那张对照表**进 README，四条区别一条不少：粒度、时机、家、范围 | 数那张表；四条区别逐条对着 PRD v2 那一节读 |
+| 6 | 写清**双人形状只在有 architect 的作业里**；小作业那条路没有它 | 读那一段 |
+| 7 | 写清 PM 要开两棵工作树、**每棵都要补那条 `node_modules` 软链接**，少了它检查会安静地变弱 | 读那一段 |
+| 8 | `README-zh.md` 与 `README.md` **说同一件事**：小节一一对应，编号列表逐项对应 | 列两份的标题并排比；逐项比对编号列表 |
+| 9 | 两份都在**同一个提交**里改 | `git show --stat` 里两个文件都在 |
+| 10 | 没有一处把这套东西叫「结对编程」；如果为了讲清区别提到它，必须是**对比**语境 | `grep -n -i "pair programming\|结对编程" README.md README-zh.md` 逐处读 |
+| 11 | 两份 README 里的「test / 测试」按用词表用精确名词；**清理只到本次改动的段落**，其余不动 | `git diff` 逐块读 |
+| 12 | 版本号那一行不动（本作业不发版，PRD「不在范围内」） | `git diff` 里没有版本行 |
+| 13 | `npm test` 全绿，跑两次 | 那条命令 |
+
+---
+
+## T-60 — `CLAUDE.md`：角色表、设计规则，以及 flat 规则的第四道守卫
+
+- **Verdicts**：code: not run — 尚未开工 ｜ security: not run — 尚未开工 ｜ qa: not run — 尚未开工 ｜ doc: not run — 尚未开工
+
+- **里程碑**：M5
+- **形状**：单人（solo）
+- **拥有的文件**：`CLAUDE.md`
+- **测试文件**：无——纯文档任务。检查由 `docs/qa/T-60/` 的 grep 用例做（QA 写）。
+- **依赖**：T-56、T-62、T-57、T-58
+- **要求来源**：PRD 的 M5 DoD 第 1 条；PRD「它必须做到什么」第 8 条；
+  CRD 0012「更正」一节（`send_message` 的血缘检查，今天 `CLAUDE.md` 只写了三道守卫）；
+  CRD 0013；`ADR 0010`（bash 检查扩到三个之后，加角色的清单要补一步）。
+- **DoD（PM 写，在简报发出之前）**：
+
+| # | 怎么算做完 | 别人怎么验 |
+| --- | --- | --- |
+| 1 | 「The two planes」那张表加两行（两个新角色工具），并说清它们和现有角色走同一条路 | 读那张表 |
+| 2 | 设计规则第 4 条改掉：bash 检查现在**覆盖三个 engineer 角色**，并**保留那个还开着的洞**——`crew_qa` 仍然没有被这个检查守着，理由是本作业不许改 QA 的行为 | 读第 4 条：两半都在（覆盖三个、QA 那个洞还开着） |
+| 3 | **flat 规则从三道守卫改成四道。** 第四道是 `send_message` 的血缘检查：它把调用者当作 `parent` 传进 `ctx.subagents.followup(parent, …)`，dsh 在 `authorizeLineage` 里查血缘，两条错误串 `delivery requires the exact live parent agent` 和 `belongs to another parent session` 都抛 `UNAUTHORIZED`，所以**兄弟发不到兄弟**。<br>**不许把 `dsh-subagent/lib/index.js` 的行号写进 `CLAUDE.md`**：那个包是 `peerDependencies`、公开 npm 装不到，行号会随升级烂掉，而且**没有任何检查会因此变红**；再说 `belongs to another parent session` 在那个文件里出现**两处**（890 和 1338），行号本来就不精确。行号留在 `CRD 0012` 里——CRD 记的是某一刻，烂掉也无害 | 数那一条里的守卫个数：4；`grep -n 'authorizeLineage' CLAUDE.md` 有命中；`grep -n 'UNAUTHORIZED' CLAUDE.md` 有命中；`grep -n 'dsh-subagent/lib/index.js:' CLAUDE.md` **为空** |
+| 4 | 第四道守卫要写明**它不依赖任何 deny 列表，也不依赖任何提示词措辞**——这是它比另外三道硬的地方 | 读那一句 |
+| 5 | 同一处要写明它**没有**重新打开横向通道，而且它**不管** B 不读测试文件那件事（那件事由两棵工作树管） | 读那一段 |
+| 6 | 「Adding or changing a role」那份清单补一步：新角色如果靠 `bash` 活，要把它的 key 加进 `verify-mount.mjs` 那份三名清单（`ADR 0010`「它不证明什么」） | 数那份清单的步数；读新增那一步 |
+| 7 | 「State and documents」一节更新：`docs/design/prd.md` 和 `docs/design/hld.md` **现在存在了**——那一节今天写着「There is no `prd.md`, no `hld.md`」 | `grep -n 'no `prd.md`' CLAUDE.md` 为空；读那一段 |
+| 8 | 加一段讲双人形状：它只在有 architect 的作业里；PM 开两棵工作树并**每棵补那条软链接**；首次会合由 PM 在合并后跑；全绿只等于「两份理解对上了」 | 读那一段：四件事都在 |
+| 9 | 没有一处把这套东西叫「结对编程」 | `grep -n -i 'pair programming' CLAUDE.md` 为空（这个文件是英文的） |
+| 10 | 这个文件里的「test / 测试」按用词表用精确名词；**清理只到本次改动的段落** | `git diff CLAUDE.md` 逐块读 |
+| 11 | 现有的设计规则一条都没被删、编号没被重排（它被 QA 用例和别处按号引用） | `grep -cE '^[0-9]+\. \*\*' CLAUDE.md` 与改前对比；`bash docs/qa/run-all.sh` 绿 |
+| 12 | `npm test` 全绿，跑两次 | 那条命令 |
+
+---
+
+## T-61 — `CHANGELOG.md` 加一条，写用户会注意到的东西
+
+- **Verdicts**：code: not run — 尚未开工 ｜ security: not run — 尚未开工 ｜ qa: not run — 尚未开工 ｜ doc: not run — 尚未开工
+
+- **里程碑**：M5
+- **形状**：单人（solo）
+- **拥有的文件**：`CHANGELOG.md`
+- **测试文件**：无——纯文档任务。检查由 `docs/qa/T-61/` 的 grep 用例做（QA 写）。
+- **依赖**：T-56、T-62、T-57、T-58
+- **要求来源**：PRD 的 M5 DoD 第 4 条；`principles.md` 原则 20 那张表第 14 步
+  （**读者看得见的文件是一整套，不只是 README**）。
+- **DoD（PM 写，在简报发出之前）**：
+
+| # | 怎么算做完 | 别人怎么验 |
+| --- | --- | --- |
+| 1 | 加一条，写**用户会注意到**的东西：多了两个角色工具，一个任务可以派两个 engineer，PM 会开两棵工作树 | 读那一条 |
+| 2 | 同一条里写清**它不保证什么**：首次会合全绿只等于「两份理解对上了」 | 读那一条 |
+| 3 | 写清边界：**双人形状只在有 architect 的作业里**，小作业那条路没有它 | 读那一条 |
+| 4 | 位置按这个文件的规矩：**最新的在最上面**，用户会注意到的话写在前面 | 读文件开头 |
+| 5 | **不动版本号，不新建版本小节声称已发布。** 本作业不发版；版本号是否要动，作业结束时另外问（PRD「不在范围内」） | `git diff CHANGELOG.md`；`package.json` 不在这次改动里 |
+| 6 | 没有一处把这套东西叫「结对编程」；「test / 测试」按用词表用精确名词 | `grep -n -i 'pair programming' CHANGELOG.md` 为空（这个文件是英文的，0 个中文字符）；读那一条 |
+| 7 | 这个文件已有的内容一个字不改（它里面有过被写错的数字，别顺手动） | `git diff CHANGELOG.md`：只有新增行 |
+| 8 | **全仓库最后一次核对**：`grep -rn -i "pair programming\|结对编程" --include='*.md' .` 的**每一处**命中都在**对比**语境里（在说这套东西**不是**结对编程）。这一格是 M2 那条要求的收口——它在 M2 时点验不完，因为会破坏它的文件（两份 README、`CLAUDE.md`、`CHANGELOG.md`）到 M4、M5 才写。这里两个串都要保留：这一次扫的是全仓库，里面有中文文档 | 那条命令，逐处读；命中数和每一处的语境都写进报告 |
+| 9 | `npm test` 全绿，跑两次 | 那条命令 |
