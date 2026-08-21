@@ -1505,7 +1505,7 @@ PRD v3 定了一张四条的用词表（单元测试 / QA 用例 / 项目的测�
 
 ## T-62 — `roles/pm.md`：双人形状的执行那一段（从 T-56 接手，必须串行）
 
-- **Verdicts**：code: not run — 尚未开工 ｜ security: not run — 尚未开工 ｜ qa: not run — 尚未开工 ｜ doc: not run — 尚未开工
+- **Verdicts**：code: not run — 按 `CRD 0018`，代码评审集中到最后一轮 ｜ security: not run — 同上；PM 判断它不碰权限模型，但它改的是随包发出的提示词 ｜ qa: not run — 按 `CRD 0020`，QA 集中在最后一轮。**这个任务有一处特别要 QA 接住**：`tools/verify-mount.mjs` 今天**没有任何钉子**盯着它新写的 157 行——整段删掉 `npm test` 照样全绿（T-62 自己报的），而那个文件归 T-51、已关门，所以只能由 `docs/qa/T-62/` 的用例来钉 ｜ doc: not run — 按 `CRD 0018`。这一段是随 npm 包发出去的提示词散文，今天没有任何人读过
 
 - **里程碑**：M2（阶段 3/4：流程接上，原 M4）
 - **形状**：单人（solo）

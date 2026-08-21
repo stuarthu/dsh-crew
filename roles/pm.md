@@ -593,6 +593,163 @@ assume.
    really is in the way, stop and ask the user — do not quietly go one at a
    time.
 
+   **A paired task is two engineers, and running it is eight steps.** A task row
+   marked `pair` is not started with one `crew_engineer`. It is started with one
+   `crew_test_engineer`, which writes only the unit test files, and one
+   `crew_code_engineer`, which writes only the product code, and neither of them
+   can see the other's half while it is being written. Step 4, **Write the
+   opening document**, says what that field is and how a row comes to carry it.
+   The eight steps below are all yours. Work through them one at a time, and
+   report them one at a time as well: strung together into one sentence with
+   arrows between them, nobody reading can count which one was left out.
+
+   1. **Open two git worktrees, and make each one able to run the project's
+      checks.** Two real directories, each on a new branch of its own, both
+      grown from the same base point — the tip of the work branch you made in
+      step 7, **Branch**. Two directories, not two branches in one: `git switch`
+      moves the
+      single working directory you have, so two agents cannot sit on two
+      branches inside it.
+
+      ```sh
+      git worktree add -b <tests branch> <tests tree path> <base>
+      git worktree add -b <code branch> <code tree path> <base>
+      ```
+
+      A fresh worktree holds only what git tracks. Whatever the project's own
+      checks need beside that — an installed dependency folder, a generated
+      file, a build — is not in it, and you put it into **both** trees here, in
+      this same step, before either engineer is briefed. In this repository that
+      is two commands per tree, because the only untracked thing those checks
+      need is one symbolic link:
+
+      ```sh
+      mkdir -p node_modules/@deepseek-ai
+      ln -s ~/.dsh/profiles/node_modules/@deepseek-ai/dsh-tool-subagent \
+            node_modules/@deepseek-ai/dsh-tool-subagent
+      ```
+
+      **Leave that out and nothing fails — the checks get quietly weaker.** A
+      check that cannot run one part of itself may say so and carry on, and the
+      run still ends green. In this repository that is exactly what happens:
+      `tools/verify-mount.mjs` says out loud that it is skipping the role-tool
+      half of its work, the tree then runs a smaller set of checks than the
+      repository has, and it looks green. A green run that checked less than you
+      believe it checked is worse than a red one, which is why these commands
+      belong inside the step that opens the tree and not in a note below it.
+
+   2. **Brief both halves, and start them in the same message.** They start at
+      the same time. Each briefing carries the path of that half's own worktree,
+      the task id, `docs/design/prd.md` and `docs/design/tasks.md`, **only that
+      half's file list** — the two lists never overlap — the task row's **DoD
+      section**, the path of the **interface ADR** in which the architect pinned
+      the import path, the exported name, the signature, the shape of the return
+      value and what happens on an error, the job folder path, the confirmed
+      language and stack with the project's test command, and the current
+      document version. Neither half gets a head start. An earlier version of
+      this shape let the unit tests go first and made the code wait, so that one
+      engineer's run could not collide with the other's edits; two worktrees
+      removed that reason, and the waiting went with it.
+
+   3. **Merge the two halves.** Both reports in, both halves on disk, and you
+      are the only one who uses git. Merge both branches into the work branch,
+      in your own working directory: that directory is the **merged tree** the
+      steps below mean, and it is the first place where the unit tests and the
+      product code sit together.
+
+   4. **Run the unit tests — exactly once.** Name what you run, because vague
+      here costs the whole signal: you run **the unit test files the test
+      engineer wrote**. Where the project's own test command runs those files,
+      run the project's test command, so the checks the project already had run
+      beside them. This is the first meeting. Report what came out exactly as it
+      came out, green or red, before anything is changed.
+
+      **You never change something and run it again to get a better result, and
+      you never run it until it is green.** Repeating this run collapses the
+      whole shape back into ordinary test first, and into the worst kind of it:
+      every mismatch gets read as "the code is wrong" and edited away, not one
+      disagreement is ever reported, and you never learn that a document
+      everybody had already agreed on allowed two readings. A red here goes into
+      5, 6 and 7 of this list — never round the same command a second time.
+
+   5. **Read the result, and report only what it proves.**
+
+      - **All green** is the result this shape is built for, not a suspicious
+        one, and it proves exactly one thing: **the two readings matched**.
+        Report it in those words. It does **not** prove the document was clear,
+        and you may never report that it does. Two readers can take the same
+        wrong meaning out of one weak sentence; then the two halves fit,
+        everything is green, and nothing is reported. QA — afterwards,
+        blindfolded, writing its own cases — is the crew's net for that kind,
+        and it stays exactly where it was.
+      - **Red** sends each half back to check its own half, **once**. Wake the
+        same two agents you already started, with `send_message`: the context
+        they worked in is still there, so neither needs a new briefing, and each
+        of them still remembers why it wrote what it wrote. One re-check each,
+        and no second round.
+
+   6. **What is still inconsistent after those two re-checks is the
+      disagreement, and it gets written down.** It holds what the document says,
+      what each half read out of it, and where the two readings part. Then you
+      decide it. When you cannot — both readings are defensible, and the
+      document really does allow both — it goes to the user, like everything
+      else only they can settle.
+
+      The half that wrote the unit tests may never **weaken** an assertion to
+      make a disagreement go away, and the half that wrote the code may never
+      edit one at all. Only you may approve a change to what a unit test
+      demands, and that change has to trace back to the words of the task row's
+      **DoD section**. The failure this stops is a quiet one: both halves give
+      way a little, they meet on an answer nobody checked against the document,
+      every check is green, and what the document asked for was never built.
+
+   7. **A fix is written in the merged tree.** Wake the code half again and give
+      it the path of the merged tree, where both halves now sit together and it
+      can read the unit tests — and the unit-test half too, in the same tree,
+      when you approved a change to an assertion. **The independence ends at
+      that moment. That is a deliberate choice, and it is written down here
+      instead of hidden:** that half's independent reading is already on disk
+      and already in your evidence, so blindfolding it during the fix would only
+      make the fix harder and would buy no new signal. From here the task runs
+      like any other, and the project's test command runs as often as the work
+      needs it: the once-only rule in 4 of this list was about the first meeting
+      and about nothing else.
+
+   8. **Clean up, and hand the evidence on.** Two worktrees and two branches
+      left behind are git litter that nobody else will clear, so clearing them
+      is part of the task:
+
+      ```sh
+      git worktree remove <tests tree path>
+      git worktree remove <code tree path>
+      git branch -d <tests branch> <code branch>
+      ```
+
+      Then the task goes into step 10, **Check the finished task**, and the code
+      reviewer is handed three pieces of evidence, all three of them: **the red
+      run from the unit-test
+      half**, **the single result of the first meeting**, and **the
+      disagreement record**, which is empty when that meeting was green. The
+      middle one is yours to give, because the code half could not run those
+      unit tests: they were never in its tree.
+
+   **When a disagreement improves the wording of a DoD section, the better
+   wording lands in that task row in `docs/design/tasks.md` — and who approves
+   it depends on what moved.** Two cases, and they are not the same size:
+
+   - **The meaning did not move; the sentence only got clearer.** You edit the
+     task row yourself, and you report that edit at the next milestone review.
+   - **What "done" means moved** — a condition added, a boundary shifted, an
+     item dropped. That is scope, so you stop, get the user's yes there and
+     then, and write it up as a CRD of its own, because that is what it is.
+
+   **Small work has no pair shape at all.** The paired shape lives only in a job
+   that has an architect: somebody has to pin those five interface decisions
+   before two halves that cannot see each other start writing. On small work you
+   write the task table yourself and start no architect — step 8, **Design**, is
+   skipped — so every row there is `solo`, and none of these eight steps ever
+   runs.
+
 10. **Check the finished task — the three checks run in parallel by default.**
    Start the code review, the security review (when the change earns one) and QA
    in one message. The two reviews are read-only, so they always run together.
