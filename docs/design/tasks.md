@@ -1050,6 +1050,38 @@ grep -o -E '检查 [0-9、]+' docs/qa/gaps.md | grep -o -E '[0-9]+' | sort -n -u
 | 9 | 两份 README 逐项对应 | 列标题；逐项比对编号列表 |
 | 10 | `npm test` 与 `bash docs/qa/run-all.sh` 全绿；`roles/pm.md` 的字数行会变，其他不许变 | 两条命令跑两次 |
 
+## T-50 — `publish.yml` 也需要完整历史，而那个钉子只钉了 `test.yml`
+
+- **Verdicts**：code: not run — 交工了，本批评审还没开（它是发布被拦之后的紧急修复） ｜ security: not run — PM 判断它只改一个工作流的 checkout 深度和一个检查脚本 ｜ qa: pass（自己用 `git clone --depth 1` 复现了那次 CI 失败，修完再验；697 个 ok、67 个用例全绿） ｜ doc: not run — 同 code（它更正了 PM 写在这一节里的一处事实错误：读 git 的只有 `case-26`，不是三个）
+
+- **拥有的文件**：`.github/workflows/publish.yml`、`tools/verify-mount.mjs`
+- **要求来源**：真实的发布失败。2026-08-21 推 `v0.7.0` 之后，`publish.yml` 的运行
+  **失败**（run 32437581309），`crew QA: 5 task(s) run, 4 passed, 1 failed — T-01`。
+  同一个 tag 上的 `Tests` 工作流**通过**。
+- **根因**：`test.yml` 的 checkout 设了 `fetch-depth: 0`，注释里还写明了为什么——
+  `docs/qa/T-01/case-26` 读这个仓库自己的提交历史。（**PM 在这里写的是「三个用例」,错了**——
+  T-50 查了:`case-01` 和 `case-07` 匹配的是 `roles/pm.md` 里的文本,检查合并步骤有没有把那些
+  git 命令写下来,它们自己从不跑 git,在浅克隆上都通过。`test.yml` 自己的注释只点了 `case-26`,
+  是对的。）
+  `publish.yml` 的 checkout **一个 `with:` 都没有**，所以是深度 1 的浅克隆，而它也跑 `npm test`。
+  T-41/T-43/T-44 把 `fetch-depth: 0` 钉在了 `test.yml` 上；**守着唯一不可撤销动作的那个工作流
+  既没有这个设置，也没有这个钉子。**
+- **值得记下的一件事**：这次失败是**好**的。`publish.yml` 先跑 `npm test` 再 `npm publish`，
+  所以它在发布之前就红了——npm 上仍然是 `0.6.0`，什么都没发出去。这正是 T-41 那个「测试必须
+  排在发布之前」的钉子存在的理由，而它第一次真正被用到就救了一次发布。
+- **DoD（PM 写，在简报发出之前，2026-08-21）**：
+
+| # | 怎么算做完 | 别人怎么验 |
+| --- | --- | --- |
+| 1 | `publish.yml` 的 checkout 设 `fetch-depth: 0`，并且注释说清为什么（照 `test.yml` 的写法） | 读那个文件 |
+| 2 | 钉子改成：**任何**跑 `npm test` 的工作流都必须设 `fetch-depth: 0`，不再只认 `test.yml` | 在副本里把 `publish.yml` 的那一行删掉，`node tools/verify-mount.mjs` 变红并**点名 `publish.yml`** |
+| 3 | 一行注释满足不了它（和 T-37 那个洞同一种） | 在副本里把真设置删掉、只留 `# fetch-depth: 0`，变红 |
+| 4 | 不跑 `npm test` 的工作流不被要求设它 | 在副本里加一个只跑 lint 的工作流，保持绿 |
+| 5 | T-37、T-41、T-43、T-44、T-46 的**全部** mutation 行为不变 | 重跑 `t41/` 下各套；每个该红的红、该绿的绿 |
+| 6 | `docs/qa/T-42/` 的 25 个用例全绿；`bash docs/qa/run-all.sh` 5 个任务 67 个用例 | 两条命令 |
+| 7 | `npm test` 全绿，跑两次 | 那条命令 |
+| 8 | 报告里说清：这个钉子**证明不了**浅克隆下别的东西会不会坏——它只钉那一个设置 | 读报告 |
+
 # 那四个还活着的指针，现在能不能解
 
 | 指针 | 出现在 | 现在解得开吗 |

@@ -97,6 +97,115 @@ for (const gate of [
   else ok(gate.ok);
 }
 
+// ------------------------------------------- the workflow folder, read once
+// Read the FOLDER, never a file name. T-41 and T-43 pinned `publish.yml` by that
+// name, while host/git-guard.js's publishingWorkflow() reads EVERY
+// `.github/workflows/*.yml` — so a second workflow called anything else, with
+// `npm publish` under a bare `on: push`, kept that pin green while the
+// repository really published on every branch push. The guard would still have
+// refused that push, so it was a hole in the pin and not in the guard; and the
+// pin's job is to stop such a file existing at all. Renaming the release
+// workflow, which the trusted-publisher setting on npmjs.com allows, used to red
+// a file that was still perfectly correct — a gate that reds correct files
+// teaches people to stop reading it. Both extensions count, because GitHub reads
+// `.yaml` exactly like `.yml` (T-44).
+//
+// T-50 made a third pin read this same list, and for the same lesson one file
+// over: the full-history setting was pinned on `test.yml` by name, and the
+// release workflow — the one that gates this repository's only irreversible
+// action, running the very same `npm test` — was left with neither the setting
+// nor a pin. So every workflow file is read once here, and the pins below decide
+// by content.
+const workflowsDir = join(packageRoot, ".github", "workflows");
+const workflowNames = existsSync(workflowsDir)
+  ? readdirSync(workflowsDir).filter((name) => /\.ya?ml$/i.test(name)).sort()
+  : [];
+const workflowFiles = workflowNames.map((name) => ({ name, text: readFileSync(join(workflowsDir, name), "utf8") }));
+
+// A command has to BE the command, not a word inside somebody's `echo`: it
+// either follows `run:` — as a key of its own, or in the one-liner list form
+// `- run: npm test`, which is legal YAML and a common style — or it is a body
+// line of a `run: |` block. The leading `-` is allowed only together with
+// `run:`, so a bare `- npm test` list item under some action's `with:` still
+// proves nothing, and a `# run: npm publish` note about what somebody might add
+// one day is not a release. `[ \t]` never crosses a newline and `#` is not
+// whitespace, so no comment can satisfy either pattern — the hole T-37 found,
+// and the reason test.yml, whose own comments talk about publishing at length,
+// is not read as a publisher (T-37, T-41, T-43).
+//
+// One definition each, shared by every pin below, so "what counts as running the
+// tests" and "what counts as publishing" cannot drift between the pin that picks
+// a file out of the folder and the pin that judges it. The capture on the test
+// pattern is the rest of that line, read further down for the CRD 0009 hole.
+//
+// The publish pattern is narrower than the guard's own test, which also knows
+// `pnpm|yarn|bun publish`, `semantic-release`, `release-please` and
+// `gh release create`, and which does not read comments: this pin covers the one
+// vocabulary this repository uses, and T-44's report names the rest as a
+// follow-up rather than guessing at them here.
+const testCommand = /^[ \t]*(?:(?:-[ \t]+)?run:[ \t]*)?npm test\b([^\n]*)/m;
+const publishCommand = /^[ \t]*(?:(?:-[ \t]+)?run:[ \t]*)?npm publish\b/m;
+
+// -------------------------------- full history, for every workflow that tests
+// `npm test` ends in `bash docs/qa/run-all.sh`, and some of those cases read
+// this repository's own commits (docs/qa/T-01/case-26-repo-diff-scope.mjs looks
+// up commits by the task marker in their subject line). A default checkout is a
+// depth-1 shallow clone with no history, so such a case goes red — and any
+// assertion of it that survived would pass over an empty set, which is worse
+// than failing (T-22).
+//
+// The thing that needs the history is `npm test`, not a file name. T-22 pinned
+// `fetch-depth: 0` on `test.yml`, and T-41, T-43 and T-44 went on pinning
+// `publish.yml` beside it without ever asking this of it — so the release
+// workflow ran the same suite on a shallow clone. Pushing the v0.7.0 tag is what
+// found that: `npm test` inside publish.yml went red on T-01 while the Tests
+// workflow on the same tag was green. Nothing was published, because the tests
+// run before `npm publish`, but the release was blocked by the checkout rather
+// than by the code. Naming files one at a time is how that happened, so this
+// reads every workflow that really runs the suite (T-50).
+//
+// The VALUE is captured and judged on its own, never matched with a lookahead
+// placed after `[ \t]*`: such a lookahead is not anchored, it backtracks to zero
+// width and gets tested against the space instead of the value. That is the
+// defect T-46 found in the continue-on-error pin below, and ADR 0008 wrote it
+// down. A trailing `# comment` comes off first, exactly as that pin does it, so a
+// correct setting with a note beside it is not reddened.
+//
+// What counts as full history: the value spelled `0`, `"0"` or `'0'`. Every
+// action input is a string to YAML in any case, so a quoted zero really is a full
+// clone, and redding it would red a correct file. Everything else is red — `1`,
+// `"1"`, an empty value, an expression, a value on the next line — because this
+// pin does not guess how a runner coerces those and shallow is the dangerous
+// direction. `#` is not whitespace, so a commented-out setting satisfies nothing.
+//
+// What this does NOT prove, named rather than guessed at. It reads the whole
+// file as lines, so it cannot tell WHERE the setting sits: not that it belongs to
+// the checkout of the job that runs the suite (one job with `fetch-depth: 0`
+// beside another that tests on a shallow checkout would pass), and not that it is
+// a checkout input at all rather than a line in some `run: |` body. Both need a
+// YAML parser this file does not have. The repository's workflows are one job
+// each, and the T-41 pin below refuses a release workflow that grows a second job
+// for exactly that reason. Nor does it prove the suite PASSES with full history —
+// it pins one setting, and it is the run itself that says whether the tests are
+// green.
+const fullHistory = (text) =>
+  [...text.matchAll(/^[ \t]*fetch-depth:[ \t]*([^\n]*)$/gm)]
+    .map((match) => match[1].replace(/[ \t]+#.*$/, "").trimEnd())
+    .some((value) => /^(?:0|"0"|'0')$/.test(value));
+const suiteRunners = workflowFiles.filter((workflow) => testCommand.test(workflow.text));
+const shallowRunners = suiteRunners.filter((workflow) => !fullHistory(workflow.text));
+for (const workflow of shallowRunners) {
+  fail(`.github/workflows/${workflow.name} does not set fetch-depth: 0 — it runs \`npm test\`, and the cases that read this repository's own commits cannot run on a shallow clone (T-22, T-50)`);
+}
+if (suiteRunners.length === 0) {
+  // Only reachable when nothing in the folder runs the suite at all, which the
+  // test.yml pin just below reds by name. Said out loud rather than left silent:
+  // a green that read nothing looks exactly like a green that read everything.
+  ok(`no workflow under .github/workflows/ runs \`npm test\`, so there was no checkout depth to pin — this pin checked nothing (workflow files read: ${workflowNames.join(", ") || "none"})`);
+} else if (shallowRunners.length === 0) {
+  ok(`${suiteRunners.length} of ${workflowNames.length} workflow files under .github/workflows/ run \`npm test\` (${suiteRunners.map((workflow) => workflow.name).join(", ")}), and every one of those checks out with full history (fetch-depth: 0)`);
+}
+
 const testWorkflow = join(packageRoot, ".github", "workflows", "test.yml");
 if (!existsSync(testWorkflow)) fail(".github/workflows/test.yml is missing, so nothing runs npm test on a push (CRD 0009)");
 else {
@@ -118,17 +227,20 @@ else {
   const blockPush = /^on:[ \t]*(?:#.*)?\n(?:[ \t].*\n|[ \t]*\n)*[ \t]+push:/m;       // on: ⏎   push:
   if (!inlinePush.test(workflow) && !blockPush.test(workflow)) {
     fail(".github/workflows/test.yml is not triggered by a push (`on: push`), so an ordinary push runs no CI (CRD 0009)");
-  // `npm test` has to BE the command, not a word inside somebody's `echo`: it
-  // either follows `run:` — as a key of its own, or in the one-liner list form
-  // `- run: npm test`, which is legal YAML and a common style — or it is a body
-  // line of a `run: |` block. The leading `-` is allowed only together with
-  // `run:`, so a bare `- npm test` list item under some action's `with:` still
-  // proves nothing. Both workflow pins spell this the same way (T-43).
-  } else if (!/^[ \t]*(?:(?:-[ \t]+)?run:[ \t]*)?npm test\b/m.test(workflow)) {
+  // `npm test` has to BE the command, not a word inside somebody's `echo`. The
+  // shared pattern above spells that out; every workflow pin in this file reads
+  // that one definition (T-43, T-50).
+  } else if (!testCommand.test(workflow)) {
     fail(".github/workflows/test.yml never runs `npm test`, so the push CI proves nothing (CRD 0009)");
-  } else if (!/^[ \t]*fetch-depth:[ \t]*0[ \t]*$/m.test(workflow)) {
-    fail(".github/workflows/test.yml does not set fetch-depth: 0 — the cases that read this repository's own commits cannot run on a shallow clone (T-22)");
-  } else ok(".github/workflows/test.yml runs npm test on a push, with full history");
+  } else if (fullHistory(workflow)) {
+    ok(".github/workflows/test.yml runs npm test on a push, with full history");
+  }
+  // No `else` for the full-history half, and no second pattern for it. A test.yml
+  // that runs the suite on a shallow checkout is already red, by name, from the
+  // folder-wide pin above — and the `ok` line here reads that pin's own
+  // predicate, so its third claim cannot drift from what was checked. This file
+  // has twice been bitten by two pins answering one question two ways, so the
+  // question is asked once and the answer is raised in one place (T-50).
 }
 
 // The release CI. `npm publish` is the one action in this repository that cannot
@@ -140,35 +252,10 @@ else {
 // comment can satisfy a pin, and a command has to BE the command, not a word
 // inside somebody's `echo` (T-41).
 //
-// Read the FOLDER, never a file name. T-41 and T-43 pinned `publish.yml` by that
-// name, while host/git-guard.js's publishingWorkflow() reads EVERY
-// `.github/workflows/*.yml` — so a second workflow called anything else, with
-// `npm publish` under a bare `on: push`, kept this pin green while the
-// repository really published on every branch push. The guard would still have
-// refused that push, so it was a hole in the pin and not in the guard; and the
-// pin's job is to stop such a file existing at all. Renaming the release
-// workflow, which the trusted-publisher setting on npmjs.com allows, used to red
-// a file that was still perfectly correct — a gate that reds correct files
-// teaches people to stop reading it. Both extensions count, because GitHub reads
-// `.yaml` exactly like `.yml` (T-44).
-const workflowsDir = join(packageRoot, ".github", "workflows");
-const workflowNames = existsSync(workflowsDir)
-  ? readdirSync(workflowsDir).filter((name) => /\.ya?ml$/i.test(name)).sort()
-  : [];
-// What makes a workflow a PUBLISHING workflow: a live `npm publish` command,
-// spelled the way every other command pin here is spelled — `run:` as a key of
-// its own, the one-liner list form `- run: npm publish`, or a body line of a
-// `run: |` block. So a `# run: npm publish` note about what somebody might add
-// one day is not a release, and test.yml, whose comments talk about publishing
-// at length, is not a publishing workflow either. Narrower than the guard's own
-// test, which also knows `pnpm|yarn|bun publish`, `semantic-release`,
-// `release-please` and `gh release create`, and which does not read comments:
-// this pin covers the one vocabulary this repository uses, and T-44's report
-// names the rest as a follow-up rather than guessing at them here.
-const publishCommand = /^[ \t]*(?:(?:-[ \t]+)?run:[ \t]*)?npm publish\b/m;
-const publishers = workflowNames
-  .map((name) => ({ name, text: readFileSync(join(workflowsDir, name), "utf8") }))
-  .filter((workflow) => publishCommand.test(workflow.text));
+// What makes a workflow a PUBLISHING workflow is `publishCommand` above: a live
+// `npm publish`, in one of the three shapes a real command can take. The folder
+// it is applied to, and why it is a folder and not a file name, are up there too.
+const publishers = workflowFiles.filter((workflow) => publishCommand.test(workflow.text));
 
 /**
  * Every pin on ONE publishing workflow. Each message names the file it read,
@@ -219,11 +306,10 @@ function checkPublishWorkflow(rel, release) {
   // starts this run", and branchPushTriggers() treats them the same way. `#` is
   // not whitespace, so a commented-out filter cannot trip this.
   const branchFilter = /^[ \t]*branches(?:-ignore)?[ \t]*:/m;
-  // Same spelling as the test.yml pin above: `run:` as a key of its own, the
-  // one-liner list form `- run: npm test`, or a body line of a `run: |` block —
-  // and a leading `-` only ever together with `run:`. The capture is the rest of
-  // that line, checked below for the CRD 0009 hole.
-  const testStep = /^[ \t]*(?:(?:-[ \t]+)?run:[ \t]*)?npm test\b([^\n]*)/m.exec(release);
+  // The one shared `npm test` pattern, the same one the push-CI pin and the
+  // full-history pin read, so "runs the tests" means one thing in this file. Its
+  // capture is the rest of that line, checked below for the CRD 0009 hole.
+  const testStep = testCommand.exec(release);
   // The same pattern that picked this file out of the folder, now for its
   // position: one definition, so "what counts as publishing" cannot drift
   // between finding the file and pinning it.

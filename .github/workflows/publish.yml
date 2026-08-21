@@ -37,6 +37,19 @@ jobs:
       id-token: write # required for OIDC trusted publishing (and provenance)
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Full history, on purpose — the same reason as test.yml, because this
+          # workflow runs the same `npm test`. Some QA cases under docs/qa/ read
+          # this repository's own commits (docs/qa/T-01/case-26-repo-diff-scope.mjs
+          # looks up commits by the task marker in their subject line). The
+          # default here is a depth-1 shallow clone with no history, so those
+          # checks fail — which is what happened: the v0.7.0 tag ran this
+          # workflow, `npm test` went red on T-01, and the release stopped. It
+          # stopped for the right reason and nothing was published, but the run
+          # was red over the checkout and not over the code. tools/verify-mount.mjs
+          # now asks this of EVERY workflow that runs `npm test`, so the next
+          # workflow to run the suite cannot be forgotten the way this one was.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v7
         with:
