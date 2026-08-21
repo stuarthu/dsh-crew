@@ -155,19 +155,53 @@ review**), `roles/architect.md`,
 
 ## 6. Tests come before code, and the report has to prove it
 
-**Rule.** An engineer writes a failing test, checks it fails for the right
-reason, then writes the smallest code that passes. Its report shows the failing
-run and then the passing run. A report without the failing run is not accepted.
+**Rule.** The unit test for a behaviour exists, and has been seen to fail, before
+the code that satisfies it. Whoever writes that unit test runs it once and checks
+it failed for the right reason — the behaviour is missing, not an import, not a
+runner that could not start. Then the smallest code that makes it pass is
+written. The report shows the failing run and then the passing run. A report
+without the failing run is not accepted.
 
-**Why (ours).** An agent that writes code first will write a test that passes
-against whatever it just wrote, including the bugs. The failing run is the only
-evidence that the test could ever have failed. Scrum says the same thing another
-way: developers build quality in "by adhering to a Definition of Done". Quality
-is built in, not checked afterwards.
+**Two shapes, one rule.** The rule above says nothing about how many agents are
+involved, and that is on purpose, because the crew has two ways of doing it:
 
-**Lives in** `roles/engineer.md`, `roles/architect.md`, `roles/pm.md`,
-`roles/code-reviewer.md`. Where that test file lives, and how it is run again
-later, is principle 13.
+- **Solo.** One `crew_engineer` writes both halves of a task: the unit test
+  first, then the code. This is the default, and nothing about it has changed.
+- **Paired.** Two engineers each write one half. `crew_test_engineer` writes only
+  the unit tests, `crew_code_engineer` writes only the product code, neither can
+  see the other's half while it is being written, and the PM runs the two halves
+  together after it merges them. Why that shape exists, what it buys, where it is
+  allowed and — most of all — what it cannot prove, is **principle 21**.
+
+Both shapes owe the same evidence: a unit test that was red before the code
+existed, and a report that shows that red run. The paired shape does not get to
+skip it. It moves *who* produces each half, not *what* has to be proved.
+
+**Why (ours).** An agent that writes code first will write a unit test that
+passes against whatever it just wrote, including the bugs. The failing run is the
+only evidence that the unit test could ever have failed. Scrum says the same
+thing another way: developers build quality in "by adhering to a Definition of
+Done". Quality is built in, not checked afterwards.
+
+**The hole this rule still has in the solo shape.** The unit test is written by
+the same agent that is about to write the code, so it can be shaped around the
+code that agent already meant to write, and the failing run does not catch that:
+a unit test aimed at the wrong behaviour fails exactly as convincingly as one
+aimed at the right behaviour. One defence against it is already in the crew — for
+a bug fix, the PM writes the task's DoD section before anyone attempts the fix,
+so the check is authored by someone who is not doing the fixing (principle 20).
+The paired shape of principle 21 extends that same defence to any task, and pays
+for it.
+
+**A word on the word.** "Tests" in this principle's heading deliberately covers
+every kind: a unit test, and the contract test of principle 3. Everywhere a
+sentence could mean two different kinds, the precise noun is used instead — the
+four names are in **Words we use**, near the end of this file.
+
+**Lives in** `roles/engineer.md`, `roles/test-engineer.md`,
+`roles/code-engineer.md`, `roles/architect.md`, `roles/pm.md`,
+`roles/code-reviewer.md`. Where that unit test file lives, and how it is run
+again later, is principle 13. The paired shape, and its limits, is principle 21.
 
 **Source.** [The 2020 Scrum Guide](https://scrumguides.org/scrum-guide.html)
 
@@ -971,9 +1005,11 @@ every push.
 and **20 lost outright**. 46 of those 48 came from one place nobody had planned as
 an archive: the header comment each QA case writes about which check it covers —
 all 42 cases that existed on the day of the recovery, covering 46 distinct numbers
-between them. (`docs/qa/` holds 67 cases in 5 task folders today. 42 is the count
-at that moment, not a count of the folder now.) The lesson is not "we were lucky". It is that the only parts that survived
-were the parts that had been written into the repository for another reason.
+between them. (That 42 is a count of one day, not a count of `docs/qa/` — the
+folder has grown with every job since, and any current number written into this
+paragraph would be stale before the paragraph was next read.) The lesson is not
+"we were lucky". It is that the only parts that survived were the parts that had
+been written into the repository for another reason.
 
 **Why the root cause was an asymmetry, not a location.** Big work's opening
 document lived in `docs/design/` and survived every job. Small work's opening
@@ -1025,6 +1061,34 @@ pointer was stale the moment the new step landed. A pointer that reads "step 18,
 Finish" still finds its target after the numbers move, and a reader can see when
 the two halves disagree.
 
+**And the same rule for a line number, which is the worse case.** A pointer at a
+document in this repository names the section heading it means, or quotes the
+sentence it means — the thing, **not its number**. It never points with a line
+number: not `principles.md:589`, not any other file and number. The reason is the
+one above, one step worse: a stale step number still reads as stale, while a
+drifted line number lands on a real line carrying the wrong words, and a reader
+who does not already know the answer cannot tell that it moved. This is not a
+worry, it is a thing that happened here. Principle 6 was rewritten in place and
+grew by thirty-four lines in a single commit, and ten pointers written that way —
+most of them at `:589`, one at `:322` — became wrong at the same moment, and
+nothing went red. That is precisely the failure the ADR behind that same commit
+used to reject renumbering the principles: references by number all break
+together and no check notices. It came back in the other currency, in the option
+that was chosen to avoid it.
+
+**Where a line number is still allowed, and why only there.** Inside a record
+that is never rewritten: a CRD or an ADR. Those files are a snapshot of one
+decision at one moment on purpose, so a number that rots inside one rots
+honestly — a reader already knows to read it as of its date, and editing it
+afterwards would be the larger mistake. Everywhere a document is alive and gets
+revised — this file, the PRD, the HLD, the task table, the role prompts,
+`CLAUDE.md` — the pointer names the section or quotes the words. The rule itself
+is older than this paragraph: it was written down while the Verdicts gate was
+being decided, in `docs/decisions/crd/0011-verdicts-gate-in-npm-test.md`, and it
+stayed there. A rule the crew has to keep belongs in this file, and a rule that
+lives only inside one record is a rule the next job will not find — which is the
+same failure this principle exists to record.
+
 **An honest limit: the migration step now has seven destinations, and it still
 runs on trust.** The two new ones exist because two more things nearly leaked a
 second time, in the very job that was cleaning up after the first leak. A DoD
@@ -1056,6 +1120,205 @@ with its own corrections at the end),
 put the gate on the Verdicts line, and killed the `pre-push` hook first),
 `tools/verify-tasks.mjs` (the gate itself, and its own comment on what it cannot
 prove), `CLAUDE.md` (**State and documents**), both READMEs.
+
+---
+
+## 21. On a paired task, the unit tests and the code come from two engineers who never meet
+
+**Rule.** A task may be run in the **paired shape**. `crew_test_engineer` writes
+only the unit test files; `crew_code_engineer` writes only the product code. Each
+works in its own git worktree, and each reads the same two documents and nothing
+else: the task's DoD section, and the ADR in which the architect pinned the
+interface between the two halves. They never talk to each other — the crew is
+flat (principle 1), and a sibling is not a child, so `send_message` cannot reach
+across even if a role holds the tool. The code engineer runs lint, type checks,
+the compiler and the project's test command while it works, but no unit test for
+the behaviour it is building, because it does not have one. **The PM merges the
+two halves and runs the project's test command itself, exactly once, and reports
+what came out.** Where the halves disagree, the disagreement is the product: each
+side re-checks its own half once, and what is left goes to the PM, and if the PM
+cannot settle it, to the user. The engineer that wrote the unit tests may never
+weaken an assertion to make a disagreement go away; only the PM may approve a
+change to it, and that change has to be traceable to the words of the DoD
+section.
+
+The solo shape of principle 6 is unchanged and stays the default. Which tasks are
+paired is written in the task row in `docs/design/tasks.md`, proposed by the
+architect, and stamped by the user together with the rest of the table.
+
+**Why (ours).** Principle 6 buys a unit test that was red first, but in the solo
+shape that unit test is written by the agent that is about to write the code, so
+it can be bent towards the code that agent already meant to write. The paired
+shape takes that possibility away by construction: the one who writes the check
+is deliberately not the one who writes the code. The second thing it buys is
+cheaper and larger — **two independent readings of the same document**. Where the
+document allowed two readings, the two halves do not fit, and the crew finds out
+at the merge instead of finding out in production. The disagreement is not a
+mishap to be smoothed over; it is the only cheap signal the crew has that a
+document it already agreed on is not clear.
+
+**It is not pair programming.** Ping-pong pair programming works by talking
+continuously and checking continuously, and its goal is for two people to
+**converge** on one shared understanding. This shape removes the talking
+completely, and wants the opposite: the two readings must not converge, because
+the place where they differ is the whole point. So it is not pair programming
+with the chat switched off — it is a different thing, **independent
+verification**, which comes from safety-critical engineering and not from XP. Do
+not call it pair programming in any document here. Call it the paired shape.
+
+**The three roles that write something which checks the product.** They are easy
+to confuse now that there are three of them, and one of the names invites the
+confusion: `crew_test_engineer` is a programmer, not a tester.
+
+| | `crew_test_engineer` | `crew_code_engineer` | `crew_qa` |
+| --- | --- | --- | --- |
+| Who it is | a **programmer** | a programmer | **QA** |
+| What it writes | **unit tests** | product code | **QA cases**, acceptance and black box |
+| Granularity | **one behaviour per unit test** | — | **one DoD item per case**, checked the way the user would see it |
+| When | **before** the code exists | — | **after** the code is finished |
+| Home | **the project's own test suite**; a file this task owns, committed with the code | product code files | **`docs/qa/<task-id>/`, nowhere else** |
+| Can it see the code | No — its own worktree, where the code does not exist yet | — | Writes its plan first, then reads the code |
+| Scope | **this task only** | this task only | this task, **plus every earlier task's cases run again** |
+
+**Four differences, and not one of them is optional**: granularity (one unit
+behaviour against one acceptance item), timing (before the code against after
+it), home (the project's own test suite against `docs/qa/`), and scope (this task
+against every task's cases run again as a regression). This same table also has
+to stand in both READMEs, because a reader meets these three names there before
+they ever meet this file.
+
+**Two boundaries this shape does not cross.**
+
+- **It exists only in a job that has an architect.** Small work — where the PM
+  writes the task rows itself and starts no architect — has no paired shape at
+  all. The reason is not taste. Before either engineer can write a line, both
+  have to decide the same five things: the import path, the exported name, the
+  signature, the shape of the return value, and what happens on an error. They
+  cannot see each other, so any one of those five landing differently makes the
+  merged run red — a name clash, not a disagreement — and the rate of that is
+  near enough to certain that the signal of principle 21 would drown in it
+  forever. The architect settles those five in an ADR and each side reads its own
+  half; only the architect may change that ADR, and an engineer that thinks it is
+  wrong reports to the PM instead of editing it. So this shape rides on a design
+  step that already exists, and where there is no architect there is no paired
+  shape.
+- **While the two halves are written, the independence is real isolation, not
+  good faith.** Two git worktrees, made by the PM with plain `git worktree add`:
+  the unit test file does not exist in the code engineer's tree, so it is not
+  "should not read it", it is "cannot read it". That distinction is worth the
+  cost, because reading a file leaves no trace — a rule alone would have been a
+  seatbelt, the same shape as `host/git-guard.js`, which reads command text and
+  can be walked around. Say the limit as precisely as the lock: **the lock holds
+  until the merge, and it ends there.** When the merged run is red, the code
+  engineer is called back into the merged tree and can see the unit tests. That
+  is deliberate and written down rather than hidden: its independent reading is
+  already on disk and already recorded as evidence, so blindfolding it during the
+  fix would only make the fix harder and would buy no new signal.
+
+**What a green first meeting proves, and what it does not.** When the merged run
+comes out all green, it says exactly one thing: **the two readings matched**. It
+does **not** say the document was clear, and a report may never claim that. There
+are two kinds of ambiguity in a document. One kind makes two readers disagree —
+this shape catches that kind, and that is what it is for. The other kind makes
+two readers make the *same* wrong assumption, and against that kind this shape is
+completely blind: the halves fit, everything is green, and nothing is reported.
+The evidence below says the second kind is common, and that it clusters exactly
+where a specification is weakest — which is to say, it arrives wearing the
+costume of the best possible result. Two consequences follow, and both are rules,
+not opinions. First, this is not the last net: `crew_qa` (afterwards, blindfolded,
+writing its own cases) and the code reviewer stay exactly as they were, and QA is
+the only thing in the crew that catches a shared misreading. Second, giving the
+two sides different models does not fix it — see the rejected ideas below.
+
+**And the ceiling.** Everything this shape can buy is capped by the quality of
+that one DoD section, and **that DoD section has no second pair of eyes.** That is
+the deepest limit of the design, written here rather than left to be discovered.
+
+**Lives in** `roles/test-engineer.md`, `roles/code-engineer.md`,
+`roles/engineer.md` (which says at the top that it is the solo road),
+`roles/pm.md` (the shape decision, the two worktrees, the merge, the one run, the
+clean-up), `roles/architect.md` (marking the shape in the task table, and the
+interface ADR), `roles/code-reviewer.md` (the evidence it must be handed, and the
+reversal above), `host/roles.js` and `preset/crew/agent.cordis.yml` (the two role
+tools have to exist), `docs/design/tasks.md` (the shape column, and the two file
+lists that may not overlap),
+`docs/decisions/crd/0012-paired-engineers.md` (the shape, and its own record of
+what it does not prove),
+`docs/decisions/crd/0013-two-worktrees-per-task.md` (the isolation),
+`docs/decisions/crd/0014-pair-mode-needs-an-architect.md` (the boundary and the
+interface ADR), `CLAUDE.md`, both READMEs. The rule that a unit test comes first
+at all is principle 6; where that file lives afterwards is principle 13; and the
+four names this principle keeps apart — a unit test, a QA case, the project's
+test command, a contract test — are defined in **Words we use**, the unnumbered
+section just below.
+
+**Source.**
+
+- Cockburn & Williams, *The Costs and Benefits of Pair Programming* (the Utah
+  experiment, **1999**; published **2001**) — pairing cost about 15% more effort
+  and produced about 15% fewer defects, and the paired code passed 90% of the
+  acceptance suite against 75% for solo work. Read the cost figure carefully:
+  those 15% are two people sharing one piece of work, while this shape is two
+  people each doing a whole piece.
+- Knight & Leveson, *An Experimental Evaluation of the Assumption of Independence
+  in Multiversion Programming* (**1986**) — one specification, two universities,
+  27 independently written versions, a million cases. Independently written
+  programs do not fail independently: about half the faults were shared by
+  several versions.
+- *N-Version Programming with Coding Agents* (arXiv, **2026-06**) — 5 harnesses
+  including Claude Code, 23 models, 48 implementations, a million cases.
+  Simultaneous failures: **429** observed against **115** predicted by an
+  independence model, 3.7 times as many, p about 1.8×10⁻¹⁸⁷. Changing the model
+  or the harness does not remove perfectly correlated failure: 87 of 907
+  cross-agent pairs failed identically (φ=1), and 52 pairs did so inside one
+  agent. The failures cluster where the specification is weak. This is the one
+  source that explains why a green merge is not evidence of a clear document.
+- Pair programming as one of the original twelve practices of Extreme Programming
+  (Kent Beck, *Extreme Programming Explained*, **1999**) — cited for the contrast
+  above, not as the origin of this shape.
+  [Pair programming](https://en.wikipedia.org/wiki/Pair_programming)
+
+---
+
+## Words we use
+
+Three roles now write something that checks the product, so the word "test" on
+its own can mean three different things. These four names are what the crew uses
+instead. They were counted out of the repository's own wording, not invented
+here.
+
+| Word | What it means | Who writes it | Where it lives |
+| --- | --- | --- | --- |
+| **unit test** | One behaviour per test, written before the code that satisfies it exists | `crew_engineer` in the solo shape, `crew_test_engineer` in the paired shape | The project's own test suite; a file the task owns, committed with the code |
+| **case** (a QA case) | Acceptance, black box: one DoD item checked the way the user would see it, after the code is finished | `crew_qa` | **Only** `docs/qa/<task-id>/`, with a `run.sh` per task |
+| **the project's test command** | In this repository `npm test`: it runs both of the above and every other check together | — | `package.json`, `scripts.test` |
+| **contract test** | One on each side of a module boundary, proving that side matches the boundary contract (principle 3) | `crew_engineer`, or the engineers of a paired task | The project's own test suite (this repository has no module boundary today, so it has none) |
+
+**The rule.** If a sentence could mean two of these, the precise noun has to be
+used. Bare "test" is allowed only where it deliberately means *any* of them —
+principle 6's heading is such a place, and it says so.
+
+**And one banned phrase: do not write "QA test".** It puts the word "test" back
+into the name and glues together the two things that were just separated. The
+repository already had a clean pair before this section existed — **unit test**
+against **case** — two different nouns that cannot be confused. Use them.
+
+**This section is not a principle, and it has no number on purpose.** A number in
+this file is a promise: a rule, a reason, the files that carry it, and an outside
+source where one was borrowed. This is a set of definitions with no outside
+source, and it serves several principles at once — 6 (the unit test comes first),
+13 (every test lands on disk), 21 (the paired shape) — as well as `roles/qa.md`.
+Locking it inside any one of them would put the wrong scope on it. Principle 6
+and principle 21 each point here instead.
+
+**How far the clean-up went.** The precise nouns were applied to principle 6,
+principle 21 and this section, and to the files this job was already changing.
+The rest of this file, and most of the repository, still says "test" where it is
+not ambiguous — with one engineer, "test first" was never unclear. The ambiguity
+arrived with the new roles, so the clean-up follows the new roles rather than
+sweeping a thousand lines. A reader will meet both kinds of wording in the same
+file. That is what a bounded clean-up looks like, and saying so is better than
+pretending the repository is uniform.
 
 ---
 
@@ -1092,6 +1355,12 @@ prove), `CLAUDE.md` (**State and documents**), both READMEs.
 | A global, numbered list of acceptance checks | It reads well in a review and gives every check a short name. Rejected on this crew's own evidence: three of its 75 checks failed *as checks* because they sat far from the work they governed (11 contradicted 48-52, 67 was too literal, 70 pointed at a renamed folder), and four CRDs still point at numbers no document defines. A check now lives in the DoD section of its task or milestone and is named that way. |
 | A git `pre-push` hook that refuses a push when a review gate was skipped | The user's first idea for an unskippable gate, and it went to review before it was built. Rejected on two grounds the PM re-checked, both of which hold. One: **`pre-push` cannot see the commits a tag push carries**, and a `v*` tag is this repository's one irreversible action — it triggers `.github/workflows/publish.yml` and publishes to npm — so the hook missed the only push that matters. Two: **a hook does not travel with the repository**; `git clone` does not bring `.git/hooks/`, and `--no-verify` walks past it. (The same review corrected the PM on a detail: `git push -n` is `--dry-run`, not `--no-verify`.) What replaced it is a check inside `npm test`, `node tools/verify-tasks.mjs`: push CI runs it and the publish workflow runs it again before it publishes, which covers exactly the push the hook could not see, and it travels with the repository. The hook never landed, so nothing was undone. `CRD 0011`. |
 | Every ADR stops and waits for the user to pick | Rejected: one design often holds several ADRs, so the job would stop once per ADR and the user would be interrupted with choices about the inside of the code. The architect marks a recommendation and the design keeps moving; the user sees every option at the milestone review and may overturn one. Options the user can see are still asked on the spot. |
+| Letting the two engineers of a paired task talk to each other | The user asked for this first and then rejected it himself. Pair programming works by **converging** on one understanding; the paired shape works by not converging, and a design cannot have both. Two agents that may talk will negotiate, the more assertive side wins, one understanding comes out — and the PM never learns that the document allowed two readings, because the signal was settled in private. Worse, the case that matters most ("both are right, the document really does permit both") can only be handled by the PM: no engineer may touch a task row. One side benefit is worth naming. Once the channel was gone, the rule "write the disagreement down before you discuss it" became unnecessary — **a rule that stops being needed because a feature was cut is usually a sign the cut was right.** |
+| Two engineers writing the unit tests and a third writing the code | The PM's idea; the user chose unit tests against code instead. It is kept here because it names a real weakness of what was built. **Unit test against unit test is a pure signal** — the same kind of output on both sides, directly comparable, so a difference can only come from a different reading. A red merge in the shape we built mixes three causes that look identical: an ambiguous document (the signal), a typo in an assertion, and an ordinary bug in the code. That is why each side re-checks its own half once before anything is reported; that step exists only to strip the two kinds of noise, and it is the busiest step in the loop. |
+| Having each engineer write a prose summary of its understanding, and comparing the two | Much cheaper, and it measures nothing. **Prose can be vague**, so both sides can walk around the very same ambiguity using the very same vague words and come out looking as if they agree. An assertion cannot be vague: nobody writes one without first deciding the value, the error and the edge. |
+| Two independent worktrees, for real isolation | **Rejected, then adopted — `CRD 0013` corrected this row, and it is the one row here that no longer holds.** It was rejected as a *platform feature*: the crew has no notion of a worktree anywhere in `host/`, and a role only has tool-level allow and deny lists, so building one would be platform work. That part still stands. The conclusion was wrong: the PM needs no platform feature, because the PM is the only role that touches git anyway, so plain `git worktree add` gives two real directories today. It is now how the paired shape works (principle 21), and it closed the one hole the shape had been shipped with. |
+| Requiring the code engineer to declare in its report "I did not read the unit test files" | Still unverifiable — it only turns a vague overstep into a definite lie, which is not an improvement in evidence. Overtaken as well: with two worktrees the unit test file is not in that engineer's tree while it writes, so there is nothing left to declare. |
+| Giving the two sides of a paired task different models through `roleModels` | The evidence says the gain is small: crossing an agent boundary does not remove perfectly correlated failure (principle 21's third source). And it backfires. Two sides of unequal strength produce a stream of **false disagreements**, the PM spends its attention judging noise, and the signal the shape exists to produce is buried under it. |
 
 ---
 

@@ -222,7 +222,7 @@ M3 的 DoD 第 6 条在 M3 评审时核对它——**活在 M1 落地，检查�
 **不发明新词。** 特别是**不要写「QA test」**——它把「test」这个字又放回来，等于把刚分开的两样
 重新粘在一起。这两个名词仓库里本来就有，而且很干净：`roles/qa.md` 里 case/用例出现 51 次、
 「QA test」出现 0 次；「unit test」今天已经在四处用了（`README.md:203`、`roles/pm.md:357`、
-`principles.md:322`、`roles/engineer.md:63`）。
+`principles.md` 原则 13、`roles/engineer.md`）。
 
 **用词表放在 `principles.md` 的哪里**，见 `docs/decisions/adr/0014-glossary-placement.md`。
 它的小节标题是**英文** `Words we use`——`principles.md` 全文 0 个中文字符，现有两节不编号的
@@ -308,7 +308,7 @@ subagent。**第四道没写，而它比那三道都硬。**
 | `docs/qa/lib/qa.mjs`（`tempRepo` / `edit` / `expectRed` / `runCheck`） | QA 的 mutation 用例直接用，不新写工具 |
 | `git worktree`（普通 git） | PM 开两棵树。**不做成插件功能**——CRD 0013 已经更正过：PM 本来就是唯一碰 git 的角色 |
 | 「只有 architect 能改契约」这条现成规则 | 原样搬到接口 ADR 上（CRD 0014 第 4 条） |
-| `principles.md:589`「每一个怎么做的决定都拿一个 ADR，不论 job 多大」 | 接口 ADR 靠它成立，**不是新流程** |
+| `principles.md` **原则 17**「`ADR at \`docs/decisions/adr/NNNN-<short-name>.md\`, whatever the size of the job`」 | 接口 ADR 靠它成立，**不是新流程** |
 
 **新的东西，以及每一样为什么必须是新的**：
 
@@ -404,7 +404,7 @@ PM ── 把 A 的红灯 + B 的一次性结果 + 分歧记录交给 code revie
 
 ## 十二点五、这份设计撞上的六个「怎么做」的选择，各一份 ADR
 
-`principles.md:589`：每一个「怎么做」的决定都拿一份 ADR，**不论 job 多大**。判据是
+`principles.md` **原则 17**：每一个「怎么做」的决定都拿一份 ADR，**不论 job 多大**。判据是
 「有人要求过吗」——有人要求过是 CRD，没人要求、crew 干活时撞上的是 ADR。下面六个都是后者。
 
 | ADR | 决定 | 推荐 |
