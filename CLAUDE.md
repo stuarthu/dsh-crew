@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 `dsh-crew` is a **plugin for DeepSeek Harness (dsh)**, not an application. Nothing here runs on its
 own. dsh loads the modules in `host/` and the agent preset in `preset/crew/`, and the result is a
 "crew": your dsh session becomes a product manager (PM) that starts role agents (architect, engineer,
-reviewers, QA, researcher) as its direct children.
+the two engineers of a paired task, reviewers, QA, researcher) as its direct children.
 
 There is no build step and no bundler. The package ships plain ES modules (`"type": "module"`).
 
@@ -86,7 +86,14 @@ split is load-bearing:
 | PM prompt + preset installer + job notice | `host/crew.js` | `cordis.patch.yml` (profile) | Needs no tools, so the PM behaves like a PM on any preset |
 | Git guard | `host/git-guard.js` | `cordis.patch.yml` (profile) | Must wrap `tools/execute` for **every** agent, including the PM |
 | Role tools (`crew_engineer`, …) | `host/roles-preset.js` | `preset/crew/agent.cordis.yml` | A role's allow/deny names are checked against the **preset's** tool set when a child starts. Named anywhere else, a spawn can fail on a name that deployment does not have |
+| `crew_test_engineer` — a paired task's unit tests | its `ROLES` row in `host/roles.js`, mounted by `host/roles-preset.js` | `preset/crew/agent.cordis.yml` | The paired shape needs **two** tools, not one, so the PM can start each half on its own and give each its own brief |
+| `crew_code_engineer` — a paired task's product code | its `ROLES` row in `host/roles.js`, mounted by `host/roles-preset.js` | `preset/crew/agent.cordis.yml` | The other half. Same reason: two halves the PM starts separately, and each one's persona is what makes it different |
 | Role table + persona loading | `host/roles.js` | both of the above | Single source of truth, shared by the two planes |
+
+The two paired roles take **the same road as every other role**, and nothing was added to the
+planes for them: one `ROLES` row each with a deny list built from `ROLE_TOOL_NAMES`, one persona
+file under `roles/`, `maxDepth: 1` from the same place, and a `summary` line the PM's prompt is
+built from. Only their instructions are unusual — the plumbing is not.
 
 `host/crew.js` also copies `preset/crew/` into `$DSH_HOME/.agent-presets/crew` at startup, stamped
 with the package version (`.installed-by-dsh-crew`). A `crew` folder without that stamp is somebody
@@ -104,10 +111,33 @@ because a live test showed the weaker version failing.
 
 1. **The crew is flat.** Only the PM starts agents. dsh delivers a message to *direct children*
    only, a child answers only its *direct parent*, and two children cannot talk at all — so a role
-   that started its own role would put that grandchild out of the PM's reach forever. Three
+   that started its own role would put that grandchild out of the PM's reach forever. **Four**
    independent guards keep this: every deny-list role denies all `crew_*` tools; every role tool sets
-   `maxDepth: 1` (which names no tool, so no config change can weaken it); and the crew preset
-   removes `subagent`, `subagent_fork`, `workflow`, `ralph` and the product subagents.
+   `maxDepth: 1` (which names no tool, so no config change can weaken it); the crew preset
+   removes `subagent`, `subagent_fork`, `workflow`, `ralph` and the product subagents; and dsh's own
+   lineage check on `send_message`, which is the fourth and is described next.
+
+   **The fourth guard: the lineage check on `send_message`.** The crew preset really does load the
+   subagent-control tools, so a child can hold `send_message` — and it still cannot reach a sibling.
+   The tool passes its **caller** as `parent` into `ctx.subagents.followup(parent, …)`, and dsh
+   checks the family line there, in `authorizeLineage`. Two refusals come out of that check, and
+   both throw `UNAUTHORIZED`: `delivery requires the exact live parent agent`, and the one saying a
+   subagent `belongs to another parent session`. A sibling is not a child, so the message is refused
+   by dsh itself. **This is the hardest of the four, because it leans on no deny list and on no
+   wording in any prompt**: a `roleDeny` edit, a rewritten persona or a preset that ships a new
+   messaging tool cannot weaken it, while each of the other three can be weakened by exactly that.
+
+   Two things this guard does **not** do. It does not reopen a sideways channel: what
+   `send_message` buys is the **PM** waking its own child again with that child's context intact,
+   which is why `roles/pm.md` can say "wake that engineer again" — child to child is still refused.
+   And it says nothing about the code engineer of a paired task not reading the unit tests: that one
+   is held by the two git worktrees (see **The paired shape** below), not by lineage. For the exact
+   file and line numbers behind the two error strings, read
+   `docs/decisions/crd/0012-paired-engineers.md` — its correction section, the one that opens with
+   the question `can dsh send message to subagent?`. A CRD is a snapshot of one moment and may carry
+   a line number; this file may not (`principles.md` 20). Those numbers point into dsh's own code,
+   which this repository never installs and no check here reads, so a number copied onto this page
+   would rot silently — and one of the two strings appears twice in that file anyway.
 2. **Reviewers use an allow list, never a deny list.** With `write` and `edit` denied, a reviewer
    still created a file with `echo hello > file` — a shell is a file-writing tool. With the shell
    denied too, its tool list still held `workflow`, `ralph` and desktop-control MCP tools. A deny
@@ -118,9 +148,21 @@ because a live test showed the weaker version failing.
    name when the child starts, so a stale name is a total outage for that role, not a warning.
    `verify-mount.mjs` keeps a `PROVIDERS` map from tool name to the dsh package that registers it —
    extend that map when you allow a new tool.
-4. **The engineer and QA keep `bash`.** They have to run the code and the tests. `verify-mount.mjs`
-   checks the engineer's half only, so a change that takes `bash` from QA fails no check — read
-   `host/roles.js` before you touch QA's deny list.
+4. **The roles that live by the shell keep `bash`.** `crew_engineer`, `crew_test_engineer` and
+   `crew_code_engineer` each have to run something they wrote — its unit tests, its code, the
+   project's test command — so `bash` out of one of those deny lists is that role unable to work,
+   with nothing else saying so. `verify-mount.mjs` covers **all three**: an explicit list of role
+   keys, a self-check that every key in the list is really in `ROLES` (a renamed role has to go red
+   rather than turn the block into a green that looked at nothing), and one `ok()` that names the
+   three (`docs/decisions/adr/0010-bash-check-explicit-list.md`).
+   **The hole this rule used to record shrank; it did not close.** `crew_qa` is deliberately **not**
+   in that list — QA needs the shell just as much, but the job that widened the check from one role
+   to three was not allowed to change anything about QA's behaviour, and pinning QA here would have
+   been exactly that. So it went from "one of three unguarded" to "QA alone": a change that takes
+   `bash` out of QA's deny list still fails no check. Read `host/roles.js` before you touch QA's
+   deny list, and `docs/qa/gaps.md` keeps the open hole written down. The other price of an explicit
+   list is a **fourth** shell role that nobody adds to it — that is why **Adding or changing a role**
+   below has a step for it.
 5. **Role markdown may not contain `{{`.** dsh interpolates `{{name}}` in prompt text and an unknown
    variable fails the whole prompt assembly. `readRoleText` throws at startup with the file name
    instead.
@@ -147,11 +189,58 @@ because a live test showed the weaker version failing.
    characters) and must say the role talks only to the PM.
 4. If the role's allow list names a tool not yet in `PROVIDERS` in `tools/verify-mount.mjs`, add it,
    and make sure `preset/crew/agent.cordis.yml` really loads that provider package.
-5. Mention the role in `roles/pm.md` — the PM only uses what its own rules describe.
-6. Run `npm test`.
+5. Add the role to the **three explicit lists** in `tools/verify-mount.mjs`. Each of them is a
+   hand-written list of names, so a role missing from one has nothing at all watching that half of
+   it, and nothing reminds you — that price is named out loud in the closing section of
+   `docs/decisions/adr/0010-bash-check-explicit-list.md`, the one listing what the check does not
+   prove. The three: if the role lives by the shell, its **role key** goes in the shell list of
+   design rule 4. Then its **persona file name** goes into each of the two file-name lists whose rule
+   reaches that role — the list that requires the persona to name `docs/decisions/adr/`, which is
+   every role that can meet a decision about **how**
+   (`docs/decisions/crd/0006-split-by-lifetime.md`), and the list that requires it to name
+   `docs/design/tasks.md` and `DoD section` and to name no `dod.md`, which is every role that reads a
+   task row (`docs/decisions/crd/0010-dod-is-a-section.md`).
+6. Mention the role in `roles/pm.md` — the PM only uses what its own rules describe.
+7. Run `npm test`.
 
 `host/crew.js` builds the PM's "your crew tools and limits" section **from the `ROLES` table**, so
 the PM can never promise a role that does not exist. Keep it that way: derive, do not retype.
+
+## The paired shape
+
+A task may be run in the **paired shape**: `crew_test_engineer` writes only the unit test files,
+`crew_code_engineer` writes only the product code, and the two never meet. It is a second road, not
+a replacement — the solo `crew_engineer` of `principles.md` 6 is unchanged and stays the default.
+The rule and its evidence are in `principles.md` 21; the decisions are in
+`docs/decisions/crd/0012-paired-engineers.md`,
+`docs/decisions/crd/0013-two-worktrees-per-task.md` and
+`docs/decisions/crd/0014-pair-mode-needs-an-architect.md`. Four parts of it shape how this
+repository is worked in:
+
+- **It exists only in a job that has an architect.** Small work — where the PM writes the task rows
+  itself and starts no architect — has no paired shape at all. Before either half writes a line,
+  both have to land on the same import path, exported name, signature, shape of the return value
+  and behaviour on an error; they cannot see each other, so any one of those five landing
+  differently makes the merged run red for a name clash instead of a real disagreement. The
+  architect pins those five in an ADR and only the architect may change it.
+- **The PM makes two git worktrees, and adds the symlink in each one.** Plain `git worktree add`,
+  one tree per half, so the unit test file **does not exist** in the code engineer's tree: that is
+  isolation, not good faith. The lock holds until the merge and ends there — when the merged run is
+  red, the code engineer is called back into the merged tree and does see the unit tests. A fresh
+  worktree has an empty `node_modules`, and the missing link fails nothing: `verify-mount.mjs` skips
+  its role-tool half out loud and that tree runs a weaker check that still looks green. So the two
+  commands under **Commands** above are part of making a worktree, not a reminder.
+- **The first meeting is run by the PM, in the merged tree, exactly once.** Neither engineer runs
+  it: the code engineer cannot, because the unit tests are not in its tree, and running it over and
+  over would collapse the whole thing back into the solo shape at its worst — every disagreement
+  quietly fixed as "my code was wrong" and never reported, so nobody ever learns the document was
+  ambiguous. The engineer that wrote the unit tests may never weaken an assertion to make a
+  disagreement go away; only the PM may approve such a change, and only back to the words of the
+  DoD section.
+- **All green means exactly one thing: the two readings matched.** It is **not** evidence that the
+  document was clear, and no report written here may say it is. Two readers can make the same wrong
+  assumption and go green together; `crew_qa`, which writes its own cases afterwards, and the
+  reviewers are what catch that kind.
 
 ## Users override, the package does not change
 
@@ -212,10 +301,13 @@ is**, never who made it:
 | `docs/release/` | a release and an upgrade plan for each milestone the user ships: `<milestone>-release.md` and `<milestone>-upgrade.md`; plus `<milestone>-gaps.md`, the **shipping gap list**, for a milestone that does not ship (not to be confused with `docs/qa/gaps.md`) |
 | `docs/research/` | one answer per question the PM sent to a researcher: `<short-name>.md` |
 
-Today this repository has `docs/decisions/`, `docs/qa/`, and `docs/design/tasks.md` — the task table
-of the `pm-merge-step` job, rebuilt after the fact so its checks stop being lost work. There is no
-`prd.md`, no `hld.md`, no `docs/design/api/`, no `docs/release/` and no `docs/research/` yet: no job
-has written one. That is correct, not missing.
+Today this repository has `docs/decisions/`, `docs/qa/`, and all three of `docs/design/tasks.md`,
+`docs/design/prd.md` and `docs/design/hld.md`. The task table came first, rebuilt after the fact for
+the `pm-merge-step` job so its checks stop being lost work. The PRD and the HLD arrived with the
+`paired-engineers` job — the first of each in this repository, and both written in the order the
+flow asks for: the PRD before the task rows, the HLD by the architect. What is still missing is
+`docs/design/api/`, `docs/release/` and `docs/research/`: no job here has written one. That is
+correct, not missing.
 
 Seven rules there are load-bearing, and `principles.md` 8, 13, 14, 15, 19 and 20 carry the reasons:
 
