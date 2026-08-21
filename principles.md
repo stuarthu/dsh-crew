@@ -1644,7 +1644,9 @@ the next role to meet it should not have to stop and ask.
 Every role prompt carries a section headed `## What you may write`. It names **classes** of file,
 never a file name: the opening document's name carries the job it belongs to, so it changes with
 every job, and a list of names is wrong by the next job — wrong invisibly, which is the worst kind
-this repository has. The section ends with one line, copied word for word:
+this repository has. That statement closes with one line, copied word for word — the two rules
+above follow it in subsections of their own, so it ends the write-set statement and not the
+section:
 
 > **Reading is not restricted, and you should read widely.**
 
@@ -1775,10 +1777,15 @@ not stop and wait for the user to confirm an ADR.
 
 ### CRD, a change request
 
-Across project-management and IT-service-management practice, the fields every source has are
-**description**, **reason**, **impact or risk**, and **approval**. One side alone adds a **back-out
-plan** — how to undo it — and one side alone classifies changes as corrective, preventive or defect
-repair.
+Two sources, one from each side of the practice, and they agree on four fields. The PMBOK Guide's
+change-control process is the project-management side; ITIL 4's change enablement practice
+(https://www.axelos.com/certifications/itil-service-management, read 2026-08-21) is the
+IT-service-management side. Both ask for a **description**, a **reason**, an **impact or risk**
+assessment, and an **approval**. Only ITIL requires a **back-out plan** — how to undo it — and only
+PMBOK classifies a change as corrective, preventive or defect repair. The quotations and what could
+not be reached are in `docs/research/document-types.md`, section four; ISO 10007, the
+configuration-management standard that would have been a third source, refused the fetch and is
+recorded there as unreachable rather than paraphrased.
 
 Ours adds who asked, what it touches by document and task id, the cost in work that would be built
 again, the decision with who made it, **how many DoD items it added and to which task or
