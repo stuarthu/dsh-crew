@@ -913,6 +913,24 @@ function applyCapturingLogs(config, options) {
     // that points into a flat table nobody keeps. That table is what made three
     // of this job's own checks go stale or contradict each other.
     else if (section.text.includes("Acceptance checks — a numbered list")) fail("PM section still tells the PM to write `Acceptance checks — a numbered list` — CRD 0010 removed the flat numbered list. A check is an item inside the DoD section of the task or milestone it belongs to, and it is named that way (\"item 2 of T-05's DoD\"), because a global number points into a table that goes stale. Remove that line from roles/pm.md");
+    // T-64, CRD 0023 decision four. The third lane is cancelled: `quick` let the
+    // PM change a file alone, with no crew, no task row, no DoD section and no
+    // review, and the only thing deciding whether a change was small enough was
+    // the PM's own guess about its size. Every change now gets a milestone.
+    //
+    // ABSENT, and the same shape as the two CRD 0006 strings above: the pin is
+    // the OPENING of the old lane row, so a reword of the surviving lanes cannot
+    // turn it red. It goes red when somebody writes that lane down again — which
+    // is the only failure worth catching, because the words would look perfectly
+    // reasonable next to the two lanes that stayed.
+    //
+    // Matched on the raw text, not the flattened text, on purpose: this is a
+    // bullet row that begins a line, so it cannot arrive wrapped in the middle.
+    // Note the pin covers the whole PM prompt, roles/pm.md plus the runtime facts
+    // section built in host/crew.js — which is where the same cancelled lane was
+    // named a second time, in a sentence about presets that had nothing to do
+    // with lanes and was therefore easy to miss.
+    else if (section.text.includes("`quick` — one small clear change")) fail("PM section brings back the cancelled third lane: the row opening \"`quick` — one small clear change with no design choice\" is in the PM prompt again. CRD 0023 decision four removed it: no matter how small a change is, it gets a milestone with at least one task, one round of QA and one round each of the code, security and doc reviews. A lane the PM drives alone is a change reaching the repository with no task row, no DoD section and nothing checking it, and the size judgement that let a change in was the PM's own. Take the lane out of roles/pm.md (and out of host/crew.js, which named it a second time), or reopen the decision in a new CRD and change this check in the same commit");
     // T-63. The two sentences every role prompt carries word for word, pinned
     // here on the PM's own copy. They are the authoritative wording: the block
     // in principles.md says all ten role prompts hold them character for

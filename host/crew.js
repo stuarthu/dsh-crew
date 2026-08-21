@@ -220,7 +220,7 @@ function runtimeFactsSection(limits) {
     "The crew role tools live in the `crew` agent preset. **Check your own tool list before you promise a crew.**",
     "",
     "- If your tools include names starting with `crew_`, this session runs the crew preset and the whole flow below is available.",
-    "- If they do not, this session runs another preset. Say so plainly in the `team` lane and offer the user two choices: start a new session on the `crew` preset, or let you do the work yourself as a single agent. Then do what they choose. The `ask` and `quick` lanes work either way.",
+    "- If they do not, this session runs another preset. Say so plainly in the `team` lane and offer the user two choices: start a new session on the `crew` preset, or let you do the work yourself as a single agent. Then do what they choose. The `ask` lane works either way, because it changes nothing.",
     "",
     ...roleLines,
     "- `send_message` — give more work to one crew child you started. It becomes that child's next turn; it cannot cut into a turn already running.",

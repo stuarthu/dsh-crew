@@ -13,13 +13,19 @@
 
 本作业会踩到五处：
 
-| 用例 | 谁弄红的 | 它今天断言什么 |
-| --- | --- | --- |
-| `docs/qa/T-52/case-01-principle-numbers-1-to-21.mjs` | T-68 | `principles.md` 里**没有** `## 22.` |
-| `docs/qa/T-52/case-19-pointer-rule-lives-in-principle-20.mjs` | T-68 | 引用「1–21」这个范围 |
-| `docs/qa/T-42/case-12-finish-gate-sentence.mjs` | T-65 | `A task is finished when code review passes` 在，连 `verify-mount.mjs` 的失败信息原文都写死了 |
-| `docs/qa/T-56/case-08-existing-pins-intact.mjs` | T-65 | `Parallel is the default` 和上面那句原样在 |
-| `docs/qa/T-60/case-09-prd-and-hld-exist-now.mjs` | T-67，再一次 T-80 | `docs/design/prd.md` 和 `hld.md` **存在**；`CLAUDE.md` 里有 `` — the opening document of **both** lanes `` |
+| 用例 | 谁弄红的 | 它今天断言什么 | 状态 |
+| --- | --- | --- | --- |
+| `docs/qa/T-56/case-07-no-new-h2.mjs` | **T-63** | `roles/pm.md` 的顶级小节**恰好 13 个** | **已确认并已修好。** T-63 加了一个新的顶级小节 `## What you may write`，13 变 14。`crew-qa-1` 在 T-63 那个提交（`b492ea0`）里把它改成 14，先红后绿都有输出。**这一条本表第一版漏了**，是 `crew-qa-1` 自己报回来的 |
+| `docs/qa/T-52/case-01-principle-numbers-1-to-21.mjs` | T-68 | `principles.md` 里**没有** `## 22.`，而且编号**恰好** 1 到 21 | **已确认真的红了**，不是预测。实测：`FAIL principles.md carries exactly the numbers 1 to 21`、`FAIL there is no \`## 22.\` — the glossary is not a principle (ADR 0014)` |
+| `docs/qa/T-52/case-19-pointer-rule-lives-in-principle-20.mjs` | T-68 | 没有 `## 22.`；编号仍然刚好 1–21 | **已确认真的红了。** 实测：`FAIL no \`## 22.\` heading — the rule did not open a number of its own`、`FAIL the numbered headings are still exactly 1 to 21` |
+| `docs/qa/T-52/case-09-glossary-placement.mjs` | T-68 | `## Words we use` 是**紧跟原则 21 的下一节** | **已确认真的红了。** 实测：`FAIL it is the section immediately after principle 21`。整份跑出来是 `T-52: 21 case(s), 18 passed, 3 failed`，`crew-qa-2` 正在改这三条 |
+| `docs/qa/T-42/case-12-finish-gate-sentence.mjs` | T-65 | `A task is finished when code review passes` 在，连 `verify-mount.mjs` 的失败信息原文都写死了 | 预测（T-65 还没开工） |
+| `docs/qa/T-56/case-08-existing-pins-intact.mjs` | T-65 | `Parallel is the default` 和上面那句原样在 | 预测（T-65 还没开工） |
+| `docs/qa/T-60/case-09-prd-and-hld-exist-now.mjs` | T-67，再一次 T-80 | `docs/design/prd.md` 和 `hld.md` **存在**；`CLAUDE.md` 里有 `` — the opening document of **both** lanes `` | 预测（T-67 还没开工） |
+
+**本表第一版是 5 条，真实是 7 条**，而且漏掉的那一条（`case-07`）是被**第一个任务**弄红的。
+这本身是这条规则的最好证据：**会变红的用例数不完，所以规则不能是「先数清再动手」，
+只能是「谁弄红谁在同一个提交里叫 QA 改」**——那条规则对一条没预料到的红同样管用。
 
 **要决定的是：谁改这几条断言，什么时候改。**
 
@@ -41,11 +47,11 @@
   `case-01` 的头部注释里，QA 自己就写下了这一天的正确做法：
   > the file may grow principle 22 one day … whoever adds principle 22 changes this
   > line together with the file, in the same commit
-- **代价**：`docs/qa/` 里多五次很小的 QA 出场，而 A1c 说「QA 只跑一轮」。
+- **代价**：`docs/qa/` 里多七次很小的 QA 出场（第一版以为是五次），而 A1c 说「QA 只跑一轮」。
   **这两件事不矛盾，但必须用两个不同的说法**：一轮 QA 是「从 DoD 写清单、
   一个 agent 一条用例、写新用例」；改一条已有断言是「一次点名的小编辑」。
   这个仓库为「一个词干两份活」已经付过两次代价（用词表、B7），所以这里要一开始就分开叫。
-- **以后会在哪里疼**：如果 PM 把这五次都叫成「跑 QA」，下一件作业读记录的人会以为
+- **以后会在哪里疼**：如果 PM 把这几次都叫成「跑 QA」，下一件作业读记录的人会以为
   A1c 没有落地。所以任务行里必须用「改断言」这个词，不用「跑 QA」。
 - **为什么它没输**：它是唯一一个既守住「每个提交绿」、又守住「`docs/qa/` 归 QA」的选项。
 
@@ -63,7 +69,7 @@
 
 ### 选项 C：先让它红着，最后一轮 QA 一起修
 
-- **是什么**：T-65、T-67、T-68 提交时 `npm test` 是红的，最后一轮 QA 把五条一起改好。
+- **是什么**：T-63、T-65、T-67、T-68 提交时 `npm test` 是红的，最后一轮 QA 把七条一起改好。
 - **好处**：完全符合 A1c 的字面——QA 只出场一次。
 - **代价**：中间会有**若干个提交是红的**。而「一个任务做完的判据是它的单元测试通过」
   正是 A1c 自己定的判据（`CRD 0020` 第 1 项）。红着提交，这个判据就没了，
@@ -74,10 +80,10 @@
 - **为什么它输了**：它让 A1c 的一半（QA 只一轮）成立，代价是 A1c 的另一半
   （做完 = 单元测试通过）不成立。
 
-### 选项 D：删掉那五条用例
+### 选项 D：删掉那七条用例
 
 - **是什么**：断言过期了就删。
-- **为什么它输了**：PRD 的范围外明令禁止。而且这五条里有三条钉的是这个仓库**真的出过事**
+- **为什么它输了**：PRD 的范围外明令禁止。而且这七条里有三条钉的是这个仓库**真的出过事**
   的地方（20 个任务没跑代码评审、75 条检查丢失、并行段落被删掉没人发现）。
   删掉它们等于把那三次事故的记忆一起删掉。
 
@@ -98,4 +104,9 @@
 ## 谁决定
 
 crew architect，2026-08-21。其中 `case-01` 和 `case-19` 那两条不是我决定的：
-`CRD 0019` 已经写下了同一个做法，我只是把另外三条并进同一条规则。
+`CRD 0019` 已经写下了同一个做法，我只是把其余的并进同一条规则。
+
+**2026-08-21 追加**：本表从 5 条改成 7 条——`case-07`（T-63 弄红，已修）和
+`case-09`（T-68 弄红，已确认）。前者是 `crew-qa-1` 报回来的，后者是我拆任务时数出来的。
+T-68 那三条从「预测」改成「已确认」，附实测输出。**结论没有变，选项 A 仍然是推荐**：
+改的只是它要覆盖的条数，而那正好证明了「数不完」这件事。
