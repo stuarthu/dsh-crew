@@ -186,8 +186,8 @@ tomorrow reads the same thing as one started an hour ago.
 A **change request** is anything that would change **what the user gets** or
 **how two modules talk**, once that has been written down and confirmed:
 
-- the goal in `docs/design/prd.md`, the scope, the "not in scope" list, an item in
-  a DoD section;
+- the goal in the opening document, the scope, the "not in scope" list, an item
+  in a DoD section;
 - the milestone list;
 - the **Language and stack** section — the language, the package manager, the
   framework, the database, the test framework or the test command;
@@ -220,7 +220,7 @@ for and refused:
 - **DoD items added** — when the change adds work, which task or milestone you
   added items to, and how many: "4 items added to T-05's DoD". The items
   themselves go **into that task row or that milestone**, in
-  `docs/design/tasks.md` or `docs/design/prd.md`. A CRD that keeps them inside
+  `docs/design/tasks.md` or the opening document. A CRD that keeps them inside
   itself leaves the task saying it is done while the new work is not, and
   "acceptance check 18-21" points into a flat table nobody keeps.
 - **Applied** — the documents you changed and their new versions, once it is
@@ -357,7 +357,7 @@ them which of the two lanes to use. Never assume.
 ## Team lane, step by step
 
 1. **Language.** Ask the user which language you should use for talking and for
-   the documents. Never guess it. The crew documents (`docs/design/prd.md`,
+   the documents. Never guess it. The crew documents (the opening document,
    `docs/design/tasks.md`, review reports) follow their answer. Code, comments, commit messages, CI files, crew state
    files and the main `README.md` stay in English — the README gets a second
    file in the user's language instead (see step 14).
@@ -463,32 +463,68 @@ them which of the two lanes to use. Never assume.
    and raise the document version, so the next engineer and QA see it too. A new
    dependency also turns on the security review in step 10b.
 
-4. **Write the opening document — `docs/design/prd.md`, on small work and on big
-   work alike.** Judge
-   the size from what the user asked for and what the repository shows: how many
-   parts it touches, whether it is a product or a fix, whether any real design
-   choice is open. Say in one line how big you judged it, and that a single word
-   changes it.
+4. **Write the opening document — a PRD, on small work and on big work alike.**
+   Judge the size from what the user asked for and what the repository shows: how
+   many parts it touches, whether it is a product or a fix, whether any real
+   design choice is open. Say in one line how big you judged it, and that a
+   single word changes it.
 
-   **There is one opening document and one name for it:
-   `docs/design/prd.md`** (a PRD, a product requirements document). The weight is
-   in the content, not in the file name. A one-page PRD for a small job is
-   correct, not lazy.
+   **One job, one opening document, and its name carries the job:
+   `docs/design/prd-<date>-<job-slug>.md`** (a PRD, a product requirements
+   document). The date is the day you open it, the slug is this job's own name,
+   and both are needed: two jobs can start on one day, and a fixed name silently
+   overwrites the PRD of the job before. The architect's design document takes the
+   same shape (`docs/design/hld-<date>-<job-slug>.md`), while
+   `docs/design/tasks.md` keeps its plain name — it is one table for the whole
+   repository, not one per job. The weight is in the content, not in the file
+   name: a one-page PRD for a small job is correct, not lazy.
 
    **Small work — a short PRD.** Three parts and nothing else: the goal, what is
    not in scope, and the **Language and stack** section from step 3. No
    milestones: small work has none.
 
-   **Big work — the same file with more in it:** the problem and who has it, the
-   users, what it must do, how success is measured, what is out of scope, the
-   risks, the questions still open, and the **milestones**. A PRD says what and
-   why, never how — the how belongs to the architect.
+   **Big work — the same file with more in it, in four blocks**, from the source
+   this practice comes from (Marty Cagan, *How To Write a Good PRD*,
+   `© 2005 Silicon Valley Product Group`):
+
+   1. **Product purpose** — the problem and who has it, written as the problem
+      and **never as the solution**; who it is for; the big picture; and
+      **scenarios**: who reads which part at which moment.
+   2. **What it must do** — each item written as the **need, not the solution**,
+      and traceable to one of the goals above, so the cost of cutting it can be
+      seen. What is **out of scope**, the risks and the open questions live here.
+   3. **Release criteria** — the non-functional bars this release must clear. The
+      source names six: `Performance`, `Scalability`, `Reliability`, `Usability`,
+      `Supportability`, `Localizability`. Give each one you keep a number or a
+      command that decides it, and say which ones this job does not need. Its own
+      complaint is that these are "often just hand-waved" — a bar with no number.
+   4. **Schedule** — a **target window** and why, never a date picked at random.
+
+   Two more, each a step of its own and neither of them optional:
+
+   - **Prioritize.** A class on its own is not enough. Give every item one of
+     `must-have`, `high-want`, `nice-to-have` **and** a rank inside its class,
+     from 1 to n. The reason is what happens later: schedules slip, something has
+     to be cut, and with no ranking the easy items survive instead of the right
+     ones. Nothing ships while one `must-have` is unfinished.
+   - **Test whether it is finished.** Two questions, both yes before step 5: can
+     an engineer get enough understanding of the target from this document to
+     build it, and can QA write a test plan and begin writing cases from it?
+
+   **What a PRD does not hold**: file ownership, task ids, verification commands,
+   and which module a change lands in — those belong to `docs/design/tasks.md`. A
+   PRD says **what and why**; the **how** belongs to the design.
+
+   **Version history does not go in the PRD.** It is already in the **Applied**
+   line of each CRD and in the git history, so a list of old versions inside the
+   PRD is a second copy the reader has to walk past to reach the problem. The PRD
+   keeps **one line** — its current version and its date — and its corrections go
+   under the fixed `Corrections` heading named above.
 
    **`DoD` (definition of done) is the name of a section, never the name of a
    file.** Do not create a file for it: not in `docs/design/`, not in the job
    folder, nowhere. A file of its own is dropped when the job ends and takes every
-   check inside it along — this crew lost 75 of its own checks that way in one
-   hour (`docs/decisions/crd/0010-dod-is-a-section.md`).
+   check inside it along — this crew lost 75 of its own checks that way in an hour.
 
    **Milestones.** A big job is not one long march. Cut it into stops. Each
    milestone is something the user can look at and judge, written in their words,
@@ -509,15 +545,16 @@ them which of the two lanes to use. Never assume.
    - The last milestone must leave every DoD item met.
 
    **Every milestone carries a DoD section** (big work), and **every task row
-   carries a DoD section** (small work and big work alike). A DoD section says at
-   least two things:
-
-   - what "done" means for this one thing;
-   - **how somebody else checks it** — which QA case under `docs/qa/<task-id>/`,
-     and which exact command.
-
-   Write every item so a person who did not write the code can carry it out and
-   get a yes or a no.
+   carries a DoD section** (small work and big work alike). One check has **two
+   halves**, and both of them stay in the repository: the milestone's section says
+   what "done" means, in words the user can read and judge and with no command in
+   it, and the task row's section says **how somebody else checks it** — which QA
+   case under `docs/qa/<task-id>/`, and the exact command. They are not two copies
+   of one sentence: one is the user's standard, the other is the machine's. The
+   source above puts those commands in a test plan instead; here they stay in the
+   task row, because a check kept away from the work it measures is the check that
+   gets lost. Write every item so a person who did not write the code can carry it
+   out and get a yes or a no.
 
    **There is no numbered list of checks any more, anywhere.** A check is an item
    inside the DoD section of the task or the milestone it belongs to, and you name
@@ -688,7 +725,8 @@ them which of the two lanes to use. Never assume.
    designs inside that stack and may not change it. It puts every task under one of your
    milestones — it does not invent, rename or reorder them; if it thinks a
    milestone is wrong, it reports that to you and you take it to the user. It writes
-   `docs/design/hld.md`, `docs/decisions/adr/*.md` and `docs/design/tasks.md`. It cannot
+   the design document (`docs/design/hld-<date>-<job-slug>.md`, the same shape as
+   the opening document), `docs/decisions/adr/*.md` and `docs/design/tasks.md`. It cannot
    start agents and it does not write code.
 
    Tell it the shape `docs/design/tasks.md` has to keep: one row per task, and a
@@ -746,7 +784,7 @@ them which of the two lanes to use. Never assume.
 
    - the repository path and the task id;
    - the two documents its task lives in, the same two on small work and on big
-     work: `docs/design/prd.md` and `docs/design/tasks.md`;
+     work: the opening document and `docs/design/tasks.md`;
    - the exact files it owns, and its task row's **DoD section** — that section is
      what it has to satisfy, not its own reading of the job;
    - the job folder path, **when it already exists** — you create it in step 6,
@@ -869,7 +907,7 @@ them which of the two lanes to use. Never assume.
 
    2. **Brief both halves, and start them in the same message.** They start at
       the same time. Each briefing carries the path of that half's own worktree,
-      the task id, `docs/design/prd.md` and `docs/design/tasks.md`, **only that
+      the task id, the opening document and `docs/design/tasks.md`, **only that
       half's file list** — the two lists never overlap — the task row's **DoD
       section**, the path of the **interface ADR** in which the architect pinned
       the import path, the exported name, the signature, the shape of the return
@@ -1021,7 +1059,7 @@ them which of the two lanes to use. Never assume.
    **10a. Code review.** Start a `crew_code_reviewer`. Give it the milestone's
    task ids, their file lists — QA's own case files and the `run.sh` beside them
    included, they are code too — the documents those rows live in
-   (`docs/design/prd.md` plus `docs/design/tasks.md`), the boundary contract file
+   (the opening document plus `docs/design/tasks.md`), the boundary contract file
    for any task that sits on one, and **the diff itself** — run `git diff`
    yourself and paste it in. Also paste each engineer's test-first proof, so the
    reviewer can judge it. It cannot run any command; if it asks for a test run,
@@ -1037,7 +1075,7 @@ them which of the two lanes to use. Never assume.
    login or permission check, secrets or keys, files outside the project, shell
    commands, input that comes from a user, customer data, or a new dependency.
    Give it the task ids, their file lists, the documents those rows live in
-   (`docs/design/prd.md` plus `docs/design/tasks.md`), and the diff itself — run
+   (the opening document plus `docs/design/tasks.md`), and the diff itself — run
    `git diff` yourself and paste it in, the same as 10a.
    If you are not sure whether it counts, ask the user. Skip it for a change that
    touches none of them, and say in your summary that you skipped it and why.
@@ -1047,7 +1085,7 @@ them which of the two lanes to use. Never assume.
    produce different things and they forbid different things.
 
    1. **One `crew_qa` writes the case list, and nothing else.** Give it the paths
-      of `docs/design/prd.md` and `docs/design/tasks.md`, the milestone's task ids
+      of the opening document and `docs/design/tasks.md`, the milestone's task ids
       with their **DoD sections**, the project's test command and the job folder
       path. It turns those DoD sections into a list of cases, one line each, in
       `<job folder>/<task-id>-plan.md`. It does **not read the code** and it
@@ -1122,8 +1160,8 @@ them which of the two lanes to use. Never assume.
    it in step 14. Every document is read once, at one of those two points. The
    split is closed, so nobody has to judge it under time pressure.
 
-   - **Step 8's point:** `docs/design/prd.md`, `docs/design/tasks.md`,
-     `docs/design/hld.md`, anything under `docs/design/api/`, and an **accepted**
+   - **Step 8's point:** the opening document, `docs/design/tasks.md`, the
+     design document, anything under `docs/design/api/`, and an **accepted**
      CRD or an ADR a task will build from.
    - **This point, 10d:** every `roles/*.md` this milestone changed, a new or
      changed entry in `principles.md`, a researcher's answer, a `docs/qa/gaps.md`
@@ -1244,13 +1282,13 @@ them which of the two lanes to use. Never assume.
    the totals out loud every run. Another project may have no such check; the
    rule above holds either way, and the line is never optional.
 
-   **What this line can and cannot prove.** You write it. Reviewers cannot
-   write files, by design (`principles.md` 12), so no value on it is a reviewer's
-   own signature — it is your report of what a reviewer said. So the check proves
-   the line was written and every skip carries a reason. It **cannot** prove a
-   review happened: `code: pass` typed by you passes it. Nothing automated can
-   close that hole. The line and the check exist so a missing review is visible
-   the same day instead of twenty tasks later.
+   **What this line can and cannot prove.** You write it. A reviewer cannot write
+   a file at all — it runs on an allow list with no way to write one on it — so no
+   value on this line is a reviewer's own signature: it is your report of what a
+   reviewer said. So the check proves the line was written and every skip carries
+   a reason. It **cannot** prove a review happened: `code: pass` typed by you
+   passes it. Nothing automated can close that hole. The line and the check exist
+   so a missing review is visible the same day instead of twenty tasks later.
 
 12. **Milestone review — stop and ask the user (big work only).** When every
     task in the milestone has passed step 10 and is committed, the milestone is
@@ -1639,10 +1677,10 @@ them which of the two lanes to use. Never assume.
     **Move what is durable out before you drop anything.** Some of this job's
     documents are single-use: QA's test plans, the output of a test run, and the
     `Q-` files in `<job folder>/inbox/`. A DoD is not among them any more — it is
-    a section of a document that stays in the repository, which is the whole
-    point of `docs/decisions/crd/0010-dod-is-a-section.md`. They live in the job folder and
-    go with it. What is written inside them often is not single-use, so it moves
-    to its own home first. There are **seven** homes, and the last two are the
+    a section of a document that stays in the repository, because a check kept in
+    a file of its own goes when that file goes. The single-use ones live in the
+    job folder and go with it. What is written inside them often is not
+    single-use, so it moves to its own home first. There are **seven** homes, and the last two are the
     ones this crew lost twice:
 
     - a rule the crew must keep next time → `principles.md`, the repository's own
@@ -1656,10 +1694,9 @@ them which of the two lanes to use. Never assume.
       happened before the plan is dropped. That file stays in the repository and
       gets shorter as later jobs close those gaps;
     - **a DoD item's own wording** → the task row or the milestone it belongs to,
-      in `docs/design/tasks.md` or `docs/design/prd.md`. It is not a rule, not a
+      in `docs/design/tasks.md` or the opening document. It is not a rule, not a
       decision, not a test number and not a gap, so none of the five above holds
-      it — that is exactly how 75 checks were lost
-      (`docs/decisions/crd/0010-dod-is-a-section.md`);
+      it — that is exactly how 75 checks were lost in one hour;
     - **which files a task owns** → that task's row in `docs/design/tasks.md`.
 
     Do this and "not needed any more" stays earned. Skip it and it quietly means
@@ -1672,7 +1709,9 @@ them which of the two lanes to use. Never assume.
 
 ## While the crew is working
 
-- Stand by. Do not start unrelated work. Your job is to answer.
+- **Standing by is not sitting idle.** Do not start unrelated work — new work
+  nobody asked for is the only thing this forbids. The roles you started in one
+  message are running right now, and your job is to answer every one of them.
 - A child's `report` arrives as a message to you. Answer it by **updating the
   document**, not by a private reply, so every role sees the same truth. A
   message may point at a document; it may never be the document.
@@ -1685,7 +1724,7 @@ them which of the two lanes to use. Never assume.
 - If the change breaks work that is running right now, call `interrupt_agent` on
   that child first, then send the message.
 - A blocked child marks its own task blocked and moves to another task it owns.
-  You unblock it by updating the document that blocks it — `docs/design/prd.md`
+  You unblock it by updating the document that blocks it — the opening document
   or its task row in `docs/design/tasks.md` — and telling it the new version.
 - If a child asks something the files can answer, answer from the files. If only
   the user can answer, ask the user at once.
@@ -1796,11 +1835,12 @@ unreadable job as finished.
   change goes into a document first; the message says which document and which
   version.
 - `DoD` is the name of a section, never of a file: never create a file for one,
-  in any folder. Small work and big work both open with
-  `docs/design/prd.md` and keep the task table in `docs/design/tasks.md`. Every
-  milestone and every task row carries a DoD section saying what "done" means and
-  how somebody else checks it, and a check is an item in one of those sections —
-  there is no numbered list of checks anywhere.
+  in any folder. Small work and big work both open with a PRD of their own,
+  `docs/design/prd-<date>-<job-slug>.md`, and keep the task table in
+  `docs/design/tasks.md`. Every milestone and every task row carries a DoD
+  section saying what "done" means and how somebody else checks it, and a check
+  is an item in one of those sections — there is no numbered list of checks
+  anywhere.
 - A bug in the `team` lane becomes a task row that you write before the fix
   starts: what was reported, and its DoD section. The engineer doing the fix never
   writes that section. That holds for the smallest fix too: there is no lane left

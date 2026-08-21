@@ -578,7 +578,7 @@ for (const fileName of ["engineer.md", "test-engineer.md", "code-engineer.md", "
 // tells its reader where the task row and its DoD section live.
 for (const fileName of ["architect.md", "engineer.md", "test-engineer.md", "code-engineer.md", "qa.md", "doc-reviewer.md", "code-reviewer.md", "security-reviewer.md"]) {
   const text = readRoleText(fileName, undefined);
-  if (text.includes("dod.md")) fail(`roles/${fileName} names a file called \`dod.md\` (at index ${text.indexOf("dod.md")}) — CRD 0010 forbids that file name anywhere, because a DoD file lives in the job folder and is dropped with it. \`DoD\` is a section of docs/design/prd.md or of a task row in docs/design/tasks.md. Point the role at those two files instead`);
+  if (text.includes("dod.md")) fail(`roles/${fileName} names a file called \`dod.md\` (at index ${text.indexOf("dod.md")}) — CRD 0010 forbids that file name anywhere, because a DoD file lives in the job folder and is dropped with it. \`DoD\` is a section of the job's own PRD (docs/design/prd-<date>-<job-slug>.md) or of a task row in docs/design/tasks.md. Point the role at those two files instead`);
   else if (!text.includes("docs/design/tasks.md")) fail(`roles/${fileName} does not name \`docs/design/tasks.md\` — CRD 0010 gives both lanes one task table in one place, with one shape; only the typist changes (the architect on big work, the PM on small work). Every task row and its DoD section live there, so a role that does not know the path cannot read its own task. Put it back`);
   else if (!text.includes("DoD section")) fail(`roles/${fileName} never says \`DoD section\` — that is the thing CRD 0010 creates: what "done" means and how somebody else checks it, written into the task row or the milestone. With the name gone the role no longer knows the section exists. Put it back`);
   else ok(`roles/${fileName} points at docs/design/tasks.md and knows the DoD section, and names no dod.md`);
@@ -912,12 +912,25 @@ function applyCapturingLogs(config, options) {
     // can come back by a reword: it takes someone writing the old rule again.
     else if (section.text.includes("**Decisions** section")) fail("PM section still sends a decision to a **Decisions** section of the DoD — the DoD lives in the job folder and is dropped with it, so CRD 0006 moved every decision about HOW to an ADR in docs/decisions/adr/. Remove that instruction from roles/pm.md");
     else if (section.text.includes("Only the architect writes an ADR")) fail("PM section still says `Only the architect writes an ADR` — CRD 0006 makes the PM write it when the job has no architect, so that line contradicts the rule around it. Remove it from roles/pm.md");
-    // CRD 0010. Both lanes now open with the same document, `docs/design/prd.md`
-    // — a short one for small work, the same file with milestones for big work —
-    // and both keep the task table in `docs/design/tasks.md`. Two paths, pinned
-    // present.
-    else if (!section.text.includes("docs/design/prd.md")
-      || !section.text.includes("docs/design/tasks.md")) fail("PM section is missing `docs/design/prd.md` or `docs/design/tasks.md` — CRD 0010 gives both lanes the same opening document and the same task table, so the PM briefs a role for small work with the same two paths as for big work. Put the missing path back in roles/pm.md");
+    // CRD 0010. Both lanes open with the same kind of document — a short PRD for
+    // small work, the same file with milestones for big work — and both keep the
+    // task table in `docs/design/tasks.md`. Two paths, pinned present.
+    //
+    // The PRD half is pinned as the PREFIX `docs/design/prd-`, not as a whole file
+    // name, and that is A7's doing: a job's PRD is now
+    // `docs/design/prd-<date>-<job-slug>.md`, so there is no fixed name left to
+    // pin. Pinning one job's name would go red on the next job, and pinning the
+    // one fixed name this repository used to have is what this line used to do —
+    // it required roles/pm.md to keep naming a file no job writes any more.
+    //
+    // It is a presence check, with the known limit of ADR 0004: roles/pm.md holds
+    // TWO copies of the prefix today — step 4, which teaches the shape, and the
+    // **Hard rules** summary — so breaking one of them leaves this green. Proved
+    // by mutation on 2026-08-22, both ways round. Closing that would take a
+    // count, and a count on a prefix that step 4 may legitimately write once or
+    // twice would go red on a correct file, so the limit is written down instead.
+    else if (!section.text.includes("docs/design/prd-")
+      || !section.text.includes("docs/design/tasks.md")) fail("PM section is missing `docs/design/prd-` (the prefix of a job's own PRD, `docs/design/prd-<date>-<job-slug>.md`) or `docs/design/tasks.md` — CRD 0010 gives both lanes the same opening document and the same task table, and A7 gives every job a PRD of its own, so the PM briefs a role for small work with the same two paths as for big work. Put the missing path back in roles/pm.md");
     // The same section name the four role files carry, so the PM and the crew
     // mean one thing by it. This is a NAME, not prose — like `publishCheck`
     // above — but it proves only that the name is somewhere in the prompt, not
@@ -932,7 +945,7 @@ function applyCapturingLogs(config, options) {
     // dropped with the job, and took every check inside it along — 75 of them in
     // one hour, which is the evidence that forced the CRD. The pin is the bare
     // file name, so it catches every path it could be written as.
-    else if (section.text.includes("dod.md")) fail(`PM section names a file called \`dod.md\` (at index ${section.text.indexOf("dod.md")}) — CRD 0010 forbids that file name anywhere, whichever path it is written as (~/.dsh/crew/jobs/<job-slug>/dod.md, docs/design/dod.md, docs/crew/dod.md). \`DoD\` is a section of docs/design/prd.md or of a task row in docs/design/tasks.md, never a file: a file in the job folder is dropped with the job, and this crew lost 75 acceptance checks that way in one hour. Take the path out of roles/pm.md`);
+    else if (section.text.includes("dod.md")) fail(`PM section names a file called \`dod.md\` (at index ${section.text.indexOf("dod.md")}) — CRD 0010 forbids that file name anywhere, whichever path it is written as (~/.dsh/crew/jobs/<job-slug>/dod.md, docs/design/dod.md, docs/crew/dod.md). \`DoD\` is a section of the job's own PRD (docs/design/prd-<date>-<job-slug>.md) or of a task row in docs/design/tasks.md, never a file: a file in the job folder is dropped with the job, and this crew lost 75 acceptance checks that way in one hour. Take the path out of roles/pm.md`);
     // The flat numbered acceptance-check list. A check is now an item in the DoD
     // section of the task or the milestone it belongs to, so a CRD records "4
     // items added to T-05's DoD" and never "acceptance checks 18-21" — a number

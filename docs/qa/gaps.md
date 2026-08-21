@@ -220,7 +220,35 @@ prove a review happened — a `code: pass` typed by the PM passes it」。
 
 **状态**：未关闭，等一个决定（不是等代码）。
 
-## 11. 发布钉子只认 `npm publish`，认不出另外七种发布方式
+## 11. 按全路径 grep 查不出裸文件名的过期指针
+
+**谁报的**：`crew-qa-5`，2026-08-22，在 A7 改名之后（PM 写下这一条）。
+
+**是什么**：A7 把 `docs/design/prd.md` 改成 `docs/design/prd-<日期>-<作业 slug>.md`，
+`hld` 同形。改名的验法是 `grep -c 'docs/design/prd\.md\|docs/design/hld\.md'`，
+**它只看带路径的写法**。而 `docs/qa/T-51/case-14-gaps-records-crew-qa-hole.mjs` 第 9 行写着
+
+```
+// prove", hld.md section 5): ...
+```
+
+——**裸文件名，没有 `docs/design/` 前缀**。它是一处真指针（在告诉读者去哪读那条要求），
+指向一个今天已经不存在的名字，而那条验法命中不了它。
+
+**为什么它值得单独一条**：这不是「漏了一处」，是**验法的形状漏了一整类**。
+本作业的 T-70 和 T-77 各自撞过同一件事的另一半——它们的 DoD 只要求改带路径的那几处，
+两个 engineer 都自己发现文件里还有裸的 `hld.md`、报上来问，PM 才把那一格的范围扩成
+「带路径的和裸文件名的都算」。**那两次是 engineer 顶回来的，不是验法抓到的**；
+这一次也是。
+
+**该怎么办**：凡是改文件名的作业，除了按全路径 grep，**再按裸名 grep 一遍**
+（`grep -rn 'prd\.md\|hld\.md'`），然后逐处读上下文判它是**指针**还是**提及**
+（这条分辨本身写在 `docs/design/prd-2026-08-21-apply-req.md` 的 DoD 第 11 条 v6 里，
+本作业用了四次）。
+
+**状态**：未关闭。那一行今天还指向空处，留给最后一轮 QA 或下一件作业。
+
+## 12. 发布钉子只认 `npm publish`，认不出另外七种发布方式
 
 **缺口**：`tools/verify-mount.mjs` 扫 `.github/workflows/` 下每个文件，把带**活的**
 `npm publish` 命令的那些当成发布工作流，然后钉它们：push 触发必须只认 `v*` tag、不能有
@@ -342,10 +370,10 @@ const NEEDS_SHELL = ["engineer", "test_engineer", "code_engineer"];
 所以**把 `crew_qa` 的 `bash` 拿掉，一个检查都不会红**。
 
 **为什么**：这不是漏掉，是**故意**的。把清单从一个角色扩到三个的那件作业
-（`paired-engineers`，T-51）**不许改 QA 的任何行为**（`docs/design/prd.md`「不在范围内」），
+（`paired-engineers`，T-51）**不许改 QA 的任何行为**（`docs/design/prd-2026-08-21-paired-engineers.md`「不在范围内」），
 而把 QA 约束进这条检查，本身就是一处新的行为约束。理由写在
 `docs/decisions/adr/0010-bash-check-explicit-list.md`「它不证明什么」和
-`docs/design/hld.md` 第五节，并且那个文件的注释里也写着。
+`docs/design/hld-2026-08-21-paired-engineers.md` 第五节，并且那个文件的注释里也写着。
 
 `CLAUDE.md` 设计规则 4 记着的那个洞因此**从「三个里的一个」缩到「QA 一个」，没有关掉**。
 （同一条规则的正文今天还写着「`verify-mount.mjs` checks the engineer's half only」——
