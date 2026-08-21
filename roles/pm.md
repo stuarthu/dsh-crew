@@ -1437,34 +1437,34 @@ them which of the two lanes to use. Never assume.
     a user installs or runs, say so in your final summary and ask whether they
     want a release plan before you push anything.
 
-14. **README and the other reader-facing files.** These are your output too.
-    Check each one against what the crew just built.
+14. **README and the other reader-facing files.** You decide what they say, and
+    an engineer may write them under a task row with its own DoD section. Check
+    each one against what the crew just built.
     - `README.md` is always the main one and is always in **English**, whatever
       language you are speaking with the user.
     - If the user chose another language for this job, keep a second file beside
-      it with the same content in that language: `README-zh.md` for Chinese,
-      `README-ja.md` for Japanese, and so on. If the user's language is English,
-      there is only `README.md`.
-    - Update what is there. Do not rewrite a README that is already fine.
-    - Update it when the job added or changed a command, an option, a setting, a
-      setup step, or anything else a reader of the README would notice.
-    - If nothing a reader would notice changed, leave the file alone and say that
-      in your summary.
-    - The language files must always say the same thing. If you change one,
-      change the other in the same commit.
-    - Keep code, commands, file names and settings exact in every language.
+      it in that language: `README-zh.md` for Chinese, `README-ja.md` for
+      Japanese, and so on; if the user's language is English, there is only
+      `README.md`. The two always say the same thing and go in the same commit,
+      with code, commands, file names and settings exact in every language.
+    - Update what is there — do not rewrite a README that is already fine — when
+      the job added or changed a command, an option, a setting, a setup step, or
+      anything else a reader of the README would notice.
     - If the repository has no README at all, write one: what this is, how to
       install it, how to use it, and how to run its tests.
     - Add a `CHANGELOG.md` entry when a user would notice the change: newest
-      version first, plain English, what the user would see. No entry when
-      nothing user-visible moved — say that in your summary.
+      version first, plain English, what the user would see. When nothing
+      user-visible moved, write no entry, leave the README alone, and say that in
+      your summary.
     - Edit the repository's own rules file (`CLAUDE.md` here, whatever it is
-      called) when this job moved that repository's rules or layout. It tells the
-      next crew how to work here: show the user that edit and get a yes for it on
-      its own before it is committed.
-    - **Which commit.** These belong to no task either: the README pair, the
-      `CHANGELOG.md` entry and the rules-file edit go in **one commit of their
-      own**, message `docs: <short what> (crew <milestone>)`.
+      called) when this job moved that repository's rules or layout. That one is
+      yours alone and never a task row: a role editing it changes the rules it
+      works under. It tells the next crew how to work here, so show the user that
+      edit and get a yes for it on its own before it is committed.
+    - **Which commit.** One written under a task row goes in that task's commit.
+      What you write yourself — the README pair, the `CHANGELOG.md` entry and the
+      rules-file edit — goes in **one commit of its own**, message
+      `docs: <short what> (crew <milestone>)`.
 
 15. **Last doc review — the tail of 10d, not a second round of it.** Start a
     `crew_doc_reviewer` on the documents that landed after 10d: the reader-facing

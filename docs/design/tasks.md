@@ -2506,3 +2506,51 @@ A1d 改了第 1 步，没有扫到别处说同一件事的地方。**同一类�
 | 7 | **`roles/pm.md` 里一个中文字符都没有** | `grep -cP '[\x{4e00}-\x{9fff}]' roles/pm.md` ＝ 0 |
 
 ---
+
+## T-83 — `roles/pm.md` 第 14 步和权威表互相矛盾（本作业造出来的，PM 写这一行）
+
+- **Verdicts**：code: not run — 按 `CRD 0020`，代码评审集中在 M1 最后一程 ｜ security: not run — 同样在最后一程；本任务只改散文 ｜ qa: not run — 本任务的完成判据是 `docs/qa/T-63/case-08` 变绿，那是这一轮 QA 已经写好的用例 ｜ doc: not run — 文档评审同样集中在最后一程
+
+- **里程碑**：M1
+- **形状**：单人（solo）
+- **拥有的文件**：`roles/pm.md`，**只有它**，而且**只改第 14 步**。
+- **测试文件**：**无**——判据是**已经存在**的 `docs/qa/T-63/case-08-readme-changelog-owner-is-settled.mjs`
+  （`crew-qa-C08` 本轮写的）。**它今天是红的**，改完必须变绿。**不许改那条用例。**
+- **依赖**：T-63（写了那张表）、T-66（改过第 14 步的别处）、T-79/T-80/T-81（它们的做法就是答案）
+- **要求来源**：**这是一个 bug**。报告人：`crew-qa-C08`，2026-08-22，它的用例在真仓库上是红的。
+
+## 报告的是什么（照抄报告人的话，不转述）
+
+> **这处矛盾今天到底存不存在：存在。**
+> 表选的是 **engineer 那一侧**：`an engineer may write them under a task row with its own DoD
+> section`。本作业真的照这一侧做了：**T-79**（两份 README）、**T-80**（`CLAUDE.md`）、
+> **T-81**（`CHANGELOG.md`）。而 `roles/pm.md` 第 14 步**原样还在**：
+> `These are your output too.`，并且下面还说这三样 `belong to no task either`——
+> **表说「可以属于一个任务行」，第 14 步说「不属于任何任务」，这是同一处矛盾的第二面，
+> 比第一句更硬。**
+> T-63 DoD 第 7 格给的第二条出路是「那句话由 T-66 改掉」。我读了 T-66 的全部 14 格：
+> **没有一格点名这句话。出路二选了，但没有任何任务承接它。**
+
+**PM 定的是哪一边**：**表是对的，第 14 步要改。** 三条理由：
+
+1. **本作业真的这么做了，而且做得好**：T-79 和 T-81 是 engineer 任务，各带自己的 DoD 章节，
+   两份交付都实在（T-79 还先删掉了一处 8 行的真重复才加东西）。
+2. **README 和 `CHANGELOG.md` 判不了任何人**，也不是项目的规则——它们是普通的作业产出。
+   规则 B 那一类「判你的文档」不含它们。
+3. **`CLAUDE.md` 归 PM 和表的另一行一致**（那一行写「the project's own rules file … the PM,
+   and nobody else」），而 T-80 正是 PM 自己做的。所以两行合起来今天已经自洽，缺的只是第 14 步。
+
+## DoD（PM 写，在简报发出之前）
+
+| # | 怎么算做完 | 别人怎么验 |
+| --- | --- | --- |
+| 1 | **`These are your output too.` 改掉**，改成和表一致的意思：**PM 决定它们说什么，而 engineer 可以在一个带自己 DoD 章节的任务行下写它们**；`CLAUDE.md`（仓库自己的规则文件）**仍然只有 PM 写** | `node docs/qa/T-63/case-08-readme-changelog-owner-is-settled.mjs` 绿（今天红）；`flat roles/pm.md \| grep -o 'These are your output too' \| wc -l` ＝ **0** |
+| 2 | **`These belong to no task either` 那一句也改掉**——它是同一处矛盾更硬的那一面。改成：这三样**可以**属于一个任务行；属于任务行时进那个任务的提交，PM 自己写时进它自己的那一个提交（T-66 定的那个形状**不许动**，只是不再声称「不属于任何任务」） | `flat roles/pm.md \| grep -o 'belong to no task either' \| wc -l` ＝ **0**；读第 14 步，两种情形各有一句 |
+| 3 | **T-66 定的提交形状原样保留**：`docs/design/tasks.md` 里 T-66 的第 3 格要第 14 步说清三样各进哪个提交，message 形状是 `docs: <short what> (crew <milestone>)` | `flat roles/pm.md \| grep -o 'docs: <short what> (crew <milestone>)' \| wc -l` ≥ 1（改前 1 处，不许减） |
+| 4 | **第 14 步别的规则一条不许删**：两份 README 永远同一个提交、`README.md` 永远英文、没有用户可见的变化就不写 `CHANGELOG.md` 条目并在摘要里说、改仓库规则文件要先给用户看 | 逐条读；`git diff -U0 roles/pm.md` 的每一块都落在第 14 步之内 |
+| 5 | **只改第 14 步。** T-63 的 `## What you may write` 整节、T-64 的通道段和第 1、2、12 步、T-65 的第 8、9、10、15 步、T-66 的第 11、13、16、17、18 步和 Hard rules、T-67 的第 4 步、T-82 改的两处——一个字都不许动 | `git diff -U0 roles/pm.md` 的每一块都在第 14 步；`flat roles/pm.md` 里 T-63 的四个锚串各 1 处 |
+| 6 | **`roles/pm.md` 不超过 1900 行**（今天 1899，**只剩 1 行**——这一项是替换，不是新增；装不下就先合并重复段落，不许删规则、不许抬上限） | `wc -l roles/pm.md` ≤ 1900 |
+| 7 | **`roles/pm.md` 里一个中文字符都没有** | `grep -cP '[\x{4e00}-\x{9fff}]' roles/pm.md` ＝ 0 |
+| 8 | **`npm test` 全绿，跑两次一致**；用例数不许减 | `npm test`；`ls docs/qa/*/case-*.mjs \| wc -l` |
+
+---
