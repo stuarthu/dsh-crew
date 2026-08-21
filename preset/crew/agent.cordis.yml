@@ -232,12 +232,15 @@
       #   # LIST. An empty list, an empty string, 0, false or {} makes dsh-crew
       #   # refuse to start, with a message naming the field and the role — and so
       #   # does a value that is not a list at all (`roleDeny: engineer: read`;
-      #   # write `roleDeny: engineer: ['read']`). That refusal is new: earlier
-      #   # versions took such a value quietly and dropped your line, and where
-      #   # it was that role's only filter the child was left with NO filter at
-      #   # all — so a read-only reviewer got every tool this preset has, `bash`,
-      #   # `write` and `edit` included, and nothing said so. See the CHANGELOG
-      #   # for the version it landed in.
+      #   # write `roleDeny: engineer: ['read']`). Both refusals are new, and the
+      #   # two used to fail differently. An EMPTY value was taken quietly: your
+      #   # line was dropped, and where it was that role's only filter the child
+      #   # was left with NO filter at all — so a read-only reviewer got every
+      #   # tool this preset has, `bash`, `write` and `edit` included, and
+      #   # nothing said so. A value that was not a list was passed on as the
+      #   # filter instead, and the role then failed tool-subagent's own config
+      #   # schema every time it started. See the CHANGELOG for the version it
+      #   # landed in.
       #   # There is no way to spell "no filter": to widen a role, list the tools
       #   # it may have. To go back to the shipped list, delete the line, or set
       #   # it to nothing at all (a bare ~), which still means "use the shipped

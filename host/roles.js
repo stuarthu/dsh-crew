@@ -86,7 +86,8 @@ export const ROLES = [
     key: "engineer",
     toolName: "crew_engineer",
     personaFile: "engineer.md",
-    // A short line shown in the PM's own prompt (host/crew.js:214) — it is not
+    // A short line shown in the PM's own prompt (crew.js's runtimeFactsSection,
+    // which builds one line per role from `role.summary`) — it is not
     // passed to the tool schema. It names the shape, not just the job: in that
     // prompt this line sits two lines above `crew_code_engineer`'s, and "write
     // the code for a task" would read as the same offer twice, while the

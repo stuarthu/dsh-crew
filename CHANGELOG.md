@@ -21,10 +21,12 @@ there are kept as `<name>.bak` and named in the boot log, but your settings do
   list at all (`roleDeny: engineer: read` instead of
   `roleDeny: engineer: ['read']`), and dsh-crew now refuses to start, with a
   message naming the field, the role key, and what to write instead. Earlier
-  versions took every one of those values quietly: your line was dropped without
-  a word, and where it was the only filter that role had, the child started with
-  **no tool filter at all** — every tool this preset registers, `bash`, `write`
-  and `edit` included. On a read-only reviewer that undid the read-only rule,
+  versions failed on those two groups differently, and only one of them failed
+  quietly. An **empty** value was dropped without a word, and where it was the
+  only filter that role had, the child started with **no tool filter at all** —
+  every tool this preset registers, `bash`, `write` and `edit` included. A value
+  that was **not a list** was passed on as the filter as it stood, so the role
+  failed tool-subagent's own config schema on every start: wrong, but loudly. On a read-only reviewer that undid the read-only rule,
   which this repository learned the hard way twice: with only `write` and `edit`
   denied, a reviewer wrote a file with `echo hello > file`, and with the shell
   denied as well its own tool list still held `workflow`, `ralph` and
