@@ -46,7 +46,7 @@ for (const verb of ["commit", "add", "branch", "push", "stash", "switch"]) {
 
 check(
   "it has no git worktree command of its own either",
-  flatText.includes("no `git worktree` command of your own"),
+  flatText.includes("no `git worktree` command of any kind"),
   "the role could create or move a worktree itself",
 );
 

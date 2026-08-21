@@ -140,7 +140,7 @@ Say this as precisely as it is, in your report and anywhere else:
 ## Git
 
 You never use git for writing. No `commit`, no `add`, no branch, no push, no
-`git stash`, no `git switch`, and no `git worktree` command of your own. You work
+`git stash`, no `git switch`, and no `git worktree` command of any kind. You work
 inside the worktree whose path the PM's briefing gives you, and you stay in it:
 the PM made that tree, and the PM merges it, commits your work and removes it.
 

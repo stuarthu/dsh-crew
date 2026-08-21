@@ -624,10 +624,30 @@ assume.
       need is one symbolic link:
 
       ```sh
+      cd <tests tree path>
       mkdir -p node_modules/@deepseek-ai
       ln -s ~/.dsh/profiles/node_modules/@deepseek-ai/dsh-tool-subagent \
             node_modules/@deepseek-ai/dsh-tool-subagent
       ```
+
+      Then the same two commands inside `<code tree path>`. **Both paths in
+      them are relative, so the `cd` is part of the step, not a nicety** —
+      run them from your own working copy and you have put a link into the
+      main checkout instead of into the tree that needed one.
+
+      **Read through that link; never write through it.** It points at the
+      dsh installation this machine actually uses, so anything inside the
+      tree that writes into that package directory — a test dropping a
+      fixture, a generate step, a package manager install, a delete — reaches
+      the real installation, which every later session loads. Removing the
+      `node_modules` directory in a tree is safe, because that only removes
+      the link. Writing through it is not. **Never run a package manager
+      install inside either tree**, which is also why neither engineer may
+      add a dependency.
+
+      Put the two trees in a private directory of your own beside the
+      repository, not in a shared temporary directory where another account
+      on the machine could read the work.
 
       **Leave that out and nothing fails — the checks get quietly weaker.** A
       check that cannot run one part of itself may say so and carry on, and the
