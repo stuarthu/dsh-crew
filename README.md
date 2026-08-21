@@ -483,9 +483,14 @@ already agreed on is not clear.
 - **Not where the two halves would have to change the same file.** The two file
   lists of a paired task may not overlap, and one file cannot be in both of them.
   The task is split until the halves own different files, or it stays `solo`.
-- **You stamp it, together with the whole table, in one yes.** The architect
-  proposes a shape for every row when it writes the task table, and you confirm
-  the shapes with the rest of it — never row by row. The PM brings a default and
+- **It is confirmed with the table it sits in, never row by row.** The architect
+  proposes a shape for every row when it writes the task table. On small work the
+  PM writes that table itself and you stamp it with the rest of the opening
+  document — but small work has no paired shape at all. On big work, the only
+  road where a paired task can exist, the architect writes the table after you
+  have already confirmed the opening document, so the PM confirms the shapes and
+  you meet them at the milestone review. Either way it is one yes for a whole
+  table: a job of fifty tasks is not fifty decisions.
   a list of exceptions, each exception with its reason: a DoD section it could
   not word sharply, a row sitting on a module boundary contract, a mistake that
   would cost money, permissions or data, or an earlier defect in that part of the

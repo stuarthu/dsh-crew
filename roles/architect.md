@@ -345,8 +345,13 @@ is red over names instead of over behaviour. The decision therefore sits in two
 places, and both were already in the flow. The PM decides at the start of the
 job whether the work needs an architect. You propose, task by task, which tasks
 are `pair`. You do not ask the user yourself: your proposal reaches them with
-the whole table at step 5, **Confirm**, and they stamp the shapes together with
-everything else in it.
+the whole table. Which of you confirms it depends on the road. On small work the
+PM writes that table itself and the user stamps it at step 5, **Confirm** —
+and small work has no paired shape, so you are not there at all. On the road
+you are
+on, the user has already confirmed the opening document by the time you write
+this table, so the PM confirms the shapes and the user meets them at the
+milestone review. Never ask the user yourself.
 
 Mark a task `pair` only where the shape earns its cost — its DoD section is
 sharp enough that a second, independent reading of it is worth paying for, and

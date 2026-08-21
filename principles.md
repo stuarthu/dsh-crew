@@ -978,10 +978,10 @@ buys is timing — a missing review is visible the same day instead of twenty ta
 later. The rule it enforces is honesty, not effort: a skip is allowed, a silent
 skip is not.
 
-The paths the table
-names but this repository does not hold yet — `docs/design/prd.md`,
-`docs/design/hld.md`, `docs/design/api/`, `docs/release/`, `docs/research/` — are
-steps no job here has run, and that is not a misalignment.
+Some of the paths that table names are here and some are not, and the split
+moves as jobs run: `docs/design/prd.md` and `docs/design/hld.md` arrived with
+the first job that needed them, while `docs/design/api/`, `docs/release/` and
+`docs/research/` are steps no job here has run, and that is not a misalignment.
 
 **Why (ours): 75 acceptance checks were lost in an hour.** The closing migration
 step named five destinations — a rule to `principles.md`, a decision about how to
@@ -1144,7 +1144,15 @@ section.
 
 The solo shape of principle 6 is unchanged and stays the default. Which tasks are
 paired is written in the task row in `docs/design/tasks.md`, proposed by the
-architect, and stamped by the user together with the rest of the table.
+architect when it writes that table. Who confirms it depends on which road the
+job is on, and a paired task only ever exists on one of them. On small work the
+PM writes that table itself and the user stamps it with the rest of the opening
+document — but small work has no paired shape at all. On big work, the only
+road where a paired task can exist, the architect writes the table after the
+user has
+already confirmed the opening document, so the PM confirms the shapes and the
+user meets them at the milestone review
+(`docs/decisions/crd/0021-who-stamps-the-shape-on-big-work.md`).
 
 **Why (ours).** Principle 6 buys a unit test that was red first, but in the solo
 shape that unit test is written by the agent that is about to write the code, so

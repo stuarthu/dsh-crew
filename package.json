@@ -15,7 +15,7 @@
       ]
     }
   },
-  "description": "DeepSeek Harness (dsh) plugin: run work as a small crew of role agents (product manager, researcher, architect, engineer, QA, code reviewer, security reviewer, doc reviewer) that talk through files on disk, with the PM as the only voice to the user.",
+  "description": "DeepSeek Harness (dsh) plugin: run work as a small crew of role agents (product manager, researcher, architect, engineer, test engineer, code engineer, QA, code reviewer, security reviewer, doc reviewer) that talk through files on disk, with the PM as the only voice to the user.",
   "keywords": [
     "dsh",
     "dsh-plugin",
