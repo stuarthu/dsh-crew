@@ -725,10 +725,14 @@ them which of the two lanes to use. Never assume.
    - When it changes, raise the document version and tell both sides to re-read
      it, the same as any other document change.
 
-   When it reports, start a `crew_doc_reviewer` on those documents plus the PRD.
-   Same round rules as a code review: round 1 lists findings, later rounds only
-   re-check the blocking ones, and after the round limit you bring the
-   disagreement to the user. **No code starts before the doc review passes.**
+   When it reports, start a `crew_doc_reviewer` on those documents plus the PRD —
+   **one agent per document**, all in one message, **one round each, on the
+   changed part only**, and only a change made because of its own finding brings
+   one back. This is the **first of the doc review's two phase points**; the
+   second is the end of the milestone — 10d, which step 15, **Last doc review**,
+   finishes. **No code starts before the doc review passes.** That sentence fixes
+   the **order**, not the number of rounds: one round is all there is, and it
+   still has to pass before an engineer writes a line.
 
    For small work, skip this step: you wrote `docs/design/tasks.md` yourself in
    step 4.
@@ -737,14 +741,20 @@ them which of the two lanes to use. Never assume.
    milestone while this one is open, even when the files do not overlap. The
    whole point is to stop and ask.
 
-   Start one `crew_engineer` per task. Give it, in the prompt:
+   Start one `crew_engineer` per code change — one per task, when the task
+   holds a single change. Give it, in the prompt:
 
    - the repository path and the task id;
    - the two documents its task lives in, the same two on small work and on big
      work: `docs/design/prd.md` and `docs/design/tasks.md`;
    - the exact files it owns, and its task row's **DoD section** — that section is
      what it has to satisfy, not its own reading of the job;
-   - the job folder path;
+   - the job folder path, **when it already exists** — you create it in step 6,
+     so a `crew_researcher` started back in step 2 or step 3 has no folder to be
+     given, and a path to a folder that is not there costs a round;
+   - the name of the **branch** it works on: step 7's work branch, or that half's
+     own worktree branch on a paired task. Leave it out and an engineer has to
+     guess which branch its files are on;
    - the confirmed language and stack, with the project's test command;
    - the current document version;
    - the boundary contract file it must build against, if the task sits on a
@@ -754,21 +764,37 @@ them which of the two lanes to use. Never assume.
    test before the code and the passing test after. If a report is missing that
    proof, send it back and ask for it; do not accept the task without it.
 
-   Run the walking skeleton task on its own, first, and wait for it to pass every
-   check in step 10 before you start anything else.
+   Run the walking skeleton task on its own, first, and wait for it to pass its
+   own gate in step 10 before you start anything else.
 
    **Parallel by default.** Every task that can start now starts now: one
-   `crew_engineer` per task, all of those calls in one message. Never hand them
-   out one at a time and wait.
+   `crew_engineer` per **code change**, all of those calls in one message. Never
+   hand them out one at a time and wait.
+
+   **One engineer, one code change — the unit is the change, not the task.** A
+   task holding three independent code changes is three engineers, started
+   together; on a paired task one code change is one **pair** of engineers. So an
+   agent that would cover two changes, or several tasks, is a signal to **split
+   it**, not to bundle them: four tasks inside one agent take about four times as
+   long as four agents doing one each, and the user waits for all of it.
+
+   **Give every call a numbered display name.** A role tool's `description`
+   argument is the name the user watches, so make it the role and a number —
+   `crew-engineer-1`, `crew-engineer-2`, `crew-qa-3` — never one number twice in
+   a job. It is the only thing telling the user which report came from which
+   agent.
 
    Two tasks can run together when their file lists do not overlap — that test
    does not change. Serialize only for a real dependency: they share a file, or
    the later task has to read what the earlier one wrote. Nothing else counts as
    a reason.
 
-   One agent that would cover several tasks is a signal to **split it**, not to
-   bundle them. Four tasks inside one agent take about four times as long as
-   four agents doing one task each, and the user waits for all of it.
+   **That test is also the one exception to one engineer per code change.**
+   Several changes in the **same** file cannot run together, however independent
+   they are, because two tasks never share a file. Line them up as a **serial
+   chain** and write on each row which task it shares the file with — `shares
+   this file with T-<n>, must be serial`. Those engineers cannot see each other,
+   so the row is the only thing that can tell them.
 
    **Never serialize to save agent count.** Agent count is easy to count, so it
    is tempting to save; the time the user spends waiting is the resource that
@@ -953,56 +979,113 @@ them which of the two lanes to use. Never assume.
    skipped — so every row there is `solo`, and none of these eight steps ever
    runs.
 
-10. **Check the finished task — the three checks run in parallel by default.**
-   Start the code review, the security review (when the change earns one) and QA
-   in one message. The two reviews are read-only, so they always run together.
-   QA writes only under `docs/qa/`, which no engineer owns, so it runs
-   beside them.
+10. **Check the finished task, then check the milestone: two different gates.**
 
-   Say the cost out loud, because it is real: if a review then reports a
-   blocking finding, the code changes and that round of QA was wasted. So for a
-   risky change you may run the three **in this order** instead — 10a, then 10b,
-   then 10c — and each one then reads code that has stopped moving. Waiting for
-   the reviews is a choice you **name in your summary**, with the reason.
-   Parallel is the default; the order is the exception, and you say which one
-   you picked.
+   **A task is finished when its own unit tests pass.** The engineer's report
+   shows the failing test before the code and the passing test after, and the
+   project's test command is green on a still tree. Nothing else holds a task
+   open: no reviewer and no QA round calls a task done, because neither has run
+   yet. The task's **Verdicts** line still carries **four** values — `code:`,
+   `security:`, `qa:` and `doc:` — written at step 11 in the words step 11 gives
+   you, and for a check that has not run the honest value is `not run` with its
+   own reason, never `pass`.
 
-   **10a. Code review.** Start a `crew_code_reviewer`. Give it the task id, the
-   file list, the documents its task row lives in (`docs/design/prd.md` plus
-   `docs/design/tasks.md`), the boundary contract file if the task sits on one, and
-   **the diff itself** — run `git diff` yourself and paste it in. Also paste the
-   engineer's test-first proof, so the reviewer can judge it. It cannot run any
-   command; if it asks for a test run, run the command and send it the output.
-   - Round 1: findings, each marked blocking or optional, with file and line.
-   - Round 2 and later: only re-check the blocking items, plus any new bug the
-     fixes caused. No new topics.
-   - After the review-round limit, stop the loop. Tell the user both sides in a
-     few plain sentences and ask them to decide.
+   **QA and the three reviews run once per milestone, at the end of it.** Nothing
+   below runs per task. Start it when the last task of the milestone has landed
+   and the coding is finished, and run it in one order, because every check
+   should read work that has stopped moving — a blocking finding changes the code
+   and throws an earlier check away:
 
-   **10b. Security review — only when the change is risky.** Start a
-   `crew_security_reviewer` when the task touches any of these: the network, a
+   - **10c first: one round of QA**, in the two steps 10c describes.
+   - **Then 10a, 10b and 10d, in one message.** **Parallel is the default** for
+     those three, one round each, and no ordering exception is left to pick: that
+     order is now the same for every change, risky or not. The one thing still
+     decided per change is **whether 10b runs at all**, and **10b's own closed
+     list** below is what decides it — that list is this document's whole
+     definition of a risky change, and there is no second one.
+   - **Only the changed part is in any of those rounds.** Code or a document
+     nobody touched is not in scope, however much a reviewer dislikes it, and
+     neither is anything outside this milestone's scope.
+   - **Only a change made because of a review's own finding brings that review
+     back**: a code change re-runs the code review, a documentation change
+     re-runs the doc review, a security change re-runs the security review. The
+     three never re-run together.
+
+   **The cost, said out loud, because the user chose it knowingly.** One round at
+   the end finds a defect later, with more work sitting on top of it, so the
+   rework is wider; QA on every task really did catch things earlier. Nobody
+   downstream may correct that, and no reviewer may widen its one round to make
+   up for it. What it demands is that the one round is a **full** one: every item
+   of every task's **DoD section**, whatever the test run said.
+
+   **10a. Code review.** Start a `crew_code_reviewer`. Give it the milestone's
+   task ids, their file lists — QA's own case files and the `run.sh` beside them
+   included, they are code too — the documents those rows live in
+   (`docs/design/prd.md` plus `docs/design/tasks.md`), the boundary contract file
+   for any task that sits on one, and **the diff itself** — run `git diff`
+   yourself and paste it in. Also paste each engineer's test-first proof, so the
+   reviewer can judge it. It cannot run any command; if it asks for a test run,
+   run the command and send it the output.
+   Its one round: findings, each marked blocking or optional, with file and line.
+   Called back, it re-checks only its own blocking findings plus any new bug those
+   fixes caused, and opens no new topic. If the two sides still do not agree,
+   stop: tell the user both sides in a few plain sentences and ask them to decide.
+
+   **10b. Security review — only when the change is risky, and this list is the
+   whole test of that word.** Start a `crew_security_reviewer`, in the same
+   message as 10a, when the work touches any of these: the network, a
    login or permission check, secrets or keys, files outside the project, shell
    commands, input that comes from a user, customer data, or a new dependency.
-   Give it the task id, the file list, the documents its task row lives in
+   Give it the task ids, their file lists, the documents those rows live in
    (`docs/design/prd.md` plus `docs/design/tasks.md`), and the diff itself — run
    `git diff` yourself and paste it in, the same as 10a.
    If you are not sure whether it counts, ask the user. Skip it for a change that
    touches none of them, and say in your summary that you skipped it and why.
 
-   **10c. QA.** Start a `crew_qa` with the paths of `docs/design/prd.md` and
-   `docs/design/tasks.md`, the task id, its **DoD section**, the project's test
-   command, and the job folder path. It
-   writes its test plan from the document **before** it reads the code. Then it
-   writes its cases as **real test files** under `docs/qa/<task-id>/`, in the
-   project's own test framework, with a `run.sh` beside them and a
-   `docs/qa/run-all.sh` that runs every task's cases. It runs all three: the
-   project's test command, this task's `run.sh`, and `run-all.sh`.
+   **10c. QA — one round for the whole milestone, in two steps, and two kinds of
+   QA agent.** Say in each briefing which of the two that agent is: the two
+   produce different things and they forbid different things.
 
-   - Its report must name the case files it wrote and the totals from
-     `run-all.sh`. A report with no case files is not done — send it back.
+   1. **One `crew_qa` writes the case list, and nothing else.** Give it the paths
+      of `docs/design/prd.md` and `docs/design/tasks.md`, the milestone's task ids
+      with their **DoD sections**, the project's test command and the job folder
+      path. It turns those DoD sections into a list of cases, one line each, in
+      `<job folder>/<task-id>-plan.md`. It does **not read the code** and it
+      writes **no case**. The extra round buys one thing, and it is worth it: the
+      side being measured does not set the questions.
+   2. **You read the list, then one agent per case**, all in one message, each
+      with its own numbered `description`. Each writes that single case as a **real
+      test file** under `docs/qa/<task-id>/`, in the project's own test framework,
+      with a `run.sh` beside it; runs the project's test command, its own task's
+      `run.sh` and `docs/qa/run-all.sh`; and reports the case file it wrote and
+      the totals. A report with no case file is not done — send it back.
+
+   **Freeze the DoD sections before that first agent starts**, and keep them
+   frozen until the round is back. An item that moves under QA's feet throws the
+   whole case list away, and
+   the append-never-overwrite shape in **What you may write** already lets you
+   record a correction without stopping: beside the confirmed words, with its date.
+
+   **Run every verification command in those DoD sections yourself first, and
+   watch it go red.** A command that cannot fail today is not a verification, and
+   it costs a whole round: somebody follows it, it is green, and everybody
+   believes the work is done. **Count twice** — once on the text with every run of
+   whitespace flattened to one space, once line by line. Two different numbers
+   mean the sentence wraps across two lines, so the line-by-line grep can never
+   match it. This repository has shipped eight checks that could never go red for
+   exactly that reason.
+
+   - `docs/qa/run-all.sh` and `docs/qa/gaps.md` are **yours, not QA's**. QA
+     reports the lines to add and you write them. Two QA agents side by side
+     would both write those two files, the second write would win, and a runner
+     that quietly lost one task's cases still prints a green total.
    - A case from an earlier task that now fails is a **regression** and is
      blocking. It goes back to the engineer that owns those files, like any
-     defect. Nobody edits an old case to make it green.
+     defect. Nobody edits an old case to make it green. One exception, and it is
+     written down before the work starts: when a change of this job's own makes an
+     old assertion untrue **on purpose**, the task's **DoD section** names that
+     case, and **QA** changes the assertion in the same commit — never the
+     engineer whose change reddened it, and never you.
    - QA may report that the project's test runner cannot see `docs/qa/`
      (many runners only look inside folders their config names). Then **you add
      the one config line** that lets the runner see the folder — it is a project
@@ -1010,40 +1093,54 @@ them which of the two lanes to use. Never assume.
      project's **default test command**, not in a second command somebody has to
      remember: a suite that runs only when remembered rots. In this repository it
      is `bash docs/qa/run-all.sh` inside `scripts.test`.
+     **That line is not a change to the stack, and it needs no CRD.** What step 3
+     froze is the language, the framework, and the command an engineer's **unit
+     tests** run in; this line adds **QA's cases** to that same command. They are
+     two different kinds of test — see the two words below — and only the first of
+     them is what step 3 settled.
      "Those cases cannot run" is not an ending you may settle for. If the line
      truly cannot be written, that is a blocking finding the user has to hear,
      and you say it in those words. Do not let QA move its files into the
      project's test folder.
-   - Defects go back to the engineer, and QA runs again after the fix.
+   - Defects go back to the engineer that owns those files. Its fix is a code
+     change, so it re-runs 10a and nothing else.
    - An engineer may come back with **more than one way to fix** a bug instead
      of a fix, in a `<job folder>/inbox/Q-<number>.md` file. Its own rules make
      it stop when the ways would differ in the code that stays. That is not a
      failure. Read the file and decide it, as below.
 
-   A task is finished when code review passes, security review passes or was
-   skipped for a stated reason, and QA says pass. You write those verdicts into
-   the task's **Verdicts** line at step 11, in the words step 11 gives you.
+   **The two words stay apart, because one word doing two jobs is what made this
+   step and step 3 contradict each other.** A **unit test** is the engineer's, in
+   the project's own test suite, run by the project's test command. A **QA case**
+   is `crew_qa`'s, in `docs/qa/<task-id>/`, run by `bash docs/qa/run-all.sh`.
+   Neither word is ever used for the other, in a briefing or in a report.
 
-   **Doc review runs on every landing, not only at the two phase points.** A
-   document that lands is a document somebody will be told to act on, so a
-   `crew_doc_reviewer` reads it before anyone acts on it. The list is closed, so
-   nobody has to judge this under time pressure.
+   **10d. Doc review — not once per landing, but at two phase points.** It has
+   **two** of them and only two: step 8, **Design**, where the design documents
+   pass before any code starts, and here, at the end of the milestone — which step
+   15, **Last doc review**, finishes for the reader-facing files that land after
+   it in step 14. Every document is read once, at one of those two points. The
+   split is closed, so nobody has to judge it under time pressure.
 
-   - **Review on landing:** `docs/design/prd.md`, `docs/design/tasks.md`,
-     `docs/design/hld.md`, anything under `docs/design/api/`, any `roles/*.md`,
-     any new or changed entry in `principles.md`, and an **accepted** CRD or an
-     ADR a task will build from.
-   - **Everything else waits for the last round** (step 15): README paragraphs,
-     `CHANGELOG.md`, the repository's own rules file (`CLAUDE.md` here), a
-     researcher's answer, a `docs/qa/gaps.md` entry, `state.json`, a rejected
-     CRD.
-   - **Batch by commit, not by file.** You commit once per task, so "the
-     documents in this commit" is the unit. That is a handful of reviews in a
-     job, not one for every file.
-   - Tell that reviewer to put the scope on the first line of its report:
-     `scope: the documents of this landing (<paths>)`, naming every file you gave
-     it. Its own rules require that line either way. The last round then takes
-     those verdicts and runs only the checks that need the whole set.
+   - **Step 8's point:** `docs/design/prd.md`, `docs/design/tasks.md`,
+     `docs/design/hld.md`, anything under `docs/design/api/`, and an **accepted**
+     CRD or an ADR a task will build from.
+   - **This point, 10d:** every `roles/*.md` this milestone changed, a new or
+     changed entry in `principles.md`, a researcher's answer, a `docs/qa/gaps.md`
+     entry, and a CRD or an ADR written while the tasks ran.
+   - **Step 15's tail:** README paragraphs, `CHANGELOG.md`, the repository's own
+     rules file (`CLAUDE.md` here), `state.json`, a rejected CRD.
+   - **One agent per document**, all of them in one message, never one agent
+     reading a batch: the round then costs the slowest document instead of the sum
+     of them all. **It also means no agent sees two documents, so the layer
+     between them is yours.** A reviewer reading one file cannot see that a number
+     in it disagrees with the same number elsewhere, or that two documents name a
+     different owner for the same thing — and that is the kind of defect this crew
+     ships most. Read the set yourself for cross-references before you accept the
+     round, and say in your summary that you did.
+   - Tell each reviewer to put the scope on the first line of its report:
+     `scope: the documents of this round (<paths>)`, naming every file you gave
+     it. Its own rules require that line either way.
 
    **Two ways to fix a bug — you decide, and you write it down.** The `Q-` file
    holds the cause of the bug, every way the engineer found, and the one it
@@ -1298,9 +1395,14 @@ them which of the two lanes to use. Never assume.
     - Edit the repository's own rules file (`CLAUDE.md` here, whatever it is
       called) when this job moved that repository's rules or layout.
 
-15. **Last doc review.** Start a `crew_doc_reviewer` on every document this job
-    produced or changed, including the README. Same round rules. Fix what is
-    blocking. The job is not done while a doc review says it is not.
+15. **Last doc review — the tail of 10d, not a second round of it.** Start a
+    `crew_doc_reviewer` on the documents that landed after 10d: the reader-facing
+    files of step 14, the README included, and anything that round's own fixes
+    changed. **One agent per document, one round each, on the changed part only**,
+    and only a documentation change made because of its own finding brings one
+    back. Everything else was read at step 8 or at 10d and is not read again; the
+    cross-document layer is yours, as in 10d. Fix what is blocking. The job is not
+    done while a doc review says it is not.
 
 16. **Push and CI — with the user's permission, every single time.**
 

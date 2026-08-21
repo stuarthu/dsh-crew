@@ -1915,7 +1915,7 @@ T-63                                             （一个人做，别的全部�
 
 - **里程碑**：M1
 - **形状**：单人（solo）
-- **拥有的文件**：`roles/pm.md`（从 T-64 接手；**只改第 9、10、15 步**）、
+- **拥有的文件**：`roles/pm.md`（从 T-64 接手；**只改第 8、9、10、15 步**）、
   `tools/verify-mount.mjs`（从 T-64 接手）。两个文件在交工时交给 **T-66**。
 - **测试文件**：`tools/verify-mount.mjs`
 - **依赖**：T-64
@@ -1925,6 +1925,7 @@ T-63                                             （一个人做，别的全部�
   第 10 步那一段同时写着「三道检查怎么跑」和「一个任务什么时候算做完」，
   A1b、A1c、B4、B6、B7 五项改的是**同一段话**。PRD 的 B4 自己就写着
   「A1c 会重写『做完』的定义，所以这两条必须在同一个任务里做」。
+- **第 8 步是后来加进这一环的（2026-08-21，PM 定案）。** 我拆链的时候四环的范围加起来漏了整整一节：T-64 是通道段与第 1、2、12 步，T-65 原本是第 9、10、15 步，T-66 是第 11 到 18 步，T-67 是第 4 步——**第 8 步一个都没沾**。而第 8 步里有一处真矛盾，**是本作业自己造出来的**：A1b 改了 Hard rules（现在写着一个里程碑 `one round each of the code, security and doc reviews`），却没有改第 8 步，所以同一份文件现在一个里程碑有两到三次文档评审、而它的硬规则说一次。**这正是 Part B 那八条的形状。** 它放进 T-65 而不是新开一环，理由是第 8 步只有那一处措辞要改，而 T-65 本来就要改第 15 步里**一模一样的一句**——两处放在一起改才不会一处改一处不改；新开一环要给本作业最贵的那条串行链再加一次交接，为了两句话不值。
 - **它要踩到两道故意脆的钉子**，所以它必须同时拥有 `tools/verify-mount.mjs`：
   `A task is finished when code review passes`（A1c、B4 改写它）、
   `Parallel is the default`（A1b、A1c 之后第 10 步不再是「三道检查默认并行、逐任务跑」，
@@ -1950,10 +1951,13 @@ T-63                                             （一个人做，别的全部�
 | 14 | **B6：`docs/qa/run-all.sh` 和 `docs/qa/gaps.md` 归 PM**，QA 只写 `docs/qa/<task-id>/`，要加的行报给 PM。理由：两个并行的 QA 同时写这两份文件，**第二个写赢而且不报错** | 读第 10 步和第 18 步；`flat roles/pm.md \| grep -o 'docs/qa/gaps.md' \| wc -l` **不减**（今天 4 处，`verify-mount.mjs` 的门槛只是「≥ 3」，删掉一处不会红——那一格才是保险） |
 | 15 | **B7：两种「测试」的词分开**——**单元测试**是 engineer 写的、跑在项目的测试命令里；**QA 用例**是 QA 写的、跑在 `bash docs/qa/run-all.sh` 里。分开之后第 10c 步就没有要改的东西了：那条「PM 加一行配置」的指令**不再说它在改 stack**，所以它和「stack 只能通过 CRD 改」不再冲突 | 读第 10c 步和第 3 步；两处措辞不再互相矛盾；`flat roles/pm.md \| grep -o 'unit test' \| wc -l` 不减（改前 13 处） |
 | 16 | **B13 的四个从句**（都在第 9、10、15 步）：① 第 10 步「风险大就按 10a→10b→10c 顺序跑」那句话要**指向** 10b 自己那份封闭清单；② 「文档评审在每次落地都跑，不只在两个阶段点」要**点名那两个阶段点**（第 8 步和第 15 步）；③ engineer 简报里的「作业文件夹路径」要加一句限定（作业文件夹在第 6 步才建，而第 3 步就可能启动 researcher）；④ engineer 简报的清单里**加上分支名**（今天 7 项里没有它） | 四处各读一遍；每一处都能指出改动 |
-| 17 | **不动 T-63、T-64 写的段落** | `git diff roles/pm.md` 的每一块都落在第 9、10、15 步；T-63 的两个锚串各 1 处；`flat roles/pm.md \| grep -oi 'both lanes' \| wc -l` 仍然是 0；带反引号的 `quick` 的处数和 T-64 报告里的数一致 |
-| 18 | **现有钉子一个不破** | `node tools/verify-mount.mjs` 绿；`bash docs/qa/T-01/run.sh`、`docs/qa/T-56/run.sh`、`docs/qa/T-62/run.sh`、`docs/qa/T-42/run.sh` 全绿；`roles/pm.md` 第 1 行未改动 |
-| 19 | **`npm test` 全绿，跑两次一致**；用例数不少于 193 | `npm test`；`ls docs/qa/*/case-*.mjs \| wc -l` |
-| 20 | **报告里给出两个文件改动前后的行数**，T-66 从这些数接着；并说明 `roles/pm.md` 仍然不超过 1900 行 | 读报告；`wc -l roles/pm.md` |
+| 17 | **第 8 步和第 15 步的「多轮」措辞改成 A1b 的一轮形状。** 两处今天都写着 `Same round rules`：第 8 步（728–731 行）是 `Same round rules as a code review: round 1 lists findings, later rounds only re-check the blocking ones, and after the round limit you bring the disagreement to the user.`，第 15 步（1301–1303 行）是 `Same round rules.`。两处都改成：**一轮**、只看改动的部分、只有**文档改动**才把文档评审叫回来。**两处必须一起改**——只改一处，这份文件就仍然自相矛盾，只是矛盾换了个地方。 | `flat roles/pm.md \| grep -oi 'same round rules' \| wc -l` ＝ **0**（改前 **2** 处）；读第 8、15 步，两处说的都是一轮 |
+| 18 | **`No code starts before the doc review passes.` 这一句必须留着。** 它管的是**顺序**（设计文档过了才开始写代码），**不是轮数**——A1b 取消的是多轮，没有取消这道顺序门。**这一格是专门给它上的保险**：改上一格的时候顺手把它删掉，是这里最可能发生的事，而删掉它就等于让 engineer 在设计还没过审的时候开工 | `flat roles/pm.md \| grep -o 'No code starts before the doc review passes' \| wc -l` ＝ **1**（改前 1 处，改后必须还是 1）|
+| 19 | **三处说文档评审轮数的地方要说同一件事，一处都不许矛盾**：第 8 步、第 15 步、以及 Hard rules 里那句 `one round each of the code, security and doc reviews`（T-64 写的，**本任务不许动它**）。另外第 10 步那句 `Doc review runs on every landing, not only at the two phase points.` 说的是**旧形状**，它和 A1b 直接打架，**跟着一起改**（第 16 格的第 ② 条本来只要求给它补上「那两个阶段点」的名字，现在它要连形状一起改） | 四处并排读；四处说的是同一个轮数。`flat roles/pm.md \| grep -o 'on every landing' \| wc -l` ＝ **0** |
+| 20 | **不动 T-63、T-64 写的段落** | `git diff roles/pm.md` 的每一块都落在第 8、9、10、15 步；T-63 的两个锚串各 1 处；`flat roles/pm.md \| grep -oi 'both lanes' \| wc -l` 仍然是 0；带反引号的 `quick` 的处数和 T-64 报告里的数一致 |
+| 21 | **现有钉子一个不破** | `node tools/verify-mount.mjs` 绿；`bash docs/qa/T-01/run.sh`、`docs/qa/T-56/run.sh`、`docs/qa/T-62/run.sh`、`docs/qa/T-42/run.sh` 全绿；`roles/pm.md` 第 1 行未改动 |
+| 22 | **`npm test` 全绿，跑两次一致**；用例数不少于 193 | `npm test`；`ls docs/qa/*/case-*.mjs \| wc -l` |
+| 23 | **报告里给出两个文件改动前后的行数**（改前：`roles/pm.md` **1701** 行、`tools/verify-mount.mjs` **1235** 行），T-66 从这些数接着。**行数预算是三个 engineer 共用的，而它们互相看不见，所以只有任务行能告诉它们**：`roles/pm.md` 今天 **1701 行**，PRD 的发布标准给的硬上限是 **1900**，也就是 T-65、T-66、T-67 三环**一共**只剩 **199 行**。超了怎么办 PRD 已经写了答案：**先合并重复段落，再加东西**——**不许删规则，也不许抬上限**。 | 读报告；`wc -l roles/pm.md` ≤ 1900 |
 
 ---
 
@@ -1990,7 +1994,7 @@ T-63                                             （一个人做，别的全部�
 | 11 | **不动 T-63、T-64、T-65 写的段落** | `git diff roles/pm.md` 的每一块都落在第 11–18 步或 Hard rules；T-63 的两个锚串各 1 处；`flat roles/pm.md \| grep -oi 'both lanes' \| wc -l` ＝ 0；T-65 改写的「做完」那句话原样在 |
 | 12 | **现有钉子一个不破**：八个合并清理串（`git merge --no-ff`、`git branch -d crew/`、`git push origin --delete` **两处**、`git branch --merged main`、`--ff-only`、`origin/crew/`、`publishCheck`、作业 slug 的正则）、`` `scope: ``、`docs/qa/gaps.md` 4 处、不含 `{{`、不含 `dod.md`、第 1 行未改动 | `node tools/verify-mount.mjs` 绿；`bash docs/qa/T-01/run.sh` 绿；`flat roles/pm.md \| grep -o 'git push origin --delete' \| wc -l` ＝ 2 |
 | 13 | **`npm test` 全绿，跑两次一致**；用例数不少于 193 | `npm test`；`ls docs/qa/*/case-*.mjs \| wc -l` |
-| 14 | **报告里给出两个文件改动前后的行数**，T-67 从这些数接着 | 读报告；`wc -l roles/pm.md` ≤ 1900 |
+| 14 | **报告里给出两个文件改动前后的行数**，T-67 从这些数接着。**行数预算是三个 engineer 共用的，而它们互相看不见，所以只有任务行能告诉它们**：`roles/pm.md` 今天 **1701 行**，PRD 的发布标准给的硬上限是 **1900**，也就是 T-65、T-66、T-67 三环**一共**只剩 **199 行**。超了怎么办 PRD 已经写了答案：**先合并重复段落，再加东西**——**不许删规则，也不许抬上限**。 | 读报告；`wc -l roles/pm.md` ≤ 1900 |
 
 ---
 
@@ -2030,7 +2034,7 @@ T-63                                             （一个人做，别的全部�
 | 12 | **不动前面三环写的段落** | `git diff roles/pm.md`：除了那 16 处路径替换和 4 处指针，别的改动都落在第 4 步 |
 | 13 | **现有钉子一个不破** | `node tools/verify-mount.mjs` 绿；`bash docs/qa/T-01/run.sh`、`docs/qa/T-56/run.sh`、`docs/qa/T-62/run.sh`、`docs/qa/T-42/run.sh`、`docs/qa/T-60/run.sh` 全绿；第 1 行未改动 |
 | 14 | **`npm test` 全绿，跑两次一致**；用例数不少于 193 | `npm test`；`ls docs/qa/*/case-*.mjs \| wc -l` |
-| 15 | **报告里给出 `roles/pm.md` 最终行数**，并说清它不超过 1900 行；**这一环是 `roles/pm.md` 这条链的终点，所有权在此结束** | `wc -l roles/pm.md` |
+| 15 | **报告里给出 `roles/pm.md` 最终行数**，并说清它不超过 1900 行；**这一环是 `roles/pm.md` 这条链的终点，所有权在此结束**。**行数预算是三个 engineer 共用的，而它们互相看不见，所以只有任务行能告诉它们**：`roles/pm.md` 今天 **1701 行**，PRD 的发布标准给的硬上限是 **1900**，也就是 T-65、T-66、T-67 三环**一共**只剩 **199 行**。超了怎么办 PRD 已经写了答案：**先合并重复段落，再加东西**——**不许删规则，也不许抬上限**。**这一环是最后一个，所以剩下多少预算全看前两环用了多少——不够就先合并，别删规则** | `wc -l roles/pm.md` |
 
 ---
 

@@ -812,22 +812,44 @@ function applyCapturingLogs(config, options) {
     // paragraph and this check goes red, so whoever rewords it edits this
     // string in the same commit. `Parallel is the default` would not do for
     // step 9 — that is step 10's own rule, which the next check pins on its own.
-    else if (!section.text.includes("Parallel by default")) fail("PM section is missing the string `Parallel by default` — step 9's parallel rule (one crew_engineer per task, all the calls in one message) has been dropped from roles/pm.md, or its heading was reworded. Put the rule back, or update this string in tools/verify-mount.mjs in the same commit");
+    else if (!section.text.includes("Parallel by default")) fail("PM section is missing the string `Parallel by default` — step 9's parallel rule (one crew_engineer per CODE CHANGE, which is one per task when the task holds one change, all the calls in one message) has been dropped from roles/pm.md, or its heading was reworded. Put the rule back, or update this string in tools/verify-mount.mjs in the same commit");
     // Step 10's parallel rule is the same hole one step later, and it was left
-    // open when step 9's was closed: delete the paragraph that starts the code
-    // review, the security review and QA in one message, and all four checks
-    // stayed green. So it gets its own pin. `Parallel is the default` is the
-    // anchor because it appears exactly once in roles/pm.md, in step 10. This
-    // is prose as well, and brittle on purpose for the same reason as the check
-    // above: reword that sentence and this check goes red, so a legitimate
-    // reword edits the prompt and this string in one commit.
-    else if (!section.text.includes("Parallel is the default")) fail("PM section is missing the string `Parallel is the default` — step 10's parallel rule (the code review, the security review and QA started in one message, with running them in order named in the summary as the exception) has been dropped from roles/pm.md, or that sentence was reworded. Put the rule back, or update this string in tools/verify-mount.mjs in the same commit");
+    // open when step 9's was closed: delete the paragraph that starts the
+    // milestone's reviews in one message, and all four checks stayed green. So it
+    // gets its own pin. `Parallel is the default` is the anchor because it
+    // appears exactly once in roles/pm.md, in step 10. This is prose as well, and
+    // brittle on purpose for the same reason as the check above: reword that
+    // sentence and this check goes red, so a legitimate reword edits the prompt
+    // and this string in one commit.
+    //
+    // WHAT THE RULE SAYS NOW, because the message below described a shape that
+    // was cancelled and a wrong failure message is worse than none: CRD 0020
+    // moved QA and the three reviews out of the per-task loop. Step 10 runs them
+    // once per milestone — 10c (QA) first, then 10a, 10b and 10d started in ONE
+    // message, one round each, on the changed part only. The "run them in order
+    // for a risky change" exception this message used to name is gone: the order
+    // is now the same for every change. Matched on the flattened text, so the
+    // sentence may wrap.
+    else if (!flat(section.text).includes("Parallel is the default")) fail("PM section is missing the string `Parallel is the default` — step 10's parallel rule (the milestone's three reviews, 10a, 10b and 10d, started in one message, one round each, on the changed part only, after 10c's single round of QA) has been dropped from roles/pm.md, or that sentence was reworded. Put the rule back, or update this string in tools/verify-mount.mjs in the same commit");
     // Step 10's finish gate. This is the rule the crew actually broke: 20 tasks
     // were called done with no code review at all, and nothing in the system
     // noticed. It carries no command and no path, so the pin is prose and brittle
     // on purpose (ADR 0004, ADR 0007) — a legitimate reword edits the prompt and
     // this string in one commit.
-    else if (!section.text.includes("A task is finished when code review passes")) fail("PM section is missing `A task is finished when code review passes` — step 10's finish gate (code review, security review or a stated skip, and QA pass) has been dropped or reworded in roles/pm.md. This crew ran 20 tasks without it. Put it back, or update this string in tools/verify-mount.mjs in the same commit");
+    //
+    // THE GATE ITSELF CHANGED, and this pin changed with it in the same commit.
+    // CRD 0020 took QA out of the per-task loop and A1c redefined "finished": a
+    // task is finished when its OWN UNIT TESTS pass, because at that moment no
+    // reviewer and no QA agent has run — they run once per milestone, at the end.
+    // What did NOT change is the Verdicts line: still four values, `code`,
+    // `security`, `qa` and `doc`, and the honest value for a check that has not
+    // run is `not run` with its reason, never `pass`. The old sentence is pinned
+    // as absent below, so the three-check gate cannot come back by accident.
+    // Matched on the flattened text, so the sentence may wrap across two lines —
+    // the raw match this check used to do was one reword away from being a check
+    // that could never go red.
+    else if (!flat(section.text).includes("A task is finished when its own unit tests pass")) fail("PM section is missing `A task is finished when its own unit tests pass` — step 10's finish gate has been dropped or reworded in roles/pm.md. It is the whole definition of a finished task since CRD 0020 stopped running QA per task: nothing but the task's own unit tests holds it open, and the Verdicts line still carries all four values with `not run` and a reason where a check has not run. This crew ran 20 tasks with no gate at all. Put it back, or update this string in tools/verify-mount.mjs in the same commit");
+    else if (flat(section.text).includes("A task is finished when code review passes")) fail("PM section still says `A task is finished when code review passes` — that is the gate CRD 0020 replaced. QA and the three reviews no longer run per task, so a gate that waits for them cannot be met and a task would never be finishable. Use the unit-test gate instead in roles/pm.md");
     // CRD 0006 splits the crew's documents by how long they live. Three of the
     // homes it names are PATHS, so they can be pinned without pinning prose,
     // and each one is where something lands that would otherwise vanish with

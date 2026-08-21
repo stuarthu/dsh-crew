@@ -201,6 +201,17 @@ bash docs/qa/run-all.sh       # 只跑 QA 的用例（它是那六条里的第�
 了」。** 检查脚本自己每次都把这句话打出来：「Passing is not the same as clean … it cannot
 prove a review happened — a `code: pass` typed by the PM passes it」。
 
+**2026-08-22 补**（`crew-qa-4` 报的行，PM 写）：第 10 步里「Verdicts 行仍然四个值、
+没跑的写 `not run` 带理由、永不写 `pass`」这半截，改到这一天为止**一处机器检查都没有**——
+它只活在 `tools/verify-mount.mjs` 那条失败信息的散文里，而没有任何一条 `includes()` 读它。
+也就是说从第 10 步删掉 `doc:`、或者删掉「永不写 `pass`」，**全项目一处都不会红**。
+现在由 `docs/qa/T-56/case-08-existing-pins-intact.mjs` 直接钉住：四个值各一条断言，
+掉哪一个说哪一个（实测只删 `doc:` 时只有那一条红）。
+**这不关闭本条**：钉住的是「提示词里写着这句话」，门读的还是形状，`code: maybe` 照样绿。
+**这个洞比少一条断言更贵，所以写下来**：`tools/verify-tasks.mjs` 那道门**照旧**要求
+`docs/design/tasks.md` 里四个值全在，所以提示词丢了这半截之后，PM 会撞上一道红门、
+而它的提示词里没有任何一句话教它怎么写——**门还在，说明书没了**。
+
 **状态**：未关闭，等一个决定（不是等代码）。
 
 ## 11. 发布钉子只认 `npm publish`，认不出另外七种发布方式
