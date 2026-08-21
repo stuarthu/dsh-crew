@@ -1990,7 +1990,7 @@ T-63                                             （一个人做，别的全部�
 | 7 | **`tools/verify-mount.mjs` 多两道 ABSENT 钉子**：`Ship this milestone` 和 force push 那半句**不许回来**。ABSENT 串不会因为改措辞误报，只有人重新写下旧规则才会红（和已有的 `**Decisions** section` 同一个形状） | `node tools/verify-mount.mjs` 绿；两次变异证明：分别把两句话加回 `roles/pm.md`，两道检查各自必须红，报告里贴出红的那两行 |
 | 8 | **B12：PM 改自己被衡量的那份标准 —— 只追加，不覆盖。** 确认过的原话**永不删除**；PM 写一份 CRD，把修正**标注日期后写在原话旁边**，继续干活，并在文档里用一个**固定标题**（「修正记录」）把每一条都列出来。**不停工，也不悄悄改**（`CRD 0023` 决定一） | 读那一段；四件事（永不删除、CRD、标日期写在旁边、固定标题）齐全；`flat roles/pm.md` 里能查到那个固定标题的英文原文 |
 | 9 | **B12 不许把「要用户点头」那条删掉**：范围、DoD 条目、里程碑清单的**变化**仍然要用户的 yes。只追加管的是**修正**（一条不可能通过的检查、两条互相矛盾的检查），不是范围变化 | 读那一段；两种情形分得开，各自有自己的动作 |
-| 10 | **B13 的八个从句**：① 第 11 步的 Verdicts 值清单里加上 `changes needed`（今天它只在散文里）；② 第 11 步或别处写清**用户不能关掉文档评审**（今天 `doc: skipped — the user asked for it` 允许它，而全份文件里没有一句说用户可以）；③ 第 17 步的干净树检查要写**后果**（今天只写条件，同一段的 CI 那条有后果）；④ 第 16 步补上「发包需要它自己的 yes」（今天只在第 13 步和 Hard rules 里有）；⑤ 第 17 步「推送 `main`」那一段补上「等一个明确的 yes」（合并段和删除段都有，只有它没有）；⑥ 第 13 步的 token 那一行补一句「不要把 token 的值写进文件」；⑦ 第 14 步改仓库规则文件要**先给用户看**或单独一次 yes；⑧ 第 16 步「Stand by」那一段补上「一起启动的角色此刻正在跑」 | 八处各读一遍；每一处都能指出改动。**第 ② 条要特别小心**：它可能和 A1a「PM 自己决定」相互作用，写的时候两边都要读一遍 |
+| 10 | **B13 的八个从句**：① 第 11 步的 Verdicts 值清单里加上 `changes needed`（今天它只在散文里）；② 第 11 步或别处写清**用户不能关掉文档评审**（今天 `doc: skipped — the user asked for it` 允许它，而全份文件里没有一句说用户可以）；③ 第 17 步的干净树检查要写**后果**（今天只写条件，同一段的 CI 那条有后果）；④ 第 16 步补上「发包需要它自己的 yes」（今天只在第 13 步和 Hard rules 里有）；⑤ 第 17 步「推送 `main`」那一段补上「等一个明确的 yes」（合并段和删除段都有，只有它没有）；⑥ 第 13 步的 token 那一行补一句「不要把 token 的值写进文件」；⑦ 第 14 步改仓库规则文件要**先给用户看**或单独一次 yes；⑧ **这一条不在本任务的范围里，归 T-67**，因为我把位置写错了：`Stand by. Do not start unrelated work. Your job is to answer.` 只有 **1 处**，在 `## While the crew is working` 里（实测 `grep -n 'Stand by' roles/pm.md` 只命中一行），**不在第 16 步**。`docs/research/req-part-b-audit.md` 那张 13 行表的第 13 行位置写得是对的，是我抄进这一格时写成了第 16 步。硬塞进第 16 步还会把它放错——**第 16 步跑的时候，里程碑里的角色早就跑完了**（T-66 的 engineer 报回，`inbox/Q-66-1.md`，它一个字都没改，做对了） | **七处**各读一遍（第 ⑧ 条归 T-67，见上）；每一处都能指出改动。**第 ② 条要特别小心**：它可能和 A1a「PM 自己决定」相互作用，写的时候两边都要读一遍 |
 | 11 | **不动 T-63、T-64、T-65 写的段落** | `git diff roles/pm.md` 的每一块都落在第 11–18 步或 Hard rules；T-63 的两个锚串各 1 处；`flat roles/pm.md \| grep -oi 'both lanes' \| wc -l` ＝ 0；T-65 改写的「做完」那句话原样在 |
 | 12 | **现有钉子一个不破**：八个合并清理串（`git merge --no-ff`、`git branch -d crew/`、`git push origin --delete` **两处**、`git branch --merged main`、`--ff-only`、`origin/crew/`、`publishCheck`、作业 slug 的正则）、`` `scope: ``、`docs/qa/gaps.md` 4 处、不含 `{{`、不含 `dod.md`、第 1 行未改动 | `node tools/verify-mount.mjs` 绿；`bash docs/qa/T-01/run.sh` 绿；`flat roles/pm.md \| grep -o 'git push origin --delete' \| wc -l` ＝ 2 |
 | 13 | **`npm test` 全绿，跑两次一致**；用例数不少于 193 | `npm test`；`ls docs/qa/*/case-*.mjs \| wc -l` |
@@ -2004,11 +2004,10 @@ T-63                                             （一个人做，别的全部�
 
 - **里程碑**：M1
 - **形状**：单人（solo）
-- **拥有的文件**：`roles/pm.md`（从 T-66 接手；**只改第 4 步、以及全文里那 16 处旧路径引用
-  和 4 处仓库内部指针**）、`tools/verify-mount.mjs`（从 T-66 接手，含 `:886` 那道钉子）
+- **拥有的文件**：`roles/pm.md`（从 T-66 接手；**只改第 4 步、`## While the crew is working` 那一节里的一句、以及全文里那 16 处旧路径引用和 4 处仓库内部指针**）、`tools/verify-mount.mjs`（从 T-66 接手，含 `:886` 那道钉子）
 - **测试文件**：`tools/verify-mount.mjs`
 - **依赖**：T-66
-- **要求来源**：PRD 的 A6（第 4 步那一半）、A7、B9（`roles/pm.md` 那 4 处）；
+- **要求来源**：PRD 的 A6（第 4 步那一半）、A7、B9（`roles/pm.md` 那 4 处）、**B13 的第 ⑧ 个从句（从 T-66 转来，位置是我写错的）**；
   `CRD 0023` 决定二与决定六；`docs/research/document-types.md`；`ADR 0015`、`ADR 0017`。
 - **为什么它是这一环的最后一个**：A7 要把这个文件里 16 处旧路径全改掉，
   **包括前面三环刚写下的新句子里出现的那些**。改名放在最后只扫一遍；
@@ -2033,8 +2032,9 @@ T-63                                             （一个人做，别的全部�
 | 11 | **本任务不改任何历史快照**（`docs/decisions/`、`docs/research/`、`CHANGELOG.md`）。理由和 `docs/qa/T-52/case-21` 已经写下的那一条一样：快照里的旧名字诚实地烂在里面，为了一条 `grep` 去重写它才是更大的错（`ADR 0017`） | `git diff --name-only` 里没有 `docs/decisions/`、`docs/research/`、`CHANGELOG.md` |
 | 12 | **不动前面三环写的段落** | `git diff roles/pm.md`：除了那 16 处路径替换和 4 处指针，别的改动都落在第 4 步 |
 | 13 | **现有钉子一个不破** | `node tools/verify-mount.mjs` 绿；`bash docs/qa/T-01/run.sh`、`docs/qa/T-56/run.sh`、`docs/qa/T-62/run.sh`、`docs/qa/T-42/run.sh`、`docs/qa/T-60/run.sh` 全绿；第 1 行未改动 |
-| 14 | **`npm test` 全绿，跑两次一致**；用例数不少于 193 | `npm test`；`ls docs/qa/*/case-*.mjs \| wc -l` |
-| 15 | **报告里给出 `roles/pm.md` 最终行数**，并说清它不超过 1900 行；**这一环是 `roles/pm.md` 这条链的终点，所有权在此结束**。**行数预算是三个 engineer 共用的，而它们互相看不见，所以只有任务行能告诉它们**：`roles/pm.md` 今天 **1701 行**，PRD 的发布标准给的硬上限是 **1900**，也就是 T-65、T-66、T-67 三环**一共**只剩 **199 行**。超了怎么办 PRD 已经写了答案：**先合并重复段落，再加东西**——**不许删规则，也不许抬上限**。**这一环是最后一个，所以剩下多少预算全看前两环用了多少——不够就先合并，别删规则** | `wc -l roles/pm.md` |
+| 14 | **B13 的第 ⑧ 个从句（从 T-66 转来）**：`## While the crew is working` 那一节的第一句今天是 `Stand by. Do not start unrelated work. Your job is to answer.`——它读起来像**「什么都别干、干坐着」**，而 A1e、A1b 之后 PM 一条消息启动十个角色是常态。那一句要写清：**它禁的是「开新的、无关的活」，不是「此刻手上没有事」**，而且要点明**一起启动的那些角色此刻正在跑**，PM 的活就是随时能答它们。**为什么它落在 T-67**：它是一句话，而 T-67 无论如何都要碰这一节——那一节里本来就有一处旧路径要按 A7 改（`You unblock it by updating the document that blocks it — \`docs/design/prd.md\``）。为一句话新开一环，给本作业最贵的那条串行链再加一次交接，不值 | `flat roles/pm.md \| grep -o 'Do not start unrelated work' \| wc -l` ＝ **1**（这句话留着，改的是它周围的解释，不是删掉它）；读那一节，两件事都在：「禁的是无关的新活」和「同批启动的角色正在跑」 |
+| 15 | **`npm test` 全绿，跑两次一致**；用例数不少于 193 | `npm test`；`ls docs/qa/*/case-*.mjs \| wc -l` |
+| 16 | **报告里给出 `roles/pm.md` 最终行数**，并说清它不超过 1900 行；**这一环是 `roles/pm.md` 这条链的终点，所有权在此结束**。**行数预算是三个 engineer 共用的，而它们互相看不见，所以只有任务行能告诉它们**：`roles/pm.md` 今天 **1701 行**，PRD 的发布标准给的硬上限是 **1900**，也就是 T-65、T-66、T-67 三环**一共**只剩 **199 行**。超了怎么办 PRD 已经写了答案：**先合并重复段落，再加东西**——**不许删规则，也不许抬上限**。**这一环是最后一个，所以剩下多少预算全看前两环用了多少——不够就先合并，别删规则** | `wc -l roles/pm.md` |
 
 ---
 
