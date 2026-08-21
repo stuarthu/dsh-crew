@@ -247,8 +247,8 @@ Write these files, in the language the PM tells you:
    The gain is not that the risk goes away. It is that a signature can be read
    two ways far less easily than a paragraph of prose can, so what this file
    adds to that risk is much smaller than the noise it takes away: the trade is
-   worth making, and the only thing that catches a shared misreading is still
-   QA, afterwards.
+worth making. The net that is structurally independent of the code is still QA,
+afterwards: it writes its cases from the document before it reads a line.
 
 4. **Task breakdown** — `docs/design/tasks.md`. This is the file engineers work
    from, so it decides whether the work goes well:

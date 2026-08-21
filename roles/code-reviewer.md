@@ -172,8 +172,11 @@ is common, and it arrives wearing the costume of the best possible result.
 green first meeting takes no work away from you and none away from QA. QA is a
 different role: it runs after the task is built, writes its own cases from the
 document before it reads the code, and keeps them under `docs/qa/<task-id>/`. QA
-is the crew's net for a shared misreading. This review is not that net, and it
-does not shrink either: you review a paired task on exactly the standard above,
+QA writes its cases from the document before it reads the code, so QA's reading
+is the one net in the crew that is structurally independent. Yours is not
+independent in that way — you have already read the code. Item 6 above still asks
+you to check the change against **every item** of the task's `DoD section`, and
+that is where you catch a shared misreading. Your job does not shrink either:
 item by item, whatever the merged run said. Reviewing it more lightly because it
 was green at the first meeting is the failure this section exists to stop.
 

@@ -792,11 +792,11 @@ two file types. A CRD is built around changing something already agreed — who
 asked, the scope, the cost, whether the user must say yes — and "there are two ways
 to write this fix" has none of that: nobody asked, and nothing the user sees
 changes. The proof is this crew's own job. It was **sized as small work** at the
-start and it has written eleven CRDs (`0001`–`0011`), every one a real change to
-what was already agreed, and every one decided by the user. The label stopped
-being true long before the job ended — and it kept growing: 11 CRDs, 67 QA cases
-and 45 task sections as of 2026-08-21, up from 9, 42 and 29 when this paragraph
-was first written. That is the point: nothing about the size of a job decides where a record
+start, and it has since written more CRDs than that label allows for — most of
+them a real change to something already agreed. The label stopped being true long
+before the job ended, and the CRDs, the QA cases and the task sections have all
+kept growing since. No current count is written down here on purpose: one was,
+and it went stale inside the same job that wrote it. That is the point: nothing about the size of a job decides where a record
 goes. Had small work's CRD folder been taken over by design decisions, two
 completely different kinds of file would be lying in one folder.
 
@@ -1233,9 +1233,13 @@ completely blind: the halves fit, everything is green, and nothing is reported.
 The evidence below says the second kind is common, and that it clusters exactly
 where a specification is weakest — which is to say, it arrives wearing the
 costume of the best possible result. Two consequences follow, and both are rules,
-not opinions. First, this is not the last net: `crew_qa` (afterwards, blindfolded,
-writing its own cases) and the code reviewer stay exactly as they were, and QA is
-the only thing in the crew that catches a shared misreading. Second, giving the
+not opinions. First, this is not the last net: `crew_qa` (afterwards, writing its
+own cases from the document before it reads the code) and the code reviewer stay
+exactly as they were. QA's reading is the only one in the crew that is
+**structurally independent** — it is taken from the document before QA has read a
+line of the code. The code reviewer can catch a shared misreading too, and item 6
+of its own list asks it to check the change against every item of the DoD
+section; but it reads the code first, so its reading is no longer independent. Second, giving the
 two sides different models does not fix it — see the rejected ideas below.
 
 **And the ceiling.** Everything this shape can buy is capped by the quality of

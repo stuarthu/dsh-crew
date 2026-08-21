@@ -48,9 +48,12 @@ check(
   "the reason is missing, so the trade is asserted rather than argued",
 );
 
+// Changed together with roles/architect.md in the same commit: the final doc
+// review found "the only thing that catches a shared misreading" overstated, so
+// this case would otherwise have held a wrong sentence in place (gaps.md 16).
 check(
   "it says what still catches a shared misreading: QA, afterwards",
-  flatText.includes("the only thing that catches a shared misreading is still QA, afterwards"),
+  flatText.includes("structurally independent of the code is still QA"),
   "the remaining net is not named",
 );
 

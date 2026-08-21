@@ -88,7 +88,19 @@ QA 还核过：**没有任何已有用例钉住这四处旧文本**，所以修�
 
 ## Applied
 
-**待回填**：`principles.md`（原则 20、21）、`README.md`、`README-zh.md`、`roles/architect.md`、`package.json`（`description`）——**五个文件，不是两个**（见上面那节追加）。
+**2026-08-21，五个文件全部改完。**
+
+| 文件 | 改了哪一处 |
+| --- | --- |
+| `principles.md` | 原则 20 结尾那份路径清单；原则 21 里「谁盖章」那一段（两条路都写了，并引 `CRD 0021`） |
+| `README.md` | `## The paired shape` 里「它随它所在的那张表一起确认」那一条 |
+| `README-zh.md` | 同一条 |
+| `roles/architect.md` | **The shape of a task** 里点名第 5 步那一段 |
+| `package.json` | `description` 补上两个新角色 |
+
+最后一轮 QA 核过：**`docs/qa/` 里没有任何用例钉住这四处旧文本**，所以这次修改没有撞红任何用例。
+（对比：后来修「QA 是唯一那张网」时**撞红了两条**，`T-52/case-08` 和 `T-58/case-08`，
+两条用例和文本在同一个提交里一起改了——那是这个仓库立过的规矩。）
 以及 `docs/qa/` 里若有用例钉住了旧文本，需要在同一个提交里一起改（那是 QA 的家，
 届时由 QA 改；`docs/qa/T-52/case-01` 的头部已经立过这个先例——
 「whoever adds principle 22 changes this line together with the file, in the same commit」）。

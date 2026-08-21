@@ -58,12 +58,16 @@ dsh has three hard rules about agents, and the design follows them:
 | Two children **cannot** talk to each other at all | Roles share work through files, not chat |
 
 If the architect started the engineers, the PM could not reach the engineers at
-all. So only the PM starts agents. Three independent guards enforce that:
+all. So only the PM starts agents. Four independent guards enforce that:
 
 - every role is denied the crew delegation tools;
 - each role tool has `maxDepth: 1`, so a crew child cannot start another crew
   child;
-- the crew preset removes every other way to start an agent.
+- the crew preset removes every other way to start an agent;
+- dsh checks the family line itself when a message is sent. A sibling is not a
+  child, so the message is refused even if a role holds the tool. This one names
+  no tool and quotes no prompt, so no edit to a filter or a persona can weaken
+  it.
 
 ## What a role really is
 
@@ -104,7 +108,7 @@ A deny list cannot name what a deployment has not installed yet. An allow list
 does not have to. The PM pastes the diff into the review task and runs any
 command the reviewer asks for.
 
-Two of those three guards sit under the tool filters, and both are worth a
+Two of those four guards sit under the tool filters, and both are worth a
 closer look:
 
 - **`maxDepth: 1`** on every role tool — only the root PM can start a role, and
@@ -490,8 +494,9 @@ already agreed on is not clear.
   road where a paired task can exist, the architect writes the table after you
   have already confirmed the opening document, so the PM confirms the shapes and
   you meet them at the milestone review. Either way it is one yes for a whole
-  table: a job of fifty tasks is not fifty decisions.
-  a list of exceptions, each exception with its reason: a DoD section it could
+  table: a job of fifty tasks is not fifty decisions. What the architect brings
+  is one default for the whole table and a list of exceptions, each exception
+  with its reason: a DoD section it could
   not word sharply, a row sitting on a module boundary contract, a mistake that
   would cost money, permissions or data, or an earlier defect in that part of the
   code.

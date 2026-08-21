@@ -63,9 +63,18 @@ check(
   "principle 21 no longer names the kind of ambiguity this shape cannot catch",
 );
 
+// Changed together with principle 21 itself, in the same commit, the way
+// case-01's header says such a pair must be changed. The earlier version of this
+// case pinned the words "the only thing in the crew that catches a shared
+// misreading", and the final doc review found that claim overstated: the code
+// reviewer reads the same document too and item 6 of its own list asks it to
+// check the change against every DoD item. What is true, and what this case pins
+// now, is the narrower claim — QA's reading is the only one taken BEFORE it sees
+// the code, so it is the only structurally independent net. Pinning the old
+// wording would have turned a wrong sentence into a requirement (gaps.md 16).
 check(
-  "QA is named as the net that stays",
-  /crew_qa/.test(twentyOne) && /only thing in the crew that catches a shared misreading/i.test(twentyOne),
+  "QA is named as the net that stays, on the accurate ground",
+  /crew_qa/.test(twentyOne) && /structurally independent/i.test(twentyOne),
   "the sentence that keeps QA in the design (PRD 不在范围内: 改 QA 的任何行为) is gone",
 );
 

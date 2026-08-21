@@ -112,7 +112,7 @@
 
 ## 五、`verify-mount.mjs` 的 bash 检查：从一个角色扩到三个
 
-**今天的样子**（`tools/verify-mount.mjs:651-653`）：
+**今天的样子**（`tools/verify-mount.mjs` 里那段 `must keep bash` 的检查）：
 
 ```js
 if (ROLES.find(role => role.key === "engineer").deny?.includes("bash")) {
@@ -221,7 +221,7 @@ M3 的 DoD 第 6 条在 M3 评审时核对它——**活在 M1 落地，检查�
 
 **不发明新词。** 特别是**不要写「QA test」**——它把「test」这个字又放回来，等于把刚分开的两样
 重新粘在一起。这两个名词仓库里本来就有，而且很干净：`roles/qa.md` 里 case/用例出现 51 次、
-「QA test」出现 0 次；「unit test」今天已经在四处用了（`README.md:203`、`roles/pm.md:357`、
+「QA test」出现 0 次；「unit test」今天在四个文件里都有（`README.md`、`roles/pm.md` 第 4 步、
 `principles.md` 原则 13、`roles/engineer.md`）。
 
 **用词表放在 `principles.md` 的哪里**，见 `docs/decisions/adr/0014-glossary-placement.md`。
@@ -392,7 +392,7 @@ PM ── 把 A 的红灯 + B 的一次性结果 + 分歧记录交给 code revie
   而且强弱不同会造出大量假分歧）。
 - **不开两个 engineer 之间的横向通道。** 文件邮箱、PM 转发，都否掉了。
 - **不改 QA 的任何行为。** `roles/qa.md` 本作业不动一个字。只改它在 `host/roles.js` 里的
-  那一行 `summary`。QA 是相关性误读唯一的出口，动它就等于把最后一张网拆了。
+  那一行 `summary`。QA 的阅读是唯一结构上独立的那一次（先按文档写用例、再读代码），动它就等于把最强的那张网拆了。
 - **不改 `roles/engineer.md` 的行为。** 只在开头加一句指路。
 - **不写 `docs/design/api/`。** 一个模块，没有跨模块边界。
 - **不发版。** 不 push，不打 tag，不发 npm。版本号是否要动，作业结束时另外问。

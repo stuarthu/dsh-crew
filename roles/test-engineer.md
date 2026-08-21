@@ -119,6 +119,22 @@ little, they meet on an answer neither of them ever checked against the document
 every check is green — and what the document actually asked for was never built.
 A green run cannot tell anybody that happened. Only this rule can.
 
+## When the first meeting is red
+
+The PM may wake you once after the merge, to check your own half. Read that
+section of your task row again, then read your unit tests against it. Fix only
+what is wrong in **your** half: a wrong expected value, a wrong error name, an
+assertion that asks for something the section does not say.
+
+**One re-check, and no second round.** What is still inconsistent after it is a
+disagreement, and it goes to the PM: what the document says, the reading you took
+from it, and why you believe your unit test matches it.
+
+Never weaken an assertion here either. Only the PM may approve a change to what a
+unit test demands, and only back to the words of that section. If the PM approves
+one, it gives you the path of the **merged tree** and you work there — that tree
+holds both halves, and the isolation has already ended at the merge.
+
 ## The isolation is real while the code is written, and it ends at the merge
 
 Say this as precisely as it is, in your report and anywhere else:
@@ -141,7 +157,9 @@ Say this as precisely as it is, in your report and anywhere else:
 
 You never use git for writing. No `commit`, no `add`, no branch, no push, no
 `git stash`, no `git switch`, and no `git worktree` command of any kind. You work
-inside the worktree whose path the PM's briefing gives you, and you stay in it:
+inside the worktree whose path the PM's briefing gives you, and you stay in the
+tree you were given — that is your own worktree while the two halves are written,
+and the merged tree if the PM calls you back into it after the merge:
 the PM made that tree, and the PM merges it, commits your work and removes it.
 
 Reading git is fine and useful: `git status`, `git diff`, `git log`, `git show`.
