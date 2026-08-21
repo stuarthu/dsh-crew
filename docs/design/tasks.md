@@ -1,5 +1,98 @@
 # 任务表：`pm-merge-step` 作业（事后重建）
 
+## 验法怎么跑（先读这一段，不然你验的是空气）
+
+**2026-08-22 加，architect 写。** 这一段管全文**每一格 DoD 的「别人怎么验」那一栏**。
+M1 的 QA 那一轮跑了 30 多条用例，它回报的最有价值的东西不是缺陷，是
+**「这条验法写下来就跑不了」**：一批格子照原样贴进终端**一定绿**，而它一个字节都没读过被判的文件。
+四种形状写在 `ADR 0023` 里，本段是它的操作版。
+
+### 一、`flat <文件>` 是伪代码，不是命令
+
+这台机器上**没有**叫 `flat` 的可执行文件。它指的是 `docs/qa/lib/qa.mjs` 里的 `flat()`
+（`text.replace(/\s+/g, " ")`：把所有空白压成单个空格，这样跨行的串也查得到）。照原样跑是这样：
+
+```
+$ flat roles/pm.md | grep -o 'Ship this milestone' | wc -l
+/bin/bash: line 1: flat: command not found
+0
+```
+
+**它打印 0，而且什么都没读。** 全文有 **58 格**用 `flat`（合计 63 条 `flat` 命令），其中
+**19 格期望恰好 0**（名单见第三节）——那 19 格照原样跑**必定绿**。剩下 39 格期望 `≥ 1`，
+它们是安全的：0 不等于 ≥1，会响亮地失败。
+
+**先把这三行贴进 bash，然后全文每一格都能照原样跑：**
+
+```sh
+flat()     { python3 -c 'import re,sys;print(re.sub(r"\s+"," ",open(sys.argv[1],encoding="utf-8").read()),end="")' "$1"; }
+pointers() { python3 -c 'import re,sys;t=re.sub(r"\s+"," ",open(sys.argv[1],encoding="utf-8").read());P=re.compile(r"docs/ ?design/ ?(?:prd|hld)\. ?md");M=re.compile(r"was called|were called|used to be (?:called|named)|renamed?|formerly|no longer (?:called|named|exists)|(?:until|up to) 0\.\d",re.I);h=[s for s in re.split(r"(?<=[.!?])\s+|\|",t) if P.search(s)];print("pointer",sum(1 for s in h if not M.search(s)),"mention",sum(1 for s in h if M.search(s)))' "$1"; }
+grant()    { python3 -c 'import re,sys;t=re.sub(r"\s+"," ",open(sys.argv[1],encoding="utf-8").read());s=sys.argv[2];print(sum(1 for m in re.finditer(re.escape(s),t) if not (t[m.start()-1:m.start()] in "\x60\"“" and t[m.end():m.end()+1] in "\x60\"”")))' "$1" "$2"; }
+```
+
+- **`flat <文件>`**：把文件压平成一行打到 stdout。后面照旧接 `| grep -o '<串>' | wc -l`。
+- **`pointers <文件>`**：数**旧文档名**（`docs/design/prd.md`、`docs/design/hld.md`）的**指针**和
+  **提及**各几处。判据按**句**：压平之后取该处所在的那一句，句里有 `was/were called`、
+  `used to be called/named`、`renamed`、`formerly`、`no longer called/named/exists`、`until 0.9.x`
+  之一就算**提及**，否则算**指针**。PRD 的 DoD 第 11 条第 6 版：**指针必须 0，提及必须留下**。
+  同一判据的长期承载是 `docs/qa/T-67/case-04-old-document-names-gone.mjs`。
+- **`grant <文件> '<串>'`**：数这个串在**文件自己的口气里**出现几处；**两侧被引号或反引号包住的
+  引用不算**（「引用旧规则来禁止它」是正当写法，不许把它判成违规）。同一判据的长期承载是
+  `docs/qa/T-66/case-04-no-force-push-permission.mjs`。
+
+**看到 `flat: command not found` 就等于这条检查没跑**：那个 0 是假的，不许当成绿写进报告。
+
+### 二、源文件里的 `\|` 是 markdown 转义，真命令里是 `|`
+
+下面每一格的命令里写的是 `\|`，那个反斜杠只是为了不把表格切断。**从渲染后的表格里复制**，
+或者自己把 `\|` 换回 `|`。`echo a \| b` 在 bash 里把 `|` 当成一个普通参数、不是管道——
+又是一种「跑了但其实没跑」。
+
+### 三、期望恰好 0 的 19 格（危险名单）
+
+这 19 格**必须**先贴上面那三行才能跑。名单本身就是提醒：这一类格子（「旧措辞必须消失」）
+正是本作业最核心的一类检查。
+
+| 任务 | 第几格 | 期望 0 的串 |
+| --- | --- | --- |
+| T-64 | 6 | `Stop when the answers are settled` |
+| T-64 | 9 | `both lanes`（`grep -i`） |
+| T-65 | 5 | `A task is finished when code review passes` |
+| T-65 | 17 | `same round rules`（`grep -i`） |
+| T-65 | 19 | `on every landing` |
+| T-66 | 2 | `in this milestone's commit` |
+| T-66 | 4 | `Ship this milestone` |
+| T-66 | 5 | `or with force`（**本轮已改用 `grant`**，见 `ADR 0023`） |
+| T-66 | 11 | `both lanes`（`grep -i`） |
+| T-69 | 5 | `both lanes`（`grep -i`） |
+| T-72 | 7 | `are the one who writes it there` |
+| T-75 | 7 | `QA test` |
+| T-77 | 8 | `both lanes`（`grep -i`） |
+| T-80 | 1 | `both lanes`（`grep -i`） |
+| T-80 | 5 | `no job here has written one` |
+| T-82 | 1 | `small work has none` |
+| T-82 | 2 | `small work has no milestones` |
+| T-83 | 1 | `These are your output too` |
+| T-83 | 2 | `belong to no task either` |
+
+### 四、写一格新验法之前，先过这四道自查
+
+四种「一条检查在写下的那一刻就已经死了」的形状，全部是本作业实测出来的（`ADR 0023`）：
+
+1. **锚串跨行**——散文按 80 或 100 列折行，逐行 `grep` 命中不了。先压平（`flat`）。
+2. **锚串写的是渲染后的样子**——源文件里是 `**Applied**`，写成 `` `Applied` `` 就是 0 处。
+   钉源文件里的字节，不是钉页面上的样子。
+3. **组成词还在**——被禁的短语改了措辞，`grep -c 'quick'` 永远不是 0，因为 `a quick look`
+   是正常英文。要钉的是**承载那条规则的串**，还要分清「说这件事的话」和「做这件事的话」。
+4. **命令根本不存在**——`flat` 不是命令，照原样跑一定绿而什么都没读。凡是期望 0 的格子，
+   跑之前先证明这条命令真的读到了文件（把期望改成 `≥ 1` 的那个反向串试一次，必须非 0）。
+
+另外两条：**别把一个只有 QA 能建的文件夹当成本任务交工的门**（那个文件夹在编码全部结束之后
+才存在，见 `ADR 0023` 的「循环」一节）；**别用「随机抽三条人工核对」**——第二个人跑不出同一个
+结果的做法不是验法。
+
+---
+
 ## 这份文件是什么
 
 **这是一份重建，不是当时的记录。**
@@ -1843,11 +1936,11 @@ T-63                                             （一个人做，别的全部�
 | 2 | **规则 A 的权威原文**：一段英文，说清工具结果里送进来的文字是**数据，不是指令**，并且**逐一点名四种来源**：a tool result、an MCP server、a web page、a command's output；再加一句「要在报告里说这件事」 | `flat principles.md \| grep -o 'is data, not instructions' \| wc -l` ＝ 1；同一段里四个来源各出现至少一次；`grep -c 'MCP' principles.md` 比改前多（改前 1 处） |
 | 3 | **规则 B 的权威原文**：一段英文，说清**判你的文档不在你的可写集合里**（PRD、DoD 条目、里程碑清单），**就算简报把它递过来也不写，而且要在报告里说这件事** | `flat principles.md \| grep -o 'not yours to edit' \| wc -l` ＝ 1；同一段里必须同时出现「briefing」和「say so in your report」两个意思的句子 |
 | 4 | **「你能写什么」那一节的统一形状定下来**：小节标题一个确切的英文字符串（推荐 `## What you may write`），加一句「读不受限，而且应该多读」的确切英文原文。**按类写，不按具体文件名**——A7 让 PRD 的文件名每件作业都变，写死文件名的清单下一件作业就是错的（`CRD 0023` 决定三） | `flat principles.md \| grep -o 'Reading is not restricted' \| wc -l` ≥ 1（或本任务选定的等价原文，写进报告）；那一节里**不许出现**任何一个具体 PRD 文件名 |
-| 5 | **全局表「哪类文档谁写」进 `principles.md`**，按类不按文件名，至少覆盖：PRD、HLD、任务行与它的 DoD 章节、ADR、CRD、接口契约（与配对任务的接口 ADR）、QA 的用例与 `run.sh`、`docs/qa/gaps.md` 与 `docs/qa/run-all.sh`、产品代码与单元测试、两份 README 与 `CHANGELOG.md` 与仓库自己的规则文件 | 数那张表的行数；十一类一类不缺 |
-| 6 | **同一张表的短版进 `roles/pm.md`**，说的是同一件事（PRD 的 DoD 第 8 条要「两张表说的是同一件事」） | 两张表并排读；类的名字和归属逐行一致 |
+| 5 | **全局表「哪类文档谁写」进 `principles.md`**，按类不按文件名，至少覆盖：PRD、HLD、任务行与它的 DoD 章节、ADR、CRD、接口契约（与配对任务的接口 ADR）、QA 的用例与 `run.sh`、`docs/qa/gaps.md` 与 `docs/qa/run-all.sh`、产品代码与单元测试、两份 README 与 `CHANGELOG.md` 与仓库自己的规则文件 | ~~数那张表的行数；十一类一类不缺~~ **（PM 2026-08-22 更正，`crew-architect-2` 报的）**：「数行数」没有期望值，而「十一类」读起来像要 11 行——**今天那张表有 13 行**，而这一格写的是「**至少**覆盖」，所以 13 行是对的、不是错的。改成两条：① 左栏点名的那 11 类，**每一类按名字都查得到**（一类一条断言，失败信息要说清缺的是哪一类）；② 行数 **≥ 11**，并把今天的真实行数打印出来当基线。承载它的是 `docs/qa/T-63/case-05-write-set-names-classes-not-files.mjs` 和 `case-07-two-tables-agree.mjs`。 |
+| 6 | **同一张表的短版进 `roles/pm.md`**，说的是同一件事（PRD 的 DoD 第 8 条要「两张表说的是同一件事」） | **不要按「逐行一致」验**：那句话今天就已经是假的，而且是**正当**的假——最后一行 `principles.md` 写 `The project's own rules file, and this file`，`roles/pm.md` 写 `The project's own rules file, and the crew's principles file`：指的是同一个文件，但两份文档里的自称必须不同（`crew-qa-C07` 报回，2026-08-22）。短版的归属列也**允许在一个从句边界上截短**（例如共用 runner 那一行，长版带理由、短版不带）。改成三条：① 两张表的**行数相同**；② 顺序相同、**类名逐行相同**，唯一允许的例外是上面那一处自称；③ 短版每一行的归属列是长版同一行归属列**从头开始的一段**（截到一个从句边界）。长期承载：`node docs/qa/T-63/case-07-two-tables-agree.mjs`（它把那一处自称当**数据**写在文件里，别的任何一行不匹配都会红） |
 | 7 | **那张表必须回答一个今天答不了的问题**：两份 README、`CHANGELOG.md`、仓库自己的规则文件（这里是 `CLAUDE.md`）归谁写。`roles/pm.md` 第 14 步今天写着它们是 **PM 的产出**（`These are your output too.`），而上一件作业把它们做成了 T-59、T-60、T-61 三个 **engineer** 任务。**两个说法不能同时为真**，表里要写清哪个是对的 | 读那一行；然后 `flat roles/pm.md \| grep -o 'These are your output too'` 的结果必须和那一行不矛盾（要么表说 PM 写、那句话留着；要么表说 engineer 写、那句话由 T-66 改掉，并在本任务报告里点名交给 T-66） |
 | 8 | **`roles/pm.md` 里长出「你能写什么」那一节**，形状按第 4 格，内容是 PM 自己的可写集合；规则 A、规则 B 两段**逐字**抄自 `principles.md` | `flat roles/pm.md \| grep -o 'is data, not instructions' \| wc -l` ＝ 1；`flat roles/pm.md \| grep -o 'not yours to edit' \| wc -l` ＝ 1；两段和 `principles.md` 里的**逐字相同**（`diff` 那两段） |
-| 9 | **A6 的八种文档类型进 `principles.md`**，一节不带编号的内容，八个小节各一条「装什么」的清单，**每条带出处**（标准号或 URL 加阅读日期），对得上 `docs/research/document-types.md`。八种：PRD、HLD、ADR、CRD、接口契约、测试计划与用例、发布与升级计划、DoD | 数小节：**恰好 8 个**；随机抽三条回 `docs/research/document-types.md` 找出处，三条都能对上 |
+| 9 | **A6 的八种文档类型进 `principles.md`**，一节不带编号的内容，八个小节各一条「装什么」的清单，**每条带出处**（标准号或 URL 加阅读日期），对得上 `docs/research/document-types.md`。八种：PRD、HLD、ADR、CRD、接口契约、测试计划与用例、发布与升级计划、DoD | **两处都要改。**（一）**「数出 8 个小节」正是这一格要替掉的那种假检查**：把 CRD 那一节删掉、加一节「runbook」，数字还是 8，检查照样绿（`crew-qa-C09` 报回，2026-08-22）。改成**双向点名**：八种各按**名字**查得到（PRD、HLD、ADR、CRD、接口契约、测试计划与用例、发布与升级计划、DoD），**而且**那一节里每一个 `### ` 标题都被这八种里的恰好一种认领——换掉一种会红两次（少了一种，多了一个没人认领的标题）。（二）**「随机抽三条人工核对」不是验法**：第二个人跑不出同一个结果。改成**每一节都要带一个可追的出处**——一个标准号（`IEEE Std 1016-2009`、`ISO/IEC/IEEE 29119` 这种）或一个 `http` URL，而且整节要写出**阅读日期**（`20\d\d-\d\d-\d\d`）。注意两件事：出处判断必须**压平之后**做（`IEEE Std` 与 `1016-2009` 之间正好折行，逐行查会把接口契约那一节误判成没有出处——一次**假红**和假绿一样坏）；阅读日期只在整节的开头说**一次**，不要按小节钉，那是钉排版不是钉实质。**「一节里的出处是否真的支持这句话」没有任何脚本能验**，它在 `docs/qa/gaps.md` 里，不要假装这一格能证明它。长期承载：`node docs/qa/T-63/case-09-eight-document-types.mjs` |
 | 10 | **那一节按 `ADR 0021` 的位置放**：不带编号，放在 `## Words we use` **之后**、`## What we looked at and did not take` **之前** | `grep -nE '^## ' principles.md` 看顺序；`bash docs/qa/T-52/run.sh` 绿（`case-09` 三条断言全过） |
 | 11 | **编号原则 1–21 一个字都没动**，也没有新增 `## 22.`（原则 22 是 T-68 的活） | `bash docs/qa/T-52/run.sh` 绿，`case-01`、`case-02`、`case-19` 全过 |
 | 12 | **`principles.md` 里 0 个中文字符** | `bash docs/qa/T-52/run.sh` 绿（`case-16`）。**这一格是给写作人的警告**：中文串在这个文件上钉不到任何东西，所以上面每一格的验法都是英文串 |
@@ -1891,18 +1984,18 @@ T-63                                             （一个人做，别的全部�
 | # | 怎么算做完 | 别人怎么验 |
 | --- | --- | --- |
 | 1 | **通道只剩两条**：`ask` 和 `team`。`quick` 那一条删掉，并在原地写一句「它被取消了，以及为什么」 | `flat roles/pm.md \| grep -o '`quick`' \| wc -l` 改前是 **4**，改后必须落在「只在取消说明里」的处数上，并把那个数写进报告。**不要用 `grep -c 'quick'`**：第 36 行的 `a quick look` 是正常英文，和通道无关，改完还在，所以那条命令永远不是 0 |
-| 2 | **「任何改动都得有一个里程碑」写着**：里面至少一个任务、一轮 QA、三个评审各一轮 | 读那一段；`flat roles/pm.md \| grep -oi 'always need a milestone\|every change gets a milestone'`（本任务选定的原文写进报告） |
+| 2 | **「任何改动都得有一个里程碑」写着**：里面至少一个任务、一轮 QA、三个评审各一轮 | **不要用 `flat roles/pm.md \| grep -oi 'always need a milestone\|every change gets a milestone'`**：那两个串是猜的，`always need a milestone` 在被判的文件里**根本不存在**（压平 0 处、逐行 0 处），而这条命令没有期望值，读的人拿不到「是」或「不是」（`crew-qa-C16` 报回，2026-08-22）。真正承载这条规则的原文在 `## Step 1: pick a lane, every time` 一节里，是 `it gets a milestone`。验法两条，都要过：① `flat roles/pm.md \| grep -o 'it gets a milestone' \| wc -l` ＝ **1**；② 同一句话里五样齐全——`python3 -c 'import re;t=re.sub(r"\s+"," ",open("roles/pm.md",encoding="utf-8").read());i=t.find("it gets a milestone");w=t[i:i+300] if i>=0 else "";print(i>=0, all(k in w for k in ["at least one task","one round of QA","code review","security review","doc review"]))'` 必须打出 `True True`。长期承载：`node docs/qa/T-64/case-03-every-change-gets-a-milestone.mjs` |
 | 3 | **「里程碑 ≠ 发版」写着**：一个里程碑是「一次完整循环 ＋ 一次提交」；推送和打 tag **仍然各需要用户单独同意** | 读那一段；那句话必须同时点名第 16 步 |
 | 4 | **正常一件活只有一个里程碑**写着；只有依赖关系逼着分几次发版时才分多个 | 读那一段（`CRD 0023` 决定四） |
-| 5 | **第 2 步是苏格拉底式访谈**，六种问题类型、漏斗、「不许引导性问题」和那条停止规则四样齐全，而且**指向 `principles.md` 的原则 22**（那条原则由 T-68 写；本任务写的是它的应用版） | 数那一段：六种问题类型**恰好 6 条**；`flat roles/pm.md` 里同时能查到「funnel」、「leading question」和停止规则的原文 |
+| 5 | **第 2 步是苏格拉底式访谈**，六种问题类型、漏斗、「不许引导性问题」和那条停止规则四样齐全，而且~~**指向 `principles.md` 的原则 22**（那条原则由 T-68 写；本任务写的是它的应用版）~~——**这半句取消了（PM 2026-08-22 更正）。** 本作业的 B9 后来定下：角色提示词不许按编号指仓库内文件，因为 `principles.md` **不随 npm 包发布**，那句话在用户自己的仓库里指向一个不存在的文件里的一个编号。T-84 已经把那个指针删掉，改成**就地写出这一步为什么值得**。实现这半句的那道断言（`docs/qa/T-64/case-01` 第 128–132 行）由 **QA 换方向**，不是删掉——授权在 PRD 第 274 行的风险表。**这是本作业里「新规则让一道正确的旧检查过期」的唯一一例，记在 `docs/qa/gaps.md` 第 33 条。** | 数那一段：六种问题类型**恰好 6 条**；`flat roles/pm.md` 里同时能查到「funnel」、「leading question」和停止规则的原文 |
 | 6 | **旧的那句软话不在了**：`Stop when the answers are settled` | `flat roles/pm.md \| grep -o 'Stop when the answers are settled' \| wc -l` ＝ **0**。**必须用 `flat`**：这句话今天在第 236–237 行**换行**（`Stop when the answers are` / `settled.`），逐行 `grep` 一次都命中不了——PRD 的 DoD 第 3 条按逐行写，那条检查从写下起就不可能变红（HLD 第十一节第 1 条） |
 | 7 | **A1a 落地**：范围和 CRD 定下之后 PM 自己决定；用户想介入时 PM 给的是**产出文档的摘要**，让用户主动打断，不逐条请示；范围外的改动**原则上拒绝**，除非用户明确指定 | 读「How you write to the user」和第 12 步；三件事都能读到 |
 | 8 | **A1a 不许吃掉必须问的那几处**：范围、DoD 条目、里程碑清单的变化仍然要用户点头；每一次推送、每一次打 tag、每一次发包、合并和删分支仍然各要一次 yes | `flat roles/pm.md \| grep -o 'needs the user' \| wc -l` 改前改后不减；`bash docs/qa/T-01/run.sh` 绿 |
 | 9 | **B5：`in both lanes` / `(both lanes)` 五处全部改成「小活和大活」的意思** | `flat roles/pm.md \| grep -oi 'both lanes' \| wc -l` ＝ **0**（改前 5）。**必须 `grep -i`**：第 1453 行是大写开头的 `Both lanes open with`，区分大小写的 grep 给出 4，会漏掉它 |
 | 10 | **`host/crew.js` 里那一句跟着改**：`The \`ask\` and \`quick\` lanes work either way.` 不能再提一条不存在的通道 | `grep -n 'quick' host/crew.js` ＝ 0 处；`node tools/verify-mount.mjs` 绿 |
 | 11 | **`tools/verify-mount.mjs` 多一道钉子**：PM 那一节里 `quick` 通道的旧措辞**不许回来**（一个 ABSENT 串，和已有的 `**Decisions** section`、`Only the architect writes an ADR` 同一个形状——它不会因为改措辞而误报，只有人重新写下那条旧规则才会红） | `node tools/verify-mount.mjs` 绿；变异证明：把 `quick` 通道那一行加回 `roles/pm.md`，那道检查必须**红**，报告里贴出红的那一行 |
-| 12 | **A5 的钉子有了**（承载格，**活由 QA 做**）：一条 QA 用例断言 `host/roles-preset.js` 真的把 `readRoleText(role.personaFile, rolesDir)` 传成 `persona`，**十个角色一个不落**。它钉的是**今天已经正确**的行为，免得哪天被人拆掉没人知道 | `bash docs/qa/T-64/run.sh` 绿；那条用例要有变异证明（把 `persona` 那一行去掉，用例必须红） |
-| 13 | **现有钉子一个不破**（清单见上面「最容易翻车的地方」） | `node tools/verify-mount.mjs` 绿；`bash docs/qa/T-01/run.sh`、`docs/qa/T-56/run.sh`、`docs/qa/T-62/run.sh` 全绿；`flat roles/pm.md \| grep -o 'docs/qa/gaps.md' \| wc -l` 不减 |
+| 12 | **A5 的钉子有了**（承载格，**活由 QA 做**）：一条 QA 用例断言 `host/roles-preset.js` 真的把 `readRoleText(role.personaFile, rolesDir)` 传成 `persona`，~~**十个角色一个不落**~~ **九个角色一个不落（PM 2026-08-22 更正）**——`host/roles.js` 的 `ROLES` 里是 **9** 个可启动角色；第十份 `roles/pm.md` 不走那个循环，它由 host 那一面加载。`docs/qa/T-64/case-05` 已经用「第十份单独一检查」化解了。它钉的是**今天已经正确**的行为，免得哪天被人拆掉没人知道 | **这一格不是本任务交工的门，别把它当成门**：`docs/qa/T-64/` 只有 QA 能建，而 QA 在**全部编码结束之后**才跑一轮（`CRD 0020`），所以本任务交工的那一刻 `bash docs/qa/T-64/run.sh` 的目标还不存在——照原样验，这一格是一条自己等自己的循环（`crew-qa-7` 报回，2026-08-22）。分成两个时刻：**交工时**（engineer 自己跑，钉的行为今天已经正确）两条：① `grep -c 'persona: readRoleText(role.personaFile, rolesDir)' host/roles-preset.js` ＝ **1**，而且它落在 `for (const role of ROLES)` 那个循环**里面**（一处调用覆盖整张表，所以「一个不落」是结构保证的，不是数出来的）；② `node --input-type=module -e "import {ROLES,PM_PERSONA_FILE} from './host/roles.js';import {readdirSync} from 'node:fs';const f=readdirSync('roles').filter(n=>n.endsWith('.md'));console.log(f.length, ROLES.length, f.filter(n=>n!==PM_PERSONA_FILE).every(n=>ROLES.some(r=>r.personaFile===n)))"` 打出 `10 9 true`——十份提示词里，除 `pm.md`（第十份，由 host 那一面加载、不进这张表）之外的九份各是恰好一个角色的 `personaFile`；**QA 那一轮**（承载格，活由 QA 做）`bash docs/qa/T-64/run.sh` 绿，那条用例要有变异证明（把 `persona` 那一行去掉，用例必须红）。今天它是 `docs/qa/T-64/case-05-persona-wiring.mjs` |
+| 13 | **现有钉子一个不破**（清单见上面「最容易翻车的地方」） | `node tools/verify-mount.mjs` 绿；`bash docs/qa/T-01/run.sh`、`docs/qa/T-56/run.sh`、`docs/qa/T-62/run.sh` 全绿；`flat roles/pm.md \| grep -o 'docs/qa/gaps.md' \| wc -l` 不减（**PM 2026-08-22 更正**：判据是「不减」，所以今天不会误判；但别处写着的基线数字 **4 已经过期，压平后实测是 5 处**。拿 4 当基线会算错——`crew-architect-2` 报的） |
 | 14 | **不动 T-63 写的那两段**（规则 A、规则 B）和那张全局表 | `git diff roles/pm.md` 的每一块都落在通道段、第 1、2、12 步、「How you write to the user」或 Hard rules 里；T-63 的两个锚串仍然各 1 处 |
 | 15 | **`npm test` 全绿，跑两次一致**；用例数不少于 193 | `npm test`；`ls docs/qa/*/case-*.mjs \| wc -l` |
 | 16 | **报告里给出三个文件改动前后的行数**，T-65 从这些数接着 | 读报告；T-65 开工前对一次 |
@@ -1985,7 +2078,7 @@ T-63                                             （一个人做，别的全部�
 | 2 | **B2：第 13 步不再指向一个不存在的提交。** 「in this milestone's commit」改成**单独一个提交**，并写清 message 的形状 | `flat roles/pm.md \| grep -o "in this milestone's commit" \| wc -l` ＝ **0**；读第 13 步，它给出的是一个单独的提交加 message 的形状 |
 | 3 | **B2 的第二半：第 14 步的同一个洞补上。** `CHANGELOG.md` 和仓库自己的规则文件今天**没有**说「放进哪个提交」（两份 README 有） | 读第 14 步；三样（README、`CHANGELOG.md`、规则文件）各自都说清进哪个提交 |
 | 4 | **B3：第 12 步的答案 `Ship this milestone` 改名成「发布给用户」的意思**，正文同时点名第 13 步**和**第 16 步，并写清**每一个 yes** | `flat roles/pm.md \| grep -o 'Ship this milestone' \| wc -l` ＝ **0**；新答案的正文里同时出现「step 13」和「step 16」 |
-| 5 | **B8：Hard rules 里那半句删掉。** 今天写着「Push `main`, a tag, or with force only when the user has just said yes」——它允许一次 yes 就 force push，而第 17 步说 force push **从不**属于这一步 | `flat roles/pm.md \| grep -o 'or with force' \| wc -l` ＝ **0**（或本任务选定的等价原文写进报告）；第 17 步那两句 `git push --force` / `--force-with-lease` **原样在**（`docs/qa/T-01/case-08` 钉着） |
+| 5 | **B8：Hard rules 里那半句删掉。** 今天写着「Push `main`, a tag, or with force only when the user has just said yes」——它允许一次 yes 就 force push，而第 17 步说 force push **从不**属于这一步 | **不要用 `flat roles/pm.md \| grep -o 'or with force' \| wc -l` ＝ 0**：那是纯数个数，而本任务自己做的另一半事（引用旧规则来禁止它）一旦真写进文件，这条验法就把一份**正确**的文件判成错的（`crew-qa-C28` 报回，2026-08-22）。要数的是**提示词自己口气里**的处数：`grant roles/pm.md 'or with force'` ＝ **0**（见本文件最上面「验法怎么跑」第一节；**两侧被引号或反引号包住的引用不算**，例如 `` Never write `or with force` in the hard rules again. `` 是正当写法）。同一格还要：第 17 步那两句 `git push --force` / `--force-with-lease` **原样在**（`docs/qa/T-01/case-08` 钉着）。长期承载：`node docs/qa/T-66/case-04-no-force-push-permission.mjs`（同一判据，两个方向都有变异证明） |
 | 6 | **B8 的第二处：第 16 步那句同向的话一起删。** 今天写着守卫连 force push 都放行 | 读第 16 步；它不再说守卫放行 force push |
 | 7 | **`tools/verify-mount.mjs` 多两道 ABSENT 钉子**：`Ship this milestone` 和 force push 那半句**不许回来**。ABSENT 串不会因为改措辞误报，只有人重新写下旧规则才会红（和已有的 `**Decisions** section` 同一个形状） | `node tools/verify-mount.mjs` 绿；两次变异证明：分别把两句话加回 `roles/pm.md`，两道检查各自必须红，报告里贴出红的那两行 |
 | 8 | **B12：PM 改自己被衡量的那份标准 —— 只追加，不覆盖。** 确认过的原话**永不删除**；PM 写一份 CRD，把修正**标注日期后写在原话旁边**，继续干活，并在文档里用一个**固定标题**（「修正记录」）把每一条都列出来。**不停工，也不悄悄改**（`CRD 0023` 决定一） | 读那一段；四件事（永不删除、CRD、标日期写在旁边、固定标题）齐全；`flat roles/pm.md` 里能查到那个固定标题的英文原文 |
@@ -2019,15 +2112,15 @@ T-63                                             （一个人做，别的全部�
 
 | # | 怎么算做完 | 别人怎么验 |
 | --- | --- | --- |
-| 1 | **A6 落地：第 4 步写清 PRD 装什么。** 一份按类写的清单（不是一份模板），至少覆盖 `docs/research/document-types.md` 指出本仓库缺的三件：**优先级与切割顺序**（Cagan：定优先级是必须的一步，因为 `schedules often slip and you may well be forced to cut some features`）、**发布标准**（六条非功能门槛）、**时间窗口** | 读第 4 步；三样各能读到；每一样能指回 `principles.md` 里 T-63 写的那一节 |
-| 2 | **A6 的第二半：版本历史不写进 PRD。** 写清它在**哪里**——每份 CRD 的 **Applied** 行，和 git history。PRD 只留一行「当前版本 ＋ 日期」（`CRD 0023` 决定六） | `flat roles/pm.md` 里能查到那句话；它必须同时点名 `Applied` 和 git history |
+| 1 | **A6 落地：第 4 步写清 PRD 装什么。** 一份按类写的清单（不是一份模板），至少覆盖 `docs/research/document-types.md` 指出本仓库缺的三件：**优先级与切割顺序**（Cagan 把它立成单独一步：光有 `must-have` / `high-want` / `nice-to-have` 三档不够，每一项还要在自己那一档里排一个 1 到 n 的名次，理由是进度会滑、要砍东西的时候不能让容易的先活下来。**这一句是转述，不是引文**——出处的原话在 `docs/research/document-types.md` 的 Step 8 那一段）、**发布标准**（六条非功能门槛）、**时间窗口** | **先说一件事**：这一格原来在括号里给了一个带反引号的串 `schedules often slip and you may well be forced to cut some features`，它读起来像逐字引文，但**在三个文件里都是 0 处**（`roles/pm.md`、`principles.md`、`docs/research/document-types.md`，`crew-qa-C39` 实测，2026-08-22）——**照它抄一条 grep，那条 grep 永远是红的**。真正在文件里的原文是 `roles/pm.md` 的 `schedules slip, something has to be cut, ...`，以及 `principles.md` 引的 `it is important to rank-order each requirement, from 1 to n`。验法：读第 4 步，三样各能读到；命令上三个锚串各 ≥ 1 处——`flat roles/pm.md \| grep -o 'a rank inside its class, from 1 to n' \| wc -l`、`flat roles/pm.md \| grep -o 'Release criteria' \| wc -l`、`flat roles/pm.md \| grep -o 'target window' \| wc -l`（六条门槛里抽一个：`Localizability` 也必须 ≥ 1）；每一样能指回 `principles.md` 的 `### PRD, the opening document` 那一节。长期承载：`node docs/qa/T-67/case-07-what-a-prd-holds.mjs` |
+| 2 | **A6 的第二半：版本历史不写进 PRD。** 写清它在**哪里**——每份 CRD 的 **Applied** 行，和 git history。PRD 只留一行「当前版本 ＋ 日期」（`CRD 0023` 决定六） | **锚串要按源文件里的字节写，不是按渲染后的样子写**：这一格原来把它写成带反引号的 `` `Applied` ``，而源文件里是 `**Applied**`——照 `` `Applied` `` 抄是 **0 处**，去掉记号才是 1 处（`crew-qa-C40` 实测，2026-08-22；这就是 `docs/qa/gaps.md` 第 27 条的第二例）。验法：① `flat roles/pm.md \| grep -o 'Version history does not go in the PRD' \| wc -l` ＝ **1**；② 那句话之后 320 字符内同时出现 `**Applied**`（带两个星号）和 `git history`——`python3 -c 'import re;t=re.sub(r"\s+"," ",open("roles/pm.md",encoding="utf-8").read());i=t.find("Version history does not go in the PRD");w=t[i:i+320];print(i>=0,"**Applied**" in w,"git history" in w)'` 必须打出 `True True True`。长期承载：`node docs/qa/T-67/case-08-version-history-lives-elsewhere.mjs` |
 | 3 | **A6 的第三半，按 `ADR 0015`：一条 DoD 拆成两半。** PRD 里那一半说**什么算做完**（用户读得懂的话），任务行的 DoD 章节里那一半说**怎么查**（确切的命令）。两半都留在仓库里 | 读第 4 步；两半各自的位置写清了；`flat roles/pm.md \| grep -o 'DoD section' \| wc -l` ≥ 1（`verify-mount.mjs` 钉着这个名字） |
 | 4 | **A7：PRD 一件作业一份。** 文件名形状 `docs/design/prd-<日期>-<作业 slug>.md`，`hld` 同形；**带 slug 不只带日期**（同一天两件活会撞名——上一件作业和本作业的日期都是 2026-08-21）。`docs/design/tasks.md` **不动**：它本来就是全仓库一张表 | 读第 4 步；文件名形状写着；`flat roles/pm.md \| grep -o 'docs/design/tasks.md' \| wc -l` ≥ 1 |
 | 5 | **`roles/pm.md` 里 16 处旧路径全改** | `grep -c 'docs/design/prd\.md\|docs/design/hld\.md' roles/pm.md` ＝ **0**（改前 16 处，实测 2026-08-21） |
 | 6 | **`tools/verify-mount.mjs:886` 那道硬检查改成新形状。** 它今天**要求** `roles/pm.md` 里有字面量 `docs/design/prd.md`，改名之后这个要求本身就是错的 | `node tools/verify-mount.mjs` 绿；变异证明：把新路径从 `roles/pm.md` 里删掉，那道检查必须红 |
 | 7 | **`tools/verify-mount.mjs` 里另外 4 处旧路径跟着改**（含失败信息里的那几处——一条说错话的失败信息会把下一个人指错方向） | `grep -c 'docs/design/prd\.md\|docs/design/hld\.md' tools/verify-mount.mjs` ＝ 0（改前 5 处） |
 | 8 | **`docs/qa/T-60/case-09-prd-and-hld-exist-now.mjs` 在同一个提交里改断言**（承载格，**活由 QA 做**；`ADR 0018`）。它今天用 `existsSync` 断言旧路径**存在** | `npm test` 绿；那条用例的头部注释要写清改名这件事和新路径 |
-| 9 | **B9：`roles/pm.md` 里 4 处仓库内部指针去掉，规则本身就地写出来。** 四处：第 4 步指向 `docs/decisions/crd/0010-…`、第 12 步指向 `principles.md` 12、第 18 步两处指向 `docs/decisions/crd/0010-…`。**它们在别人的仓库里指空**，而其中一处指的是 `principles.md`——那个文件**不随 npm 包发布**（`package.json` 的 `files` 不点它） | `grep -cE 'docs/decisions/crd/[0-9]{4}-' roles/pm.md` ＝ **0**（改前 3 处：310、1301、1320 行）；`grep -nE 'principles\.md [0-9]' roles/pm.md` ＝ **0** 处（改前 1 处：952 行）。**注意不要用 `grep -c 'docs/decisions/crd/'`**——它今天是 6，另外 3 处是「往这里写一份 CRD」的目的地（93、1310、1462 行），删掉它们会破 `verify-mount.mjs` |
+| 9 | **B9：`roles/pm.md` 里 4 处仓库内部指针去掉，规则本身就地写出来。** 四处：第 4 步指向 `docs/decisions/crd/0010-…`、第 12 步指向 `principles.md` 12、第 18 步两处指向 `docs/decisions/crd/0010-…`。**它们在别人的仓库里指空**，而其中一处指的是 `principles.md`——那个文件**不随 npm 包发布**（`package.json` 的 `files` 不点它） | `grep -cE 'docs/decisions/(adr\|crd)/[0-9]{4}-' roles/pm.md` ＝ **0**（改前 3 处：310、1301、1320 行）。**`adr` 这一半是 2026-08-22 补的**：原来只写 `crd`，而 `roles/pm.md` 今天有 **5 处** `docs/decisions/adr/`（253、730、1210、1689、1881 行），任何一处退回成带编号的写法，只查 `crd` 的那条命令**看不见**（`crew-qa-C34` 报回）。另外 `grep -cE 'principles\.md [0-9]' roles/pm.md` ＝ **0**（改前 1 处：952 行；原来写的是 `grep -nE`，它不打个数，读的人拿不到一个可对照的数字）；**编号写在文件名前面**那个方向（`principle 22 in \`principles.md\``）由 T-84 第 6 格新加的钉子守。**注意不要用 `grep -c 'docs/decisions/crd/'`**——它今天是 6，另外 3 处是「往这里写一份 CRD」的目的地（93、1310、1462 行），删掉它们会破 `verify-mount.mjs`。长期承载：`node docs/qa/T-67/case-02-no-numbered-decision-pointers.mjs`（十份提示词、`adr` 与 `crd` 两边都扫） |
 | 10 | **B9 不许把两处「往这里写」的路径删掉。** `verify-mount.mjs` **要求** PM 那一节里有 `principles.md`、`docs/decisions/adr/` 和至少 3 处 `docs/qa/gaps.md`——那些是**写的目的地**，不是「去读这个文件」。B9 只禁「去读」 | `node tools/verify-mount.mjs` 绿；`flat roles/pm.md \| grep -o 'docs/qa/gaps.md' \| wc -l` **不减**（今天 4）；`grep -c 'docs/decisions/adr/' roles/pm.md` ≥ 1 |
 | 11 | **本任务不改任何历史快照**（`docs/decisions/`、`docs/research/`、`CHANGELOG.md`）。理由和 `docs/qa/T-52/case-21` 已经写下的那一条一样：快照里的旧名字诚实地烂在里面，为了一条 `grep` 去重写它才是更大的错（`ADR 0017`） | `git diff --name-only` 里没有 `docs/decisions/`、`docs/research/`、`CHANGELOG.md` |
 | 12 | **不动前面三环写的段落** | `git diff roles/pm.md`：除了那 16 处路径替换和 4 处指针，别的改动都落在第 4 步 |
@@ -2313,7 +2406,7 @@ T-63                                             （一个人做，别的全部�
 | 9 | **A7：带路径的和裸文件名的都算。** 4 处带路径的（改前十份里最多的一份）**加 2 处裸的 `hld.md`**（「`hld.md` must say which boundary is the riskiest」「`hld.md` should name the riskiest」）。理由同 T-70 第 10 格 | `grep -c 'hld\.md\|prd\.md' roles/doc-reviewer.md` ＝ **0**（改前 6 处：4 带路径 ＋ 2 裸）。**PM 2026-08-21 批了这一格的范围扩大** |
 | 10 | **`` `scope: `` 原样在**——它是一道故意脆的散文钉（一次只覆盖一个文件的评审，报告要在开头说清范围） | `grep -c '`scope:' roles/doc-reviewer.md` ≥ 1；`node tools/verify-mount.mjs` 绿 |
 | 11 | **A6 的清单本任务不抄。** PRD 的 DoD 第 13 条只要求「**写它的那个角色**」的提示词里有短版，而这个角色不写那些文档，它读它们。**这一格是「明确不做」，写下来免得下一个人以为漏了** | `git diff roles/doc-reviewer.md` 里没有八种文档类型的清单 |
-| 12 | **A1b 落进这一份提示词自己**：文档评审**一个里程碑只跑一轮**，在编码和 QA 都结束之后，**只看改动的部分**，默认没有第二轮；要重跑也只重跑**同类**（文档改动重跑文档评审）。今天这份文件有一整节 `## Later rounds` 写着旧的多轮形状——**那一节要改写成新形状，不是留着**。另外 A1f 那一条也落在这里：文档评审**按文档并行**，一个 agent 一份文档（`ADR 0019`）。**这一格是本任务行第一版漏掉的工作**，理由同 T-75 第 9 格 | `grep -c 'Later rounds' roles/doc-reviewer.md` ＝ **0**（改前 1 处，302 行）；读新的那一节，四件事都在。**并且那一节必须同时写下代价**：代价的原话在 `CRD 0020` 的「代价，写下来不藏」那一节：**缺陷更晚暴露、返工面更大，用户明确接受了这个交换** |
+| 12 | **A1b 落进这一份提示词自己**：文档评审**一个里程碑只跑一轮**，在编码和 QA 都结束之后，**只看改动的部分**，默认没有第二轮；要重跑也只重跑**同类**（文档改动重跑文档评审）。今天这份文件有一整节 `## Later rounds` 写着旧的多轮形状——**那一节要改写成新形状，不是留着**。~~另外 A1f 那一条也落在这里：文档评审**按文档并行**，一个 agent 一份文档（`ADR 0019`）。~~**这半句取消了（PM 2026-08-22 更正，`crew-qa-C47` 报的）。** 它要错了地方：A1f 说的是**PM 怎么铺开 agent**，而一个评审**没有启动 agent 的工具**——它读到这句话也做不了任何事。PRD 里 A1f 那一行写的落点只有 `roles/pm.md`，实测那边三处都做到了（`one agent per document` 3 处、`per document` 4 处）；`roles/doc-reviewer.md` 里是 0 处，**而这一格的验法一栏本来就没查它**。所以这不是产品坏了，是这一格多要了一件不属于它的事。**这件事本身进 `docs/qa/gaps.md` 第 37 条**：一格正文要两件事、验法只覆盖一件，连红都不会红，而 QA 的清单是照验法切活的，三个 agent 都没认领它。**这一格是本任务行第一版漏掉的工作**，理由同 T-75 第 9 格 | `grep -c 'Later rounds' roles/doc-reviewer.md` ＝ **0**（改前 1 处，302 行）；读新的那一节，四件事都在。**并且那一节必须同时写下代价**：代价的原话在 `CRD 0020` 的「代价，写下来不藏」那一节：**缺陷更晚暴露、返工面更大，用户明确接受了这个交换** |
 | 13 | **只有这一份有的那个坑：13 条检查和「只看改动的部分」不是矛盾。** `## What you check, in this order` 今天有**恰好 13 条**编号检查，而 A1b 说只看改动的部分。那一段必须写清：**13 条一条不少地跑，但每一条只落在这次改动的文档上**——「只看改动的部分」缩小的是**范围**，不是**检查项**。**不写清，下一个文档评审会拿它当跳过检查的理由** | 那一节里 `^[0-9]+\. \*\*` 的条数仍然是 **13**（一条不少）；读那一段，「范围」和「检查项」这两个词分得开 |
 
 ---
@@ -2373,7 +2466,7 @@ T-63                                             （一个人做，别的全部�
 - **里程碑**：M1
 - **形状**：单人（solo）
 - **拥有的文件**：`CLAUDE.md`
-- **测试文件**：**无**——检查在 `docs/qa/T-60/` 里，是 QA 用例。
+- **测试文件**：**无**（指本任务没有自己的**单元测试**文件）——**QA 用例在 `docs/qa/T-80/` 里**（`case-01` 由 `crew-qa-C59` 写、`case-02` 由 `crew-qa-C60` 写，2026-08-22）。~~检查在 `docs/qa/T-60/` 里~~ **（PM 2026-08-22 更正，`crew-qa-C60` 报的：那样写会让人以为 T-80 的 QA 用例在 T-60 那个文件夹里。）**，是 QA 用例。
 - **依赖**：T-64、T-65、T-66、T-67、T-69、T-70 到 T-78（**前面全部交工**）
 - **要求来源**：PRD 的 B5（3 处）、A7（3 处）、A1b、A1c、A1d、A6（一行）、DoD 第 15 条；
   `docs/research/document-types.md` 第十三节（它顺手报的那件事）
@@ -2382,12 +2475,12 @@ T-63                                             （一个人做，别的全部�
 | # | 怎么算做完 | 别人怎么验 |
 | --- | --- | --- |
 | 1 | **B5：`both lanes` 三处改成「小活和大活」的意思** | `flat CLAUDE.md \| grep -oi 'both lanes' \| wc -l` ＝ **0**（改前 3 处，`grep -i`） |
-| 2 | **A7：3 处旧路径改成新形状**，「State and documents」那张表里 `prd.md` 和 `hld.md` 两行跟着改 | `grep -c 'docs/design/prd\.md\|docs/design/hld\.md' CLAUDE.md` ＝ 0（改前 3 处） |
+| 2 | **A7：3 处旧路径改成新形状**，「State and documents」那张表里 `prd.md` 和 `hld.md` 两行跟着改。**改名那件事的记录留下**：禁的是**指针**（「去读 `docs/design/prd.md`」），不是**提及**（「它以前叫 `docs/design/prd.md`」）——PRD 的 DoD 第 11 条第 6 版写着提及必须留下，否则改名这件事在仓库里就没有记录了 | **不要用 `grep -c 'docs/design/prd\.md\|docs/design/hld\.md' CLAUDE.md` ＝ 0**：今天它是 **1**，那 1 处是第 321 行的改名记录（`Those two were called ... until 0.9.0; the \`apply-req\` job renamed them, because ...`），而 PRD 第 11 条第 6 版**要求它留着**——照那条命令验，这一格从写下起就永远过不了（`crew-qa-C36` 报回，2026-08-22）。改成按**句**判：`pointers CLAUDE.md`（见本文件最上面「验法怎么跑」第一节）必须打出 **`pointer 0`**，而且 **`mention` ≥ 1**。长期承载：`node docs/qa/T-67/case-04-old-document-names-gone.mjs`（同一判据，同一批标记词） |
 | 3 | **`docs/qa/T-60/case-09` 在同一个提交里改断言**（承载格，**活由 QA 做**；`ADR 0018`）。它今天断言 `CLAUDE.md` 里有 `` `prd.md` — the opening document of **both** lanes `` ——B5 和 A7 各改掉这句话的一半 | `npm test` 绿；`bash docs/qa/T-60/run.sh` 绿 |
 | 4 | **A1b、A1c、A1d 的新形状进「State and documents」和「Commands」两节**：QA 一轮、三评审各一轮、通道只剩两条 | 读那两节；三件事都在 |
 | 5 | **那句已经不成立的话改掉**：「What is still missing is `docs/design/api/`, `docs/release/` and `docs/research/`」——**`docs/research/` 已经有两份文件了**（`req-part-b-audit.md`、`document-types.md`），是 researcher 自己顺手报回来的。另外两半仍然成立 | `flat CLAUDE.md \| grep -o 'no job here has written one' \| wc -l` ＝ 0；新句子只说 `docs/design/api/` 和 `docs/release/` |
 | 6 | **A6 的一行**：八种文档类型「装什么」的清单在 `principles.md` 里，`CLAUDE.md` 的「Documentation」一节要提一句它在哪 | 读那一节 |
-| 7 | **A3 的一行**：十份角色提示词各有一段「你能写什么」，权威原文在 `principles.md`，改它要同一个提交里改十份 | 读「Adding or changing a role」那一节；**那六步要跟着变成七步或在某一步里加上这件事**——新加一个角色的人必须知道要抄那两段 |
+| 7 | **A3 的一行**：十份角色提示词各有一段「你能写什么」，权威原文在 `principles.md`，改它要同一个提交里改十份 | 读「Adding or changing a role」那一节；**~~那六步要跟着变成七步~~ **（PM 2026-08-22 更正，`crew-qa-C60` 报的：作业开始那个提交 `d06a19e` 里那一节是 **7 步**，不是六步；今天是 **8 步**，T-80 的提交信息自己写的也是「grows from seven steps to eight」。**格子的意思仍然成立**，错的只是数字。）**七步要跟着变成八步或在某一步里加上这件事**——新加一个角色的人必须知道要抄那两段 |
 | 8 | **本作业动过的每一条仓库规则都跟着改了** | 拿 `git log --oneline d06a19e..HEAD` 列出的每个任务，对着 `CLAUDE.md` 逐条问「这条规则动了吗」；报告里逐条写答案 |
 | 9 | **`npm test` 全绿，跑两次一致**；用例数不少于 193 | `npm test`；`ls docs/qa/*/case-*.mjs \| wc -l` |
 
@@ -2552,5 +2645,185 @@ A1d 改了第 1 步，没有扫到别处说同一件事的地方。**同一类�
 | 6 | **`roles/pm.md` 不超过 1900 行**（今天 1899，**只剩 1 行**——这一项是替换，不是新增；装不下就先合并重复段落，不许删规则、不许抬上限） | `wc -l roles/pm.md` ≤ 1900 |
 | 7 | **`roles/pm.md` 里一个中文字符都没有** | `grep -cP '[\x{4e00}-\x{9fff}]' roles/pm.md` ＝ 0 |
 | 8 | **`npm test` 全绿，跑两次一致**；用例数不许减 | `npm test`；`ls docs/qa/*/case-*.mjs \| wc -l` |
+
+---
+## T-84 — 本作业自己造的一个指针，和一处早该扫掉的旧措辞（bug，PM 写这一行）
+
+- **Verdicts**：code: not run — 按 `CRD 0020`，代码评审集中在 M1 最后一程 ｜ security: not run — 同样在最后一程；本任务只改散文和一段检查代码 ｜ qa: not run — 判据是 `docs/qa/T-67/case-03` 加一道新钉子后变绿，QA 在本任务之后补 ｜ doc: not run — 文档评审同样集中在最后一程
+
+- **里程碑**：M1
+- **形状**：单人（solo）
+- **拥有的文件**：`roles/pm.md`（**只改第 2 步里那一句**）和 `tools/verify-mount.mjs`。别的一个都不许碰。
+- **测试文件**：`tools/verify-mount.mjs` 里新加的那道钉子（**它就是本任务的单元测试**）。
+- **依赖**：T-64（写了那句话）、T-67（定了「不许按编号指仓库内文件」这条规则）
+- **要求来源**：**两个 bug**。① `crew-qa-C35`，2026-08-22；② `crew-qa-C25`，2026-08-22（PM 认账：C-25 报过，PM 说要写进 T-67 的简报，没写）。
+
+## 报告的是什么（照抄报告人的话，不转述）
+
+C-35 报的第一件：
+
+> `roles/pm.md` 第 370–372 行**还留着一处按编号指 `principles.md` 的指针**，而且它是**本作业新写进去的**：
+> `its sources are principle 22 in \`principles.md\`, the crew's own principles file`
+> **但它绕过了所有验法**：编号写在文件名**前面**，所以 T-67 第 9 格、T-71 第 7 格、T-77 第 7 格、
+> 以及 C-35 给我的正则，**四个全都是 0**。我的用例因此是绿的。我**没有**为它加钉子：
+> 加了今天就红，而清单要的是绿的用例。
+
+C-25 报的第二件：`tools/verify-mount.mjs` 里 `both lanes` 还有 **4 处**（第 559 行的注释、
+第 582 行和第 933 行的失败信息、第 915 行的注释）。第 915 行那一处是**大写开头**的 `Both lanes`，
+所以区分大小写的 `grep` 只看得见 3 处——PM 自己在开这一行之前就踩了一次。
+这四处描述的是一个**已经不存在的形状**：本作业的 A1d 取消了 `quick` 通道，今天只有 `ask` 和 `team`。
+
+## 这一行为什么由 PM 写
+
+`CLAUDE.md` 写着：`team` 通道里的一个 bug 变成一个任务行，**它的 DoD 章节由 PM 在修之前写**，
+永远不由动手修的那个 engineer 写。
+
+## DoD（PM 写，在简报发出之前）
+
+| # | 怎么算做完 | 别人怎么验 |
+| --- | --- | --- |
+| 1 | **那个编号在前的指针没了。** 第 2 步开头那句话不再写「它的出处是 `principles.md` 的第 22 条原则」。理由和代价**就地写出来**（第 2 步下面已经把六类问题、漏斗、两种失败、停止规则全写了，所以就地要说的只是「这一步为什么值得」，不是把原则 22 抄一遍） | `python3 -c "import re,sys;t=re.sub(r'\s+',' ',open('roles/pm.md',encoding='utf-8').read());print(len(re.findall(r'principles?\s+\d+\s+(?:of\|in)\s+.{0,3}principles\.md',t,re.I)))"` ＝ **0**（改前 1） |
+| 2 | **两个方向都为 0**：编号在文件名后（`principles.md` 21）和编号在文件名前（`principle 22 in \`principles.md\``），十份提示词合计各 0 处 | `node docs/qa/T-67/case-03-no-principles-by-number.mjs` 必须绿（它已经守着「编号在后」那个方向的两个匹配器）；「编号在前」那个方向由第 6 格新加的钉子守，`node tools/verify-mount.mjs` 必须绿 |
+| 3 | **`roles/pm.md` 里 `principles.md` 这个文件名可以留**（第 2 步那句话之外还有 3 处，全是「这个 crew 的原则文件」式的就地命名），**但一处都不许带编号** | `grep -c 'principles\.md' roles/pm.md` ≥ 1（不许把文件名全删掉，那是另一种坏法）；第 1、2 格同时为 0 |
+| 4 | **`tools/verify-mount.mjs` 里 `both lanes` 四处全部改掉**，改成今天真实的形状（`ask` 和 `team` 两条通道；小活由 PM 打字、大活由 architect 打字） | `grep -oic 'both lanes' tools/verify-mount.mjs` ＝ **0**（改前 4）。**必须 `grep -i`**：第 915 行是大写开头的 |
+| 5 | **那四处的意思一个字不许丢。** 它们说的是「一张任务表、一种形状，只有打字的人换」和「同一份开局文档」——这两件事今天仍然为真，改的只是「两条通道」这个错的说法 | 逐处读改动前后；三道检查（第 582、933 行那两道 `fail`）的**判定条件一个字节不许动**，只改失败信息里的措辞 |
+| 6 | **新加一道钉子，禁「编号在前」这个形状**，压平后判，覆盖十份提示词 | 那道钉子在 `tools/verify-mount.mjs` 里；`node tools/verify-mount.mjs` 绿 |
+| 7 | **证明那道钉子真能红**：把第 1 格删掉的那句话原样加回去（跨行加，证明必须压平），钉子必须红，并且**点名是哪一份文件**。改回来之后必须绿。报告里贴真实输出 | 报告里的两段输出；`git status --porcelain` 证明真仓库没留下变异 |
+| 8 | **不许改 `docs/qa/` 里任何文件**，`docs/qa/T-67/case-03` 尤其不许动 | `git diff --name-only` 里没有 `docs/qa/` 下的任何路径 |
+| 9 | **`roles/pm.md` 不超过 1900 行**（今天 1899，只剩 1 行——这一项是替换，不是新增） | `wc -l roles/pm.md` ≤ 1900 |
+| 10 | **`roles/pm.md` 和 `tools/verify-mount.mjs` 里一个中文字符都没有** | `grep -cP '[\x{4e00}-\x{9fff}]' roles/pm.md tools/verify-mount.mjs` 两个都是 0 |
+| 11 | **`npm test` 全绿，跑两次一致**；用例数不许减 | `npm test`；`ls docs/qa/*/case-*.mjs \| wc -l` |
+
+**一句提醒**：本任务是全树唯一在跑的写任务，所以**你自己跑 `npm test`**（`ADR 0022` 只管并行波次）。
+
+---
+## T-85 — 一道被新规则取代的旧断言，反过来而不是删掉（PM 写这一行）
+
+- **Verdicts**：code: not run — 按 `CRD 0020`，代码评审集中在 M1 最后一程 ｜ security: not run — 同样在最后一程；本任务只改一个用例文件 ｜ qa: pass — 本任务**本身就是 QA 做的**，`crew-qa-C64` 2026-08-22 交工，19 道检查变 22 道全绿，六次变异证明加两次假红测试 ｜ doc: not run — 文档评审同样集中在最后一程
+
+- **里程碑**：M1
+- **形状**：单人（solo），**由 QA 做**——`docs/qa/` 是 QA 的家
+- **拥有的文件**：`docs/qa/T-64/case-01-step-2-socratic-interview.mjs`，**只有它**
+- **测试文件**：就是它自己
+- **依赖**：T-64（写了那道断言）、T-67（定了取代它的规则）、T-84（删掉了那个指针，让它变红）
+- **要求来源**：**不是 bug，是计划内工作。** 授权在 PRD 第 274 行的风险表：
+  「本作业自己会让已有用例变红……**每一处都在同一个提交里改断言，不是删用例。`docs/qa/` 是 QA 的家，
+  所以那几条用例由 QA 改，不是 engineer、不是 PM。**」
+  **漏掉的第四处**就是这一道（风险表预告了三处），记在 `docs/qa/gaps.md` 第 33 条。
+
+## 这一行为什么存在，一句话
+
+T-64 第 5 格要求 `roles/pm.md` 的第 2 步**按编号指向** `principles.md` 的原则 22。
+后来本作业的 B9 定下：**角色提示词不许按编号指仓库内文件**（`principles.md` 不随 npm 包发布）。
+于是 T-84 删掉那个指针，而实现旧要求的那道断言**从一道正确的检查，变成了阻止新规则落地的东西**。
+T-84 的 engineer 撞上它、停下来问、并且**明说**唯一能让它自己全绿的第三条路（把两个串在文件里拆远）
+是「骗检查」，它没有走。
+
+## DoD（PM 写，在简报发出之前；这一格当时只活在简报里，PM 在 architect 交出任务表后补写，如此承诺、如此兑现）
+
+| # | 怎么算做完 | 别人怎么验 |
+| --- | --- | --- |
+| 1 | 那道断言**换了方向**：现在断言第 2 步**不**按编号指 `principles.md`，**两个词序都判**（`principles.md` 21 和 `principle 22 in \`principles.md\``） | 读那几行；`node docs/qa/T-64/case-01-step-2-socratic-interview.mjs` exit=0 |
+| 2 | **压平后判**，并带一条自检：拿一个**在数字和文件名之间折行**的样本喂给匹配器，压平后必须命中、逐行扫必须扫不到 | 那条自检在文件里；变异输出证明逐行为 0、压平为 1 |
+| 3 | **加一条正向断言**：第 2 步**就地**写出了这一步为什么值得。判**结构**（同一句里同时称出「问一句的成本」和「开局文档错了的成本」），**不许照抄那句散文** | 那条断言在文件里；一次「整句改写并换地方折行」的假红测试必须**绿**，一次「只留一半」必须**红** |
+| 4 | **检查数不许减**：改前 **19** 道（不是 14——PM 的简报把这个数写错了，`crew-qa-C64` 实测更正） | `node` 输出末尾那个总数 ≥ 19 |
+| 5 | **不许和 `docs/qa/T-67/case-03` 或 T-84 在 `tools/verify-mount.mjs` 加的钉子重复。** 那两道判的是**十份提示词、整份文件、各一个词序**；这一道判的是**第 2 步这一段、两个词序、外加一条正向** | 报告里说清三者范围差在哪；**判据必须不重叠**：一份「指针删了、理由也没补」的第 2 步，那两道都绿，只有这一道红 |
+| 6 | **变异证明**：① 指针原样加回 → 红；② 同一句跨行加回 → 红而逐行 grep 读 0；③ 什么都不改 → 绿 | 报告里三段真实输出 ＋ `git status --porcelain` |
+| 7 | **别的文件一个都不许碰** | `git diff --name-only` 里只有那一个用例文件 |
+| 8 | **用例文件里一个中文字符都没有**；跑两次结果一致 | `grep -cP '[\x{4e00}-\x{9fff}]'` ＝ 0；两次 exit=0 |
+
+**交工时的真实结果**：19 道 → **22 道全绿**，六次变异（要求三次）＋ 两次假红测试，跑两次一致，中文 0 字符。
+
+---
+## T-86 — `roles/code-reviewer.md` 说任务表是 PM 写的，两张权威表说是 architect（bug，PM 写这一行）
+
+- **Verdicts**：code: not run — 按 `CRD 0020`，代码评审集中在 M1 最后一程 ｜ security: not run — 同样在最后一程；本任务只改一个从句 ｜ qa: not run — 判据是两张权威表和这一句一致，PM 用命令验 ｜ doc: not run — 文档评审同样集中在最后一程
+
+- **里程碑**：M1
+- **形状**：单人（solo）
+- **拥有的文件**：`roles/code-reviewer.md`，**只有它**，而且**只改那一个从句**。
+- **测试文件**：**无**。判据是三条 `grep`，PM 自己跑（见 DoD）。
+- **依赖**：T-63（写了那两张权威表）、T-75（改过这份文件的别处）
+- **要求来源**：**这是一个 bug。** 报告人：`crew-qa-C46`，2026-08-22。**PM 复核过原文。**
+
+## 报告的是什么（照抄报告人的话，不转述）
+
+> `roles/code-reviewer.md` 第 21–23 行：
+> `let the role that owns that file write it: an engineer for product code and its unit tests,`
+> `` `crew_qa` `` `for the cases inside its own task's folder, **the PM for the shared QA runner,`
+> `the standing gap list, the task table and the project's own rules**.`
+>
+> 而 `principles.md`「Who writes which document」那一行是：
+> `| The task table's rows, and the DoD section on each row | the architect; the PM on small work, and the PM for a bug's row |`
+>
+> **本作业有 architect，所以任务行不是 PM 写的。** 宽松地读也能说通（评审只跟 PM 说话，
+> 所以「给 PM」是路由而不是归属），但那句话的框是 `the role that owns that file`，说的就是归属。
+> **这正是 Part B 那八条要消灭的形状：两份文件说同一件事，说法不一样。**
+
+**PM 的复核**（2026-08-22，逐字核过）：`roles/code-reviewer.md` 那一句确实这样写；
+`principles.md` 第 1668 行和 `roles/pm.md` 第 96 行的两张权威表**逐字相同**，都写 architect。
+**报告人是对的。**
+
+## DoD（PM 写，在简报发出之前）
+
+| # | 怎么算做完 | 别人怎么验 |
+| --- | --- | --- |
+| 1 | 那一句里「任务表」那一项的归属改成和两张权威表**一致**：**architect**；小活是 PM；bug 那一行是 PM | 读那一句；`grep -c 'the architect' roles/code-reviewer.md` ≥ 1 |
+| 2 | **`the shared QA runner`、`the standing gap list`、`the project's own rules` 三项仍然归 PM**——那三项两张权威表也写 PM，它们**没有错**，不许一起改掉 | 那一句里三项各在，且仍在 PM 那一侧 |
+| 3 | **那句话的框不变**：它讲的是「谁拥有那个文件就让谁写」，不是「都交给 PM」。改的只是任务表这一项的归属 | `grep -c 'the role that owns that file' roles/code-reviewer.md` ＝ 1（改前 1，不许减） |
+| 4 | **不许改这份文件的别处。** T-75 写的那一节（`## One round, at the end, on the changed part only`）和可写集合那一节一个字不许动 | `git diff -U0 roles/code-reviewer.md` 只有一块，落在那一句上；`node docs/qa/T-75/case-01-reviewers-write-nothing.mjs` 和 `case-02-one-round-each-and-its-cost.mjs` 都必须绿 |
+| 5 | **不许改 `docs/qa/`、`principles.md`、`roles/pm.md`、`docs/design/`** | `git diff --name-only` 里只有 `roles/code-reviewer.md` |
+| 6 | **一个中文字符都没有** | `grep -cP '[\x{4e00}-\x{9fff}]' roles/code-reviewer.md` ＝ 0 |
+| 7 | **`npm test` 全绿，跑两次一致** | `npm test`；`ls docs/qa/*/case-*.mjs \| wc -l` 不减 |
+
+---
+
+## T-87 — `roles/qa.md` 有三处话没说完，而 PM 只好在每一份简报里补（bug，PM 写这一行）
+
+- **Verdicts**：code: not run — 按 `CRD 0020`，代码评审集中在 M1 最后一程 ｜ security: not run — 同样在最后一程 ｜ qa: not run — 判据是三段话在，PM 用命令验 ｜ doc: not run — 文档评审同样集中在最后一程
+
+- **里程碑**：M1
+- **形状**：单人（solo）
+- **拥有的文件**：`roles/qa.md`，**只有它**。
+- **测试文件**：**无**。判据是三条结构性 `grep`，PM 自己跑。
+- **依赖**：T-72（写了那两段形状）
+- **要求来源**：**这是三个 bug，报告人是本轮真的在跑那个形状的 agent。** `crew-qa-C50`，2026-08-22。
+
+## 报告的是什么（照抄报告人的话，不转述）
+
+> **有三件事我是靠简报知道的，不是靠 `roles/qa.md` 知道的**，而且它们不是小事：
+>
+> 1. **`run.sh` 归谁写，没有断连规则。** 第 ② 段写的是「missing 就写、已有的别改」，
+>    理由是「同一行谁写都一样」。**但两个 job 2 的 agent 同一秒开跑时都看到它 missing，
+>    于是都写**——而且不是同一行：头部注释是为各自任务写的，**最后写的赢，而且不报错**。
+>    这正是同一份文件的「后两行归 PM」一节亲口描述的那个失败，
+>    而**同一个理由对共享文件夹里的 `run.sh` 一个字没说**。
+> 2. **「变红证明」没说要在副本里做。** 第 ② 段说 `Make it fail once on purpose`，
+>    同一段又说 `never write inside the repository`。**照字面读，「故意弄坏一次」只能是去改
+>    产品文件然后改回来**——在一棵十几个 agent 正在写的树里。
+>    提示词里没有「副本」这个词，也没提 `tempRepo()` 不复制 `docs/qa/` 和 `principles.md`。
+>    **这一条我认为是三条里后果最大的。**
+> 3. **第 ② 段的 Step 3 叫我跑那三条命令，而简报明令禁止其中两条。**
+>    紧接着的「假红不是证据」一节又承认「job 2 底下这两步读的是正在被别人写的文件」。
+>    **也就是说，这个形状按设计让很多 agent 同时跑，然后又叫每个 agent 去跑两条在这种情况下
+>    必然出噪音的命令。**
+
+**PM 认这三条，而且第 3 条尤其要认**：本轮 16 ＋ 14 个 QA agent，**每一份简报**都写了
+「你不许跑 `npm test`、`run-all.sh`、`verify-mount.mjs`、任何 `run.sh`」。
+那句话被写了三十遍，而**它本该在 `roles/qa.md` 里写一遍**——
+这正是本 crew 自己那条「什么都不许只活在简报里」要禁的事，而违反它的是 PM。
+
+## DoD（PM 写，在简报发出之前）
+
+| # | 怎么算做完 | 别人怎么验 |
+| --- | --- | --- |
+| 1 | **`run.sh` 有断连规则。** 那一段说清并行的一轮里谁写它。两条路都行：① 点名一个确定的规则（例如「清单里编号最小的那条用例的 agent 写它」），或 ② 也归 PM，理由和那两份共享文件一样。**必须给出理由**（后写的赢、不报错） | 读那一段；`grep -c 'run\.sh' roles/qa.md` ≥ 1；那一段里同时有「谁写」和「为什么」 |
+| 2 | **「故意弄坏一次」明说在一份抛弃用的副本里做**，并提醒 `tempRepo()` **不复制** `docs/qa/`、`docs/qa/lib/` 和 `principles.md`（判这三样要自己搭假树）。**和「不许写仓库」那句话不再矛盾** | 那一段里同时有 `copy`（或 `throwaway`）和 `tempRepo`；`grep -c 'never write inside the repository' roles/qa.md` 不减 |
+| 3 | **Step 3 说清「并行的一轮里只跑自己那一条」。** 那三条命令里的后两条（共享 runner、项目测试命令）改成「**PM 说树静了才跑**，否则只跑你自己那一个用例文件」 | 读 Step 3；那一段里有「并行」「树在动」「只跑自己那一条」三个意思 |
+| 4 | **`## Job 1` 和 `## Job 2` 两个标题原样保留**，两段的分界不动（`docs/qa/T-72/case-01` 钉着它） | `node docs/qa/T-72/case-01-qa-round-two-shapes.mjs` 绿 |
+| 5 | **T-72 第 7 格那一段（两份共享文件归 PM）一个字不许动** | `node docs/qa/T-72/case-02-shared-files-belong-to-the-pm.mjs` 绿 |
+| 6 | **只改 `roles/qa.md`** | `git diff --name-only` 里只有它 |
+| 7 | **一个中文字符都没有** | `grep -cP '[\x{4e00}-\x{9fff}]' roles/qa.md` ＝ 0 |
+| 8 | **`npm test` 全绿，跑两次一致** | `npm test`；用例数不减 |
 
 ---

@@ -52,7 +52,7 @@ PM 给了两条路，用户选了第二条：
 | # | 类型 | 它打开什么 | 例子 |
 | --- | --- | --- | --- |
 | 1 | **澄清** | 那些词到底指什么 | 「你说的『快』是什么意思？」「能给一个例子吗？」 |
-| 2 | **探assumption** | 没检查就相信的东西 | 「你这里把什么当成理所当然了？」「它总是成立吗？」 |
+| 2 | **探问预设** | 没检查就相信的东西 | 「你这里把什么当成理所当然了？」「它总是成立吗？」 |
 | 3 | **理由与证据** | 那个判断有没有依据 | 「你怎么知道的？」「你见到过什么支持它？」 |
 | 4 | **别的视角** | 没人摆到桌上的选项 | 「谁会不同意，为什么？」「有别的做法吗？」 |
 | 5 | **推论** | 这个选择背后拖进来的东西 | 「照那样建，接下来会怎样？」「什么会坏？」 |
@@ -108,7 +108,7 @@ PM 给了两条路，用户选了第二条：
 - [6 types of Socratic Questions — University of Michigan](https://websites.umich.edu/~elements/probsolv/strategy/cthinking.htm)
 - [The Six Types of Socratic Questions (PDF)](https://www.trigonweb.com/dowload/SOCRATIC%20QUESTIONS.pdf)
 - [Socratic Questioning in Psychology: Examples and Techniques](https://positivepsychology.com/socratic-questioning/)
-- [Socratic Questioning — a requirements elicitation tool](https://masteringbusinessanalysis.com/mba180-socratic-questioning/)
+- [Socratic Questioning as a requirements elicitation tool](https://masteringbusinessanalysis.com/mba180-socratic-questioning/)
 - [How to Use the Socratic Questioning Technique](https://therightquestions.co/the-socratic-method-questioning-technique/)
 - [Improve Investigative Interviews with Socratic Questioning](https://taproot.com/improve-investigative-interviews-with-socratic-questioning/)
 - [Effective questioning techniques — the funnel](https://pdf.ai/resources/effective-questioning-techniques)

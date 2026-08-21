@@ -515,6 +515,66 @@ for (const fileName of [PM_PERSONA_FILE, ...ROLES.map(role => role.personaFile)]
   }
 }
 
+// No role prompt may point at `principles.md` BY NUMBER, and this is the half of
+// that ban where the NUMBER COMES FIRST — `principle 22 in \`principles.md\``.
+// The other half, where the file name comes first (`principles.md` 21), is held
+// by a case under docs/qa/ for task T-67.
+//
+// WHY A SECOND PIN FOR THE SAME RULE. The number-first shape walked past FOUR
+// pins written to ban exactly this: three DoD cells and both matchers of that
+// case read 0 while the pointer sat in roles/pm.md — put there by the very job
+// that was deleting the name-first ones. Every one of the four looked for the
+// name before the number, so reversing the two words was enough to become
+// invisible. A rule with one direction guarded is a rule with a door in it.
+//
+// WHY THE PAIR AND NOT THE NAME. `principles.md` does not ship in the npm
+// package (the `files` list in package.json does not name it), so a numbered
+// entry inside it is empty twice over in somebody else's repository: a number
+// into a file that is not there. The bare name has to STAY — the PM block below
+// requires it, and the doc review reads the file as one entry of its list — so
+// what is banned is the pair "number + name", never the name on its own. That is
+// the mention-versus-pointer split, and this is the fourth time this repository
+// has had to draw it.
+//
+// A COUNTING NOUN IS REQUIRED before the number. A pointer always names what it
+// is numbering, while a correct sentence can put a digit near the name by
+// accident — "the seven homes: a rule to `principles.md`" is right and must stay
+// green. Demanding the noun is what keeps this from going red on a good file.
+//
+// JUDGED FLATTENED, WITH A SELF-TEST ON THAT. An ABSENT pin may only be judged
+// after flattening: this prose wraps at 80 columns, so the sentence can come
+// back with the number ending one line and the name opening the next, and a
+// line-based scan reads 0 on a file that carries the pointer. The first branch
+// feeds the matcher that exact folded sample and demands the flattened scan hit
+// it while a line-by-line scan misses it — so a later rewrite back to a line
+// scan goes red here instead of quietly going blind.
+{
+  const numberFirst = () => /\b(?:principles?|rules?|entr(?:y|ies)|items?|sections?)\s+\d+[^.\n]{0,24}?principles\.md/gi;
+  // ONE scanner, used by the self-test and by the ten prompts alike. That is
+  // deliberate: a self-test that exercised the bare regex instead would still
+  // pass after somebody dropped the flattening from the file loop, which is the
+  // likeliest way this pin would go blind. Going through the same function means
+  // the self-test fails the moment `flat` leaves this scanner.
+  const pointersIn = (text) => {
+    const flattened = flat(text);
+    return [...flattened.matchAll(numberFirst())]
+      .map((match) => JSON.stringify(flattened.slice(Math.max(0, match.index - 50), match.index + match[0].length).trim()));
+  };
+  const FOLDED = "its sources are principle 22\nin `principles.md`, the crew's own principles file";
+  const perLine = (text) => text.split("\n").some((line) => numberFirst().test(line));
+
+  if (pointersIn(FOLDED).length !== 1 || perLine(FOLDED)) {
+    fail(`the number-first \`principles.md\` scanner in tools/verify-mount.mjs no longer behaves like a flattened pin: it found ${pointersIn(FOLDED).length} pointer(s) in a folded sample it must find exactly 1 in, and a line-by-line scan of that sample ${perLine(FOLDED) ? "also matched, so the two scans are the same scan and the folding case is untested" : "correctly matched nothing"}. Either the flattening was dropped from the scanner, or the sample was changed so it no longer wraps at the number. As it stands the pointer can come back across a line break and this check will read 0 — restore the flattened scan`);
+  } else {
+    const pointers = [];
+    for (const fileName of [PM_PERSONA_FILE, ...ROLES.map(role => role.personaFile)]) {
+      for (const pointer of pointersIn(readRoleText(fileName, undefined))) pointers.push(`roles/${fileName}: ${pointer}`);
+    }
+    if (pointers.length) fail(`${pointers.length} role prompt pointer(s) name \`principles.md\` by number with the number first — ${pointers.join(" | ")}. That file does not ship in the npm package, so the sentence sends the reader to a numbered entry in a file that is not there, and the reader is a role that cannot ask. Write the reasoning in place instead: say why the step is worth running, not which numbered entry explains it. The bare file name may stay; the number beside it may not`);
+    else ok(`no role prompt points at principles.md by number, number first (${1 + ROLES.length} prompts, flattened)`);
+  }
+}
+
 // The other side of the same rule (CRD 0006). These three role files used to
 // send a small job's decision about HOW to a **Decisions** section of the DoD.
 // That file lives in the job folder and is dropped with it, so the decision was
@@ -556,8 +616,9 @@ for (const fileName of ["engineer.md", "test-engineer.md", "code-engineer.md", "
 // CRD 0010, in the four role files that act on it. `DoD` is the name of a
 // SECTION and never a file name: every milestone and every task row carries one,
 // and a check now lives as an item inside it. So each of these files must name
-// `docs/design/tasks.md` — the one task table, in both lanes, whoever types it —
-// and must say `DoD section`, and must NOT name a file called `dod.md`.
+// `docs/design/tasks.md` — the one task table, on small work and big work alike,
+// whoever types it — and must say `DoD section`, and must NOT name a file called
+// `dod.md`.
 //
 // The absent string is the pin that matters. A DoD written as its own file lives
 // in the job folder, is dropped with the job, and takes every check inside it
@@ -579,7 +640,7 @@ for (const fileName of ["engineer.md", "test-engineer.md", "code-engineer.md", "
 for (const fileName of ["architect.md", "engineer.md", "test-engineer.md", "code-engineer.md", "qa.md", "doc-reviewer.md", "code-reviewer.md", "security-reviewer.md"]) {
   const text = readRoleText(fileName, undefined);
   if (text.includes("dod.md")) fail(`roles/${fileName} names a file called \`dod.md\` (at index ${text.indexOf("dod.md")}) — CRD 0010 forbids that file name anywhere, because a DoD file lives in the job folder and is dropped with it. \`DoD\` is a section of the job's own PRD (docs/design/prd-<date>-<job-slug>.md) or of a task row in docs/design/tasks.md. Point the role at those two files instead`);
-  else if (!text.includes("docs/design/tasks.md")) fail(`roles/${fileName} does not name \`docs/design/tasks.md\` — CRD 0010 gives both lanes one task table in one place, with one shape; only the typist changes (the architect on big work, the PM on small work). Every task row and its DoD section live there, so a role that does not know the path cannot read its own task. Put it back`);
+  else if (!text.includes("docs/design/tasks.md")) fail(`roles/${fileName} does not name \`docs/design/tasks.md\` — CRD 0010 gives small work and big work one task table in one place, with one shape; only the typist changes (the architect on big work, the PM on small work). Every task row and its DoD section live there, so a role that does not know the path cannot read its own task. Put it back`);
   else if (!text.includes("DoD section")) fail(`roles/${fileName} never says \`DoD section\` — that is the thing CRD 0010 creates: what "done" means and how somebody else checks it, written into the task row or the milestone. With the name gone the role no longer knows the section exists. Put it back`);
   else ok(`roles/${fileName} points at docs/design/tasks.md and knows the DoD section, and names no dod.md`);
 }
@@ -912,9 +973,10 @@ function applyCapturingLogs(config, options) {
     // can come back by a reword: it takes someone writing the old rule again.
     else if (section.text.includes("**Decisions** section")) fail("PM section still sends a decision to a **Decisions** section of the DoD — the DoD lives in the job folder and is dropped with it, so CRD 0006 moved every decision about HOW to an ADR in docs/decisions/adr/. Remove that instruction from roles/pm.md");
     else if (section.text.includes("Only the architect writes an ADR")) fail("PM section still says `Only the architect writes an ADR` — CRD 0006 makes the PM write it when the job has no architect, so that line contradicts the rule around it. Remove it from roles/pm.md");
-    // CRD 0010. Both lanes open with the same kind of document — a short PRD for
-    // small work, the same file with milestones for big work — and both keep the
-    // task table in `docs/design/tasks.md`. Two paths, pinned present.
+    // CRD 0010. Small work and big work open with the same kind of document — a
+    // short PRD for small work, the same file with milestones for big work — and
+    // both keep the task table in `docs/design/tasks.md`. Two paths, pinned
+    // present.
     //
     // The PRD half is pinned as the PREFIX `docs/design/prd-`, not as a whole file
     // name, and that is A7's doing: a job's PRD is now
@@ -930,7 +992,7 @@ function applyCapturingLogs(config, options) {
     // count, and a count on a prefix that step 4 may legitimately write once or
     // twice would go red on a correct file, so the limit is written down instead.
     else if (!section.text.includes("docs/design/prd-")
-      || !section.text.includes("docs/design/tasks.md")) fail("PM section is missing `docs/design/prd-` (the prefix of a job's own PRD, `docs/design/prd-<date>-<job-slug>.md`) or `docs/design/tasks.md` — CRD 0010 gives both lanes the same opening document and the same task table, and A7 gives every job a PRD of its own, so the PM briefs a role for small work with the same two paths as for big work. Put the missing path back in roles/pm.md");
+      || !section.text.includes("docs/design/tasks.md")) fail("PM section is missing `docs/design/prd-` (the prefix of a job's own PRD, `docs/design/prd-<date>-<job-slug>.md`) or `docs/design/tasks.md` — CRD 0010 gives small work and big work the same opening document and the same task table, and A7 gives every job a PRD of its own, so the PM briefs a role for small work with the same two paths as for big work. Put the missing path back in roles/pm.md");
     // The same section name the four role files carry, so the PM and the crew
     // mean one thing by it. This is a NAME, not prose — like `publishCheck`
     // above — but it proves only that the name is somewhere in the prompt, not

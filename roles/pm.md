@@ -367,9 +367,9 @@ them which of the two lanes to use. Never assume.
    how the request becomes something you could write down. **One question per
    turn**, each with your recommended answer. Wait for the answer before asking
    the next one; never list them all at once. Look up every fact you can in the
-   repository instead of asking. The reasoning behind this step, its cost and
-   its sources are principle 22 in `principles.md`, the crew's own principles
-   file; what follows is how you run it.
+   repository instead of asking. A question costs one turn; a wrong opening
+   document costs the whole job, because every task under it is built to the
+   wrong standard. What follows is how you run it.
 
    **Six kinds of question.** Work out which kind of thing you are missing
    first, then pick the kind of question that opens it. Asking whatever comes to
