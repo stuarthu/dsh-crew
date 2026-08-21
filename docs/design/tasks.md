@@ -3347,3 +3347,54 @@ PM 给的两条路是「不动那 17 处」和「清掉那 17 处」。用户提
 | 7 | **`npm test` 全绿**，用例总数不减（今天 237）| **归 PM** |
 
 ---
+## T-99 — 发布 0.9.0：三处版本号 ＋ CHANGELOG 标日期（用户说 tag it）
+
+- **Verdicts**：code: not run — 只改三个版本号和一个日期 ｜ security: not run — 不动任何权限；**但这一步会往公开 npm registry 发一个包，那件事不可撤回**，`CRD 0024` 那种「问一次」的规矩在这里由用户的 `tag it` 满足 ｜ qa: pass — `docs/qa/T-59/case-09` 和 `docs/qa/T-81/case-01` **专门为发布这一刻写过**，两条都在运行时读 `package.json`，所以三处一起改它们自己跟着走 ｜ doc: not run — 发布机制，不是文档改动
+
+- **里程碑**：M1（**这是它的发布**）｜ **形状**：单人（solo），**PM 自己做**
+- **拥有的文件**：`package.json`、`README.md`、`README-zh.md`、`CHANGELOG.md`
+- **为什么是 PM 做**：`CLAUDE.md` 把发布顺序写成 PM 的活（改版本号 → 提交 → 推 `main` → 推 tag），而三处版本号是**发布机制**，不是内容。
+- **要求来源**：**用户，2026-08-22，原话 `tag it`。**
+
+## 为什么不能直接打 tag（PM 在动手前核的）
+
+`package.json` 是 `0.8.0`，tag 会是 `v0.9.0`——而 `.github/workflows/publish.yml`
+**会大声失败**，因为 tag 和 `package.json` 不一致。它自己的注释写着发布顺序：
+**先改版本号、提交、推 `main`，然后才推匹配的 `v*` tag。**
+
+## 两条用例专门为这一刻写过，PM 按它们的话做
+
+**`docs/qa/T-59/case-09-version-line-untouched.mjs`** 的注释：
+
+> 这条用例钉的是那个框的**版本号**，不是它的角色数：**有人在这件作业里改版本号它就红**
+> （PRD 把那件事放在范围外），而当那个框正当地落后于下面那张表时它保持绿。
+> **整个框在下一次发布时作为一整块移动。**
+
+它**在运行时读 `package.json` 的版本号**，再断言两个 README 框里点名的是**那个**版本
+——**所以三处一起改，它自己跟着走，不用改它一个字。**
+
+**`docs/qa/T-81/case-01-changelog-order.mjs`** 的两支择一：顶上那一节**不再标 `unreleased`**
+之后，它的版本号必须**等于** `package.json`。**那就是发布那天。**
+
+## DoD（PM 写，在动手之前）
+
+| # | 怎么算做完 | 别人怎么验 |
+| --- | --- | --- |
+| 1 | `package.json` 的 `version` ＝ **0.9.0** | `node -p "require('./package.json').version"` |
+| 2 | `README.md` 的版本框 ＝ `**Version 0.9.0.**` | `grep -c 'Version 0\.9\.0' README.md` ＝ 1 |
+| 3 | `README-zh.md` 的版本框 ＝ `**0.9.0 版本。**` | `grep -c '0\.9\.0 版本' README-zh.md` ＝ 1 |
+| 4 | `CHANGELOG.md` 顶上那一节从 `## 0.9.0 — unreleased` 改成 `## 0.9.0 — 2026-08-22` | `grep -m1 '^## ' CHANGELOG.md` |
+| 5 | **那两条为这一刻写的用例都绿**（它们自己跟着走，不许改它们一个字） | `node docs/qa/T-59/case-09-version-line-untouched.mjs`、`node docs/qa/T-81/case-01-changelog-order.mjs`；`git diff --name-only -- docs/qa/` 为空 |
+| 6 | **不改任何别的东西。** 版本框里那 8 条 bullet 仍然是 0.8.0 的要点——**这是内容判断，不是发布机制**，PM 把它报给用户而不是自己动手 | `git diff --name-only` 里只有那四个文件 |
+| 7 | `npm test` 全绿 | `npm test`（PM 在静树上跑，两次的**检查结果**相同）|
+| 8 | 推 `main`，**CI 绿之后**才打 tag | `gh run list`；**红的 CI 不算做完的活** |
+| 9 | 推 `v0.9.0` tag —— **只有这一步会发包，而且不可撤回** | `gh run list --workflow=publish.yml`；发完去 npm 上核版本 |
+
+## 一件要报给用户、PM 不自己动手的事
+
+**版本框里那 8 条 bullet 仍然是 0.8.0 的要点。** 0.9.0 用户会注意到的变化在
+`CHANGELOG.md` 那一节里，而 T-79 已经把新形状写进两份 README 的**正文**。
+所以那个框不是错的（那 8 个特性还都在），但它是**过期的摘要**。
+**改它是内容判断，归用户**——PM 报，不自己写。
+
+---
