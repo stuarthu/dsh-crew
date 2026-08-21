@@ -1,6 +1,6 @@
 # PRD：把 `~/req` 落地（`apply-req` 作业）
 
-- **版本**：6（v2 起只增不删；每一次改动记在文末**修正记录**里）
+- **版本**：7（v2 起只增不删；每一次改动记在文末**修正记录**里）
 - **日期**：2026-08-21
 - **版本历史不在本文件里。** 每次改动记在 `docs/decisions/crd/` 里那份 CRD 的 **Applied**
   行，以及 git history 里。用户 2026-08-21 明确说了「history version should not be in the same
@@ -241,7 +241,7 @@ DoD 章节**，不是它碰到的那个文件的内容。`roles/engineer.md` 在
     `docs/design/prd-*.md` 里没有连续三行以上的版本清单。
 15. **两份 README 说同一件事，CHANGELOG 有一条，`CLAUDE.md` 跟着改，版本号两处一致。**
     检查：`bash docs/qa/T-59/run.sh` 绿（两份 README 的对齐检查在这里）；
-    `CHANGELOG.md` 有 `0.9.0` 一节；`package.json` 的 `version` 也是 `0.9.0`；
+    `CHANGELOG.md` 有 `0.9.0` 一节；**`package.json` 的 `version` 留在 `0.8.0`（v7 更正，见下）**；
     `CLAUDE.md` 里凡是本作业动过的规则都跟着改了。
     **v3 更正两处。**（一）v2 说那道对齐检查在 `tools/verify-mount.mjs` 里——**那个文件里
     一次都没有提到 README**（实测 0 处），检查在 `docs/qa/T-59/`。
@@ -250,6 +250,19 @@ DoD 章节**，不是它碰到的那个文件的内容。`roles/engineer.md` 在
     **决定：两处一起改成 `0.9.0`。** 按 `CLAUDE.md` 的发布步骤，改这两处是**准备**发布，
     真正发布的是推 tag，而推 tag 仍然要用户单独同意——所以改版本号不等于发版
     （`CRD 0023` 决定四）。
+    **v7 更正这一条的后半：不改 `package.json`，也不改两份 README 的版本行。**
+    v3 定的是「两处一起到 `0.9.0`」，理由是不想留下「0.9.0 的 CHANGELOG 配 0.8.0 的
+    `package.json`」这个状态。那个理由本身没错，**但它选的解法反了**。三条依据都指向不改：
+    ① `CLAUDE.md` 的发布步骤把「改 `package.json` → 提交 → 推 `main` → 推 tag」写成**一次
+    发布动作**，而本作业不发布；② `CHANGELOG.md` 开头自己写着「最上面那一节标 `unreleased`，
+    发版前不带日期」——那正是「改动攒好了、版本还不存在」的标准holder，而 T-81 写的标题
+    就是 `## 0.9.0 — unreleased`；③ Keep a Changelog 1.1.0 明确要一个 `Unreleased` 段
+    （这一条已经写进 `principles.md` 的「What each kind of document holds」里，是本作业自己
+    刚落地的规则）。把 `package.json` 改成 `0.9.0` 而 registry 上没有 0.9.0，
+    等于让一个文件声称一个不存在的版本。
+    **所以：版本号三处（`package.json`、两份 README 的版本行）在用户决定发版那一刻一起改，
+    连同把那一节的 `— unreleased` 换成日期。** 那是一次单独的、带用户 yes 的动作。
+    这一处更正**减少**了本作业要做的事，所以它在验收报告里要明说：本作业**没有**改版本号。
 16. **Verdicts 行四个值，一条不缺。** 检查：`node tools/verify-tasks.mjs` 绿，
     而且它打印的 `not run` / `skipped` 总数里，每一条都带自己的理由。
 
@@ -377,6 +390,7 @@ Cagan 的四条 Product Purpose 里有一条是「Describe scenarios」。这个
 | 2026-08-21，v2 → v3 | **优先级表和 DoD 互相矛盾**：B9 和 A5 排在「很想有」「有就好」，却各自对应 DoD 第 10、12 条。补上切割规则：**16 条 DoD 是「一项都不砍」时的标准**；砍一项就一起划掉它那条 DoD，并在验收时说清砍了什么。这一条修的是切割规则，不是标准本身，所以不用重新问用户。 | 加 | PM（architect 报回） |
 | 2026-08-21，v2 → v3 | **补一节 v1、v2 漏写的事实**：`principles.md` 由 PM 自己写（`CRD 0019` 里用户的指示），所以 T-63、T-68、T-69 不派 engineer；连带写下代价。同一节还写下一条**看起来像违规、其实不是**的边界：engineer 改 `roles/engineer.md` 不是「被判的一方改判它的文件」，因为判一个任务的是它自己的 DoD 章节。 | 加 | PM |
 | 2026-08-21，v2 → v3 | **A1d 那一行补 `host/crew.js`**，A7 那一行改数字（30 个文件 99 处）。 | 更正 | PM（architect 报回） |
+| 2026-08-22，v6 → v7 | **DoD 第 15 条把「准备发布」和「不发布」混在一起了。** v3 定「`package.json` 一起改到 `0.9.0`」，而本作业不推 tag。三条依据都指向不改（`CLAUDE.md` 把改版本号写成发布动作的一步；`CHANGELOG.md` 自己的 `unreleased` 段就是这个状态的 holder；Keep a Changelog 1.1.0 要求那个段，而这一条是本作业刚写进 `principles.md` 的规则）。**改成不动版本号**，三处在用户决定发版时一起改。**这一处更正减少了本作业要做的事**，所以验收报告里要明说没改版本号。由 T-81 的 engineer 提醒（它选的标题 `0.9.0 — unreleased` 比 v3 定的对）。 | 更正 | PM |
 | 2026-08-22，v5 → v6 | **DoD 第 11 条自己是一条不可能通过的检查。** 它写「这两个路径在活文档里一次都不出现」，而本 PRD 的 A7 那一行、DoD 第 11 条自己、`docs/design/tasks.md` 的 5 个新任务行都必须**提到**这两个名字才说得清要改什么。改成禁**指针**、允许**提及**，并写下这是同一条分辨在本作业里的**第三次**应用（前两次：DoD 第 10 条 v3 的 B9、T-66 的两道 ABSENT 钉子选串）。**这一处更正没有改变任何一条要做的事**，它把一条从写下起就不可能满足的检查改成可以满足的。 | 更正 | PM |
 | 2026-08-22，v4 → v5 | **时间窗口那一条到期了，而它自己有应急条款。** 加了一段说清：PM 查了切割顺序，5 项可砍的里 3 项已做完，剩下 2 项省不下一轮（B9 和 A6、A7 同在 T-67），没做完的全是「必须有」——**所以没有砍任何东西，也没有用那个条款**。写下来而不是等验收时才说，因为一条到期的检查静静地留在文件里，正是本作业在修的那一类。 | 加 | PM |
 | 2026-08-21，v3 → v4 | **A1b 那一行的落点漏了三份评审提示词。** v1 到 v3 只写「落在 `roles/pm.md`」，而 A1b 说的是三个评审各跑一轮——如果只有 PM 的提示词写着这件事，而 `roles/code-reviewer.md`、`roles/security-reviewer.md`、`roles/doc-reviewer.md` 自己还写着旧的多轮形状（`roles/doc-reviewer.md` 今天有一整节叫 `## Later rounds`），那就是**四份提示词互相矛盾**——正是 Part B 那八条的形状，也正是本作业要消灭的东西。**一个角色读的是自己那份提示词，不是 PM 的。** 由 T-75 的 engineer 报回（`inbox/Q-75-01.md`）：它读了 PRD、判断这是任务行漏了链接而不是范围外，自己补上了；T-76、T-77 已叫回去补，任务行由 architect 补。 | 更正 | PM（T-75 的 engineer 报回） |

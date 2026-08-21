@@ -2450,3 +2450,59 @@ T-63                                             （一个人做，别的全部�
 
 **24 项一项不缺**（A1a、A1b、A1c、A1d、A1e、A1f、A2、A3、A4、A5、A6、A7 十二项，
 B1–B10、B12、B13 十二项；**B11 就是 A3**，同一件事只算一次）。
+
+## T-82 — `roles/pm.md` 自相矛盾：小活到底有没有里程碑（本作业造出来的，PM 写这一行）
+
+- **Verdicts**：code: not run — 按 `CRD 0020`，代码评审集中在 M1 最后一程 ｜ security: not run — 同样在最后一程；本任务只改散文，不碰代码路径 ｜ qa: not run — 按 `CRD 0020`，QA 只在全部编码结束后跑一轮 ｜ doc: not run — 文档评审同样集中在最后一程
+
+- **里程碑**：M1
+- **形状**：单人（solo）
+- **拥有的文件**：`roles/pm.md`，**只有它**（那条串行链已经结束，T-67 是最后一环，
+  所以这个文件现在空着）。
+  **两份 README 不在范围里了**：见下面第 5 格的更正。
+- **测试文件**：**无**——纯散文。检查在最后一轮 QA 的用例里。
+- **依赖**：T-64（写了第 1 步那句话）、T-67（链的终点）
+- **要求来源**：**这是一个 bug**，不是 PRD 里的一项。报告人：T-79 的 engineer，2026-08-22。
+
+## 报告的是什么（照抄报告人的话，不转述）
+
+> **产品自己有一处自相矛盾：小活到底有没有里程碑。** `roles/pm.md` 第 1 步说「不管一个改动
+> 多小，它都会有一个里程碑」，但同一个文件的状态文件那一节写着 `small work has no milestones`。
+> 两句话直接打架。README 原来抄的是后一句（「小活没有里程碑」）。我不能改 `roles/pm.md`，
+> 所以我把 README 改成两边都不撒谎的说法：小活没有**那一次停下来的评审**。
+
+**PM 核过的确切位置**（实测 2026-08-22）：
+
+- `roles/pm.md` 第 484 行（第 4 步，`**Small work — a short PRD.**` 那一段）：
+  `No milestones: small work has none.`
+- `roles/pm.md` 第 1780 行（`## The state file` 那一节）：
+  `Leave \`milestones\` out for small work — small work has no milestones.`
+- 而第 1 步（T-64 写的）写着：`No matter how small a change is, it gets a milestone: at least
+  one task, one round of QA, and one round each of the code review, the security review and the
+  doc review.`
+
+**这是本作业自己造出来的**，和第 8 步那一处、`## While the crew is working` 那一处同一种：
+A1d 改了第 1 步，没有扫到别处说同一件事的地方。**同一类错的第四次**，四次都是角色顶回来的，
+不是任何一道机器检查抓到的（`ADR 0016` 的追加说明记着前三次和该怎么做）。
+
+## PM 定的是哪一句对
+
+**第 1 步是对的。** 它是 A1d，用户直接要的（`CRD 0023` 决定四），另两处过期。
+
+**但「有一个里程碑」不等于「PRD 里要有一张里程碑清单」**，这一点必须写清，否则修完会长出
+新的矛盾：小活有**一个**里程碑，那个里程碑就是这件活本身，所以那份短 PRD 里**不需要一节
+列举多个里程碑**——列一个等于把作业名抄一遍。大活才需要那一节，因为它要在里面写清停在哪几处。
+
+## DoD（PM 写，在简报发出之前）
+
+| # | 怎么算做完 | 别人怎么验 |
+| --- | --- | --- |
+| 1 | **第 484 行那句改掉**：小活有**一个**里程碑（就是这件活本身），所以短 PRD 里不需要一节列举里程碑；大活才需要那一节 | `flat roles/pm.md \| grep -o 'small work has none' \| wc -l` ＝ **0**；读那一段，「一个里程碑」和「不需要那一节」两件事都在 |
+| 2 | **第 1780 行那句改掉**：`state.json` 的 `milestones` 数组对小活是**一条**，不是留空 | `flat roles/pm.md \| grep -o 'small work has no milestones' \| wc -l` ＝ **0**；读那一段，它说清小活那个数组里有一条 |
+| 3 | **不新造矛盾**：改完之后，全文里说「小活有没有里程碑」的每一处都说同一件事 | `grep -n 'no milestones\|has none\|milestone' roles/pm.md` 逐处读；报告里列出所有说到这件事的位置，并说明它们一致 |
+| 4 | **第 1 步、第 12 步、Hard rules 一个字不许动** —— 第 1 步是对的那一句，第 12 步的里程碑评审写着 `(big work only)`（那一条**没有**矛盾：小活有一个里程碑，但没有那一次停下来问用户的评审），Hard rules 是 T-64、T-66 写的 | `git diff -U0 roles/pm.md` 的每一块都落在第 4 步和 `## The state file`；`flat roles/pm.md \| grep -o 'no matter how small a change is, it gets a milestone' \| wc -l` ＝ 1（区分大小写不敏感） |
+| 5 | ~~**版本号三处一致，都到 `0.9.0`**~~ —— **这一格取消了（PM 2026-08-22 更正）。** 本作业**不改任何版本号**：不改 `package.json`、不改两份 README 的版本行。理由三条，都在 PRD 的 **v7 修正记录**里：`CLAUDE.md` 把改版本号写成一次发布动作的一步、而本作业不推 tag；`CHANGELOG.md` 自己的 `unreleased` 段就是「改动攒好了、版本还不存在」的标准 holder，而 T-81 写的标题正是 `## 0.9.0 — unreleased`；Keep a Changelog 1.1.0 要求那个段，而这一条是本作业刚写进 `principles.md` 的规则。**所以两份 README 也退出本任务的范围**，它们的版本框留在 `0.8.0`，`docs/qa/T-59/case-09` 因此**不会**变红。 | 无——这一格不做。验它的是「`git diff --name-only` 里没有 `package.json`、没有 `README.md`、没有 `README-zh.md`」 |
+| 6 | **`roles/pm.md` 不超过 1900 行**（今天 1898，只剩 2 行——**这一项是替换，不是新增**） | `wc -l roles/pm.md` ≤ 1900 |
+| 7 | **`roles/pm.md` 里一个中文字符都没有** | `grep -cP '[\x{4e00}-\x{9fff}]' roles/pm.md` ＝ 0 |
+
+---

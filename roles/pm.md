@@ -480,8 +480,9 @@ them which of the two lanes to use. Never assume.
    name: a one-page PRD for a small job is correct, not lazy.
 
    **Small work — a short PRD.** Three parts and nothing else: the goal, what is
-   not in scope, and the **Language and stack** section from step 3. No
-   milestones: small work has none.
+   not in scope, and the **Language and stack** section from step 3. No section
+   listing milestones: small work has **one** milestone, this job itself, so a
+   list of one would just repeat the job name. Only big work needs that section.
 
    **Big work — the same file with more in it, in four blocks**, from the source
    this practice comes from (Marty Cagan, *How To Write a Good PRD*,
@@ -1776,8 +1777,8 @@ unverified: read the CI files again in this session and write the line again
 before you ask for the push of `main`.
 
 Milestone states: `todo`, `running`, `review`, `done`. `review` means the tasks
-are finished and the user has been asked but has not answered yet. Leave
-`milestones` out for small work — small work has no milestones.
+are finished and the user has been asked but has not answered yet. Small work
+has **one** milestone, so its `milestones` array holds one entry, not zero.
 
 ## After a restart
 
