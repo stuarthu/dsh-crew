@@ -8,6 +8,121 @@ Every version bump rewrites `$DSH_HOME/.agent-presets/crew`. Files you edited
 there are kept as `<name>.bak` and named in the boot log, but your settings do
 **not** come back on their own. Copy them into the new file after an upgrade.
 
+## unreleased
+
+### Changed
+
+- **An empty `roleAllow` or `roleDeny` now stops dsh from starting, and it used
+  to hand that role every tool.** Both settings live in the `dsh-crew-roles`
+  config in the crew preset — `preset/crew/agent.cordis.yml` in the repository,
+  and the copy of it under `$DSH_HOME/.agent-presets/crew` if that is the one
+  you edited. A filter you write there has to name at least one tool, and it has
+  to be a list. Write `[]`, `""`, `0`, `false`, `{}`, or a value that is not a
+  list at all (`roleDeny: engineer: read` instead of
+  `roleDeny: engineer: ['read']`), and dsh-crew now refuses to start, with a
+  message naming the field, the role key, and what to write instead. Earlier
+  versions took every one of those values quietly: your line was dropped without
+  a word, and where it was the only filter that role had, the child started with
+  **no tool filter at all** — every tool this preset registers, `bash`, `write`
+  and `edit` included. On a read-only reviewer that undid the read-only rule,
+  which this repository learned the hard way twice: with only `write` and `edit`
+  denied, a reviewer wrote a file with `echo hello > file`, and with the shell
+  denied as well its own tool list still held `workflow`, `ralph` and
+  desktop-control tools. Nothing in the boot log said any of it had happened.
+
+  **What to do before you upgrade:** read your own `roleAllow` and `roleDeny`
+  lines. If one of them holds an empty value, dsh will not start until you write
+  out the tool names you want, or delete the line. **Leaving the line out, or
+  setting it to nothing at all — a bare `~` in YAML — is still the right way to
+  say "use the shipped list", and that is unchanged.** This was never a way
+  around the config: anybody who can edit that file could always widen a role by
+  naming the tools. The harm was that an empty value looked like the opposite of
+  what it did.
+- **If you wrote the crew tool names out by hand in your own `roleDeny`, there
+  are two more of them now.** Every role whose shipped filter is a deny list
+  gets that list from the full set of crew role tool names, so it grew from
+  seven names to nine along with the two new roles below. A hand-written
+  seven-name list is two names short: add `crew_test_engineer` and
+  `crew_code_engineer`. The same note applies as to the `roleDeny` example
+  corrected in `0.7.0` below: this is not a hole in the crew's safety, because
+  `maxDepth: 1` still stops a role from starting a role whatever the filter
+  says, but your deny list is again not what you think it is.
+
+### Added
+
+- **A task can now be built by two engineers who never meet, and there are two
+  new roles for it: `crew_test_engineer` and `crew_code_engineer`.** The PM can
+  start nine crew roles now instead of seven. In the **paired shape** one of
+  those two engineers writes only the unit test files and the other writes only
+  the product code. The PM opens **a git worktree for each of them** with
+  `git worktree add` — two real directories, on two branches grown from the same
+  base point — so the unit test file is not something the code half "should not
+  read": it is not in that half's directory at all. The two never talk to each
+  other either. A sibling agent is not a child, and dsh refuses to deliver the
+  message even if a role holds the tool for it. Then the PM merges the two
+  halves and runs those unit tests **exactly once**, and reports what came out,
+  green or red, before anything is changed. A red sends each half back to check
+  its own half once; whatever is still inconsistent after that is the
+  **disagreement**, and it goes to the PM, and on to you when both readings are
+  defensible and the document really does allow both. The half that wrote the
+  unit tests may never weaken an assertion to make a disagreement go away: only
+  the PM may approve a change to one, and that change has to trace back to the
+  words of the task's DoD section.
+
+  **What it is for.** Two independent readings of one document. Where the two
+  halves do not fit, the document allowed two readings, and the crew learns that
+  at the merge instead of learning it in production. This is independent
+  verification, the kind safety-critical engineering uses. It is the opposite of
+  two people at one keyboard talking until they agree: those two are meant to
+  converge, and these two are meant not to.
+
+  **What a green first meeting does not prove.** When that single run comes out
+  all green it says exactly one thing: **the two readings matched**. It does
+  **not** say the document was clear, and no report may claim that it does. Two
+  readers can take the same wrong meaning out of one weak sentence — and then
+  the two halves fit, everything is green, and nothing is reported at all.
+  `crew_qa`, which comes afterwards and writes its own cases from the document
+  before it reads the code, is the crew's net for that kind, and it is
+  unchanged. So is the code review.
+
+  **Where the paired shape is allowed, and where it is not.** It exists **only
+  in a job that has an architect**. Before either engineer writes a line, both
+  have to land on the same five things — the import path, the exported name, the
+  signature, the shape of the return value, and what happens on an error — and
+  they cannot see each other, so any one of the five landing differently makes
+  the merged run red for a reason nobody learns anything from: a clash of names,
+  not a disagreement. The architect settles those five in an **interface ADR**,
+  so the shape rides on a design step that already exists. On small work, where
+  the PM writes the task table itself and starts no architect, there is **no
+  paired shape at all** and every row is `solo`. One more limit: a task whose
+  unit tests and whose product code have to change the same file cannot be
+  paired, because the two halves own two file lists and those may not overlap.
+
+  **The solo shape is still the default, and not one word of it changed.** One
+  `crew_engineer` writes the failing unit test and then the code that passes it,
+  exactly as before. Which rows are paired is written in the task's own row in
+  `docs/design/tasks.md`, as a shape bullet whose value is `solo` or `pair`,
+  proposed by the architect when it writes that table; a `pair` row also names
+  its interface ADR. Reckon roughly 35% to 75% more effort on a paired task than
+  on the same task done solo — an estimate with a reason behind it and not a
+  measurement, because the writing is split in two while the reading of the
+  document is done twice. Wall time can come out shorter, because the two halves
+  are written at the same time.
+- **`principles.md` now carries principle 21 — the paired shape, with its
+  evidence and its limits — and principle 6 says the test-first rule covers both
+  shapes.** That file also gained a **Words we use** table, because three roles
+  now write something that checks the product, so the bare word "test" had come
+  to mean three different things. The table gives four precise names to use
+  instead: a **unit test** (one behaviour, written before the code that
+  satisfies it, living in the project's own test suite), a **case** (one DoD
+  item, checked the way you would see it, only under `docs/qa/<task-id>/`),
+  **the project's test command** (here `npm test`, which runs all of it
+  together), and a **contract test** (one on each side of a module boundary).
+  The name that invites the most confusion is spelled out there:
+  `crew_test_engineer` is a programmer, not a tester. `principles.md` lives in
+  the repository and is **not** part of the npm package, so you have it if you
+  cloned the repository and not if you installed the plugin.
+
 ## 0.7.0 — 2026-08-21
 
 ### Added

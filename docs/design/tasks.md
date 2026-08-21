@@ -1602,7 +1602,7 @@ PRD v3 定了一张四条的用词表（单元测试 / QA 用例 / 项目的测�
 
 ## T-59 — 两份 README 一起改，说同一件事
 
-- **Verdicts**：code: not run — 尚未开工 ｜ security: not run — 尚未开工 ｜ qa: not run — 尚未开工 ｜ doc: not run — 尚未开工
+- **Verdicts**：code: not run — 按 `CRD 0018`，代码评审集中到最后一轮 ｜ security: not run — 同上；PM 判断它不碰权限模型 ｜ qa: not run — 按 `CRD 0020`，QA 集中在最后一轮。完成判据是 `npm test` 绿 ｜ doc: not run — 按 `CRD 0018`。**这是用户第一眼看的那一层，而它的措辞今天没有任何人读过**
 
 - **里程碑**：M2（阶段 4/4：读者看得见的，原 M5）
 - **形状**：单人（solo）
@@ -1635,7 +1635,7 @@ PRD v3 定了一张四条的用词表（单元测试 / QA 用例 / 项目的测�
 
 ## T-60 — `CLAUDE.md`：角色表、设计规则，以及 flat 规则的第四道守卫
 
-- **Verdicts**：code: not run — 尚未开工 ｜ security: not run — 尚未开工 ｜ qa: not run — 尚未开工 ｜ doc: not run — 尚未开工
+- **Verdicts**：code: not run — 按 `CRD 0018`，代码评审集中到最后一轮 ｜ security: not run — 同上；PM 判断它不碰权限模型 ｜ qa: not run — 按 `CRD 0020`，QA 集中在最后一轮。完成判据是 `npm test` 绿 ｜ doc: not run — 按 `CRD 0018`。**这是用户第一眼看的那一层，而它的措辞今天没有任何人读过**
 
 - **里程碑**：M2（阶段 4/4：读者看得见的，原 M5）
 - **形状**：单人（solo）
@@ -1666,7 +1666,7 @@ PRD v3 定了一张四条的用词表（单元测试 / QA 用例 / 项目的测�
 
 ## T-61 — `CHANGELOG.md` 加一条，写用户会注意到的东西
 
-- **Verdicts**：code: not run — 尚未开工 ｜ security: not run — 尚未开工 ｜ qa: not run — 尚未开工 ｜ doc: not run — 尚未开工
+- **Verdicts**：code: not run — 按 `CRD 0018`，代码评审集中到最后一轮 ｜ security: not run — 同上；PM 判断它不碰权限模型 ｜ qa: not run — 按 `CRD 0020`，QA 集中在最后一轮。完成判据是 `npm test` 绿 ｜ doc: not run — 按 `CRD 0018`。**这是用户第一眼看的那一层，而它的措辞今天没有任何人读过**
 
 - **里程碑**：M2（阶段 4/4：读者看得见的，原 M5）
 - **形状**：单人（solo）
