@@ -772,6 +772,10 @@ function applyCapturingLogs(config, options) {
   if (ctx.sections.length !== 1) fail(`expected 1 prompt section, got ${ctx.sections.length}`);
   else {
     const [section] = ctx.sections;
+    // T-66, PRD B8. The two wordings that used to let one yes cover a force push,
+    // kept in one list because they are one rule read twice — see the pin further
+    // down that reads them.
+    const FORCE_PERMISSION = ["or with force", "and even a force push"];
     if (section.name !== "crew:pm") fail(`prompt section name is "${section.name}"`);
     else if (!section.text.includes("product manager (PM)")) fail("PM section does not contain the PM role text");
     else if (!section.text.includes("crew_engineer")) fail("PM section does not list the real role tool names");
@@ -953,6 +957,48 @@ function applyCapturingLogs(config, options) {
     // named a second time, in a sentence about presets that had nothing to do
     // with lanes and was therefore easy to miss.
     else if (section.text.includes("`quick` — one small clear change")) fail("PM section brings back the cancelled third lane: the row opening \"`quick` — one small clear change with no design choice\" is in the PM prompt again. CRD 0023 decision four removed it: no matter how small a change is, it gets a milestone with at least one task, one round of QA and one round each of the code, security and doc reviews. A lane the PM drives alone is a change reaching the repository with no task row, no DoD section and nothing checking it, and the size judgement that let a change in was the PM's own. Take the lane out of roles/pm.md (and out of host/crew.js, which named it a second time), or reopen the decision in a new CRD and change this check in the same commit");
+    // T-66, PRD B3, audit defect 3. The milestone review's first answer used to
+    // be called `Ship this milestone`, and its body named step 13 only. Step 13
+    // WRITES the release and upgrade plans and reaches nobody; step 16 is what
+    // pushes, tags and publishes. So the answer had two readings, and one of them
+    // ends with a package on a registry that nobody asked to be released — which
+    // cannot be taken back. The answer is now named after what it does for the
+    // user and names both steps and every separate yes, so the name itself is the
+    // defect coming back.
+    //
+    // ABSENT, and the same shape as the `quick` lane pin above: it takes somebody
+    // writing the old answer down again. The pin is the BOLD BULLET LABEL, with
+    // its `**` markers, and that is deliberate. The obvious pin — the bare words
+    // `Ship this milestone` — would also match a sentence that quotes the old
+    // name in order to forbid it ("never call this answer `Ship this milestone`"),
+    // and a pin that goes red on a sentence agreeing with it is a pin that gets
+    // deleted. A prose mention would be written in backticks; only a bullet label
+    // is written in bold. Nothing else in the prompt may carry the name either:
+    // T-66's DoD requires zero copies of it in any form, so this pin has no
+    // legitimate copy to trip over.
+    else if (flat(section.text).includes("**Ship this milestone**")) fail("PM section brings back the milestone-review answer `**Ship this milestone**` — PRD B3 renamed it. That answer named step 13 only, and step 13 writes plans and reaches nobody, so one honest reading of it jumps to step 16 and publishes a package the user never asked to release. The answer is now named for what the user gets and names both step 13 and step 16, with a separate yes for the branch or `main` push, a loud one of its own for the tag push, and another for the publish command. Take the old name out of roles/pm.md, or reopen the decision in a new CRD and change this check in the same commit");
+    // T-66, PRD B8, audit defect 8. The same file said two different things about
+    // a force push. The **Hard rules** section said the PM may push `main`, a tag
+    // `or with force` once the user has just said yes, and step 16 said the guard
+    // trusts the root session for any branch, any tag `and even a force push`.
+    // Step 17 says the opposite in as many words: `git push --force` and
+    // `--force-with-lease` on `main` are never part of that step, whatever the
+    // guard allows. A reader picking the first reading force pushes a branch on
+    // one yes, and a force push is the one git operation that destroys somebody
+    // else's commits. Both of those half-sentences are gone; the strict reading is
+    // the file's own and is now written out in the **Hard rules** too.
+    //
+    // ABSENT, and both strings are pinned in one check because they are one rule
+    // read twice. Choosing them was the careful part: step 17's two sentences are
+    // pinned PRESENT by docs/qa/T-01/case-08, and they legitimately contain
+    // `force`, `force push`, `--force`, `--force-with-lease` and `whatever the
+    // guard allows` — so every one of those, and any pin on the mere mention of a
+    // force push, would go red on the sentence that FORBIDS it. These two strings
+    // carry the permission and nothing else: `or with force` needs the list of
+    // things a yes covers, and `and even a force push` needs the guard-trusts-you
+    // clause. A prohibition reads "never force push", or "not even a force push",
+    // and neither contains either string.
+    else if (FORCE_PERMISSION.some((granted) => flat(section.text).includes(granted))) fail(`PM section grants a force push again: it contains \`${FORCE_PERMISSION.find((granted) => flat(section.text).includes(granted))}\`. PRD B8 removed both wordings — the **Hard rules** half-sentence that let one yes cover `+ "`main`, a tag `or with force`" + `, and step 16's clause saying the guard trusts the root session for any branch, any tag `+ "`and even a force push`" + `. Step 17 forbids \`git push --force\` and \`--force-with-lease\` on \`main\` outright, whatever the guard allows, so the prompt would again say two different things about the one git operation that destroys commits — and the reader who picks the other reading force pushes on a single yes. Take the wording out of roles/pm.md, or reopen the decision in a new CRD and change this check in the same commit`);
     // T-63. The two sentences every role prompt carries word for word, pinned
     // here on the PM's own copy. They are the authoritative wording: the block
     // in principles.md says all ten role prompts hold them character for

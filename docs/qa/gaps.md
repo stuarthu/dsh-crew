@@ -188,8 +188,14 @@ bash docs/qa/run-all.sh       # 只跑 QA 的用例（它是那六条里的第�
 
 **要说准一点：词表本身并不缺。** `roles/pm.md` 第 11 步已经把允许的写法逐条列了出来——
 `code: pass`（或 `code: pass (round 2)`）、`security: pass` 或 `security: skipped — <理由>`、
-`qa: pass`、`doc: pass` 或 `doc: skipped — the user asked for it`，没跑的写
-`not run — <理由>`，`changes needed` 要点名 `T-<编号>`。`pass with notes` 不在这张表里。
+`qa: pass`、`doc: pass`，没跑的写 `not run — <理由>`，`changes needed` 要点名 `T-<编号>`。
+`pass with notes` 不在这张表里。
+**2026-08-22 更正**：上面这份抄件原本还写着 `doc: skipped — the user asked for it`，
+而 **T-66 把那个值删掉了**——它建立在一个 `roles/pm.md` 从没给过的许可上（全份文件里没有
+一句说用户可以关掉文档评审），所以现在 `doc` **没有 `skipped` 值**：没人读过的文档写
+`doc: not run — <理由>`，是**评审缺了**，不是**被豁免了**。这一处更正由 T-66 的 engineer
+报回，PM 写（按新的「哪类文档谁写」表，这个文件是 PM 的）。**它不改变本条的状态**——
+这份抄件是不是最新，和「门读不读这张表」是两件事。
 所以缺的**不是那张表，是「把那张表变成门的一条规则」这个决定**：那张表今天是写给 PM 的
 规矩，门一个字都不读。
 真要变成门规则，还得先说清「值」和「理由」各自的边界——理由是自由文本（本仓库的 Verdicts

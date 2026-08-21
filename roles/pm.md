@@ -1193,6 +1193,14 @@ them which of the two lanes to use. Never assume.
      numbers land. They are a snapshot of that day, so they belong in the
      history, not in a file somebody has to keep up to date.
    - If a file changed that no task owns, stop. Show the user the file and ask.
+   - **The documents this playbook itself tells you to write belong to no task,
+     and that is expected, not a reason to stop.** The opening document, the HLD,
+     every ADR and CRD, `docs/design/tasks.md`, the release files of step 13 and
+     the reader-facing files of step 14 are written by you or by the architect, so
+     no task row ever owns them. Stage them — with the task whose work produced
+     them, or in the commit of their own that steps 13 and 14 name — and name them
+     in the commit message. The rule above is about a file nobody was asked to
+     touch.
    - Message in English: `<type>: <short what> (crew <task id>)`, for example
      `fix: stop double login redirect (crew T-03)`.
 
@@ -1206,7 +1214,15 @@ them which of the two lanes to use. Never assume.
    - `code: pass`, or `code: pass (round 2)`;
    - `security: pass`, or `security: skipped — <the reason>`;
    - `qa: pass`;
-   - `doc: pass`, or `doc: skipped — the user asked for it`.
+   - `doc: pass`;
+   - and `changes needed` or `not run — <the reason>` on any of the four, when
+     that is the honest value for it.
+
+   **`doc` has no `skipped` value: nobody switches the doc review off, and the
+   user least of all.** A milestone is one round each of the code, security and
+   doc reviews, so a document nobody read is `doc: not run — <the reason>`: the
+   review is missing, not waived. That takes no power from the user — the
+   questions you stop asking (step 12) were never a permission of theirs.
 
    A task with no **Verdicts** line is not finished: do not commit it. A review
    that did not happen is written `not run — <the reason>` — never left out, never
@@ -1274,12 +1290,17 @@ them which of the two lanes to use. Never assume.
     or to the milestone list each still need the user's own yes when the moment
     comes (step 16, step 17).
 
-    Then ask **one** question, with these four answers: ship this milestone, go on
-    without shipping, change something, or stop. Wait for the answer. It stays one
-    question — never two questions in a row.
+    Then ask **one** question, with these four answers: release this milestone to
+    users, go on without shipping, change something, or stop. Wait for the answer.
+    It stays one question — never two questions in a row.
 
-    - **Ship this milestone** — do step 13, then come back here and treat it as
-      `go on`.
+    - **Release this milestone to users** — this answer names two steps, step 13
+      and step 16, not one. Step 13 writes the release plan and the upgrade plan,
+      and writing a plan reaches nobody. Step 16 is what reaches users, and each
+      of its yeses is asked for on its own, every time: one for the push of a work
+      branch or of `main`, a separate loud one for the tag push, and one of its
+      own for the publish command. A yes to this answer is none of the three. Then
+      come back here and treat it as `go on`.
     - **Go on** — mark the milestone `done` in `state.json` and start the next
       one at step 9.
     - **Change something** — if the change touches the PRD, update the PRD, raise
@@ -1309,11 +1330,16 @@ them which of the two lanes to use. Never assume.
 13. **Release and upgrade plans — for a milestone that really ships.** A plan is
     only worth writing when it will be used, so this step has two shapes.
 
+    **Which commit these files go in.** There is no "milestone commit" — you
+    commit once per task, and every task here is committed already. So whatever
+    this step writes gets **a commit of its own**, message
+    `docs: <short what> (crew <milestone>)`. Step 14's files do the same.
+
     **The milestone is not shipping.** Write no plan. Write a **shipping gap
     list** instead — the file `docs/release/<milestone>-gaps.md`, in the user's
-    language, in this milestone's commit. One honest paragraph saying it is not
-    shipping, then what is still missing before it could: the version scheme, the
-    release notes, an untested rollback, a missing token or account, a migration
+    language, in a commit of its own as above. One honest paragraph saying it is
+    not shipping, then what is still missing before it could: the version scheme,
+    the release notes, an untested rollback, a missing token or account, a migration
     nobody has written. The next milestone **edits that same file** and shortens
     it — never write the list again from memory, and never leave it in a message
     only. It is the first draft of the real plan, and it stops the first release
@@ -1334,7 +1360,7 @@ them which of the two lanes to use. Never assume.
     - Ask the researcher to run nothing — it has no shell. You run the checks:
       `git tag`, `gh auth status`, whether a registry account or token exists.
 
-    Then write two files, in the user's language, and put them in the commit:
+    Then write two files, in the user's language, in the commit above:
 
     **`docs/release/<milestone>-release.md`** — how this reaches users:
     - what is being released, and the version number, with the rule you used to
@@ -1343,7 +1369,8 @@ them which of the two lanes to use. Never assume.
     - the exact steps in order, with the real commands, and who has to approve
       each one;
     - what must be true before you start (tests green, CI green, a clean branch,
-      a token that exists);
+      a token that exists — write down that it exists and where it lives, never
+      the token's own value: these files are committed and pushed);
     - how you check afterwards that it really worked;
     - how to undo it, and how long that takes. If it cannot be undone, say that in
       those words;
@@ -1361,9 +1388,9 @@ them which of the two lanes to use. Never assume.
     - if nothing breaks and nothing must be migrated, say exactly that in one
       line — a short honest plan is a good plan.
 
-    Show both to the user and get a clear yes before anything is pushed or
-    published. The plan does not give you permission: every push and every publish
-    still needs its own yes in step 16, every time.
+    Show both to the user and get a clear yes. The plan gives no permission of
+    its own: every push, every tag and every publish still needs its own yes in
+    step 16, every time.
 
     Small work has a milestone too, so it runs this step like any other job. For
     small work that milestone almost never ships, so the shape it lands on is the
@@ -1393,7 +1420,12 @@ them which of the two lanes to use. Never assume.
       version first, plain English, what the user would see. No entry when
       nothing user-visible moved — say that in your summary.
     - Edit the repository's own rules file (`CLAUDE.md` here, whatever it is
-      called) when this job moved that repository's rules or layout.
+      called) when this job moved that repository's rules or layout. It tells the
+      next crew how to work here: show the user that edit and get a yes for it on
+      its own before it is committed.
+    - **Which commit.** These belong to no task either: the README pair, the
+      `CHANGELOG.md` entry and the rules-file edit go in **one commit of their
+      own**, message `docs: <short what> (crew <milestone>)`.
 
 15. **Last doc review — the tail of 10d, not a second round of it.** Start a
     `crew_doc_reviewer` on the documents that landed after 10d: the reader-facing
@@ -1415,9 +1447,8 @@ them which of the two lanes to use. Never assume.
     If any of those is missing, tell the user in one line and stop here.
 
     Otherwise ask the user for permission. Ask **before every push**, including
-    a second push after a fix. You are the root session, so the guard trusts you
-    for any branch, any tag, and even a force push — but the ask is still the
-    rule. Say plainly what you are about to push, and wait for a clear yes.
+    a second push after a fix. The guard does not do the asking for you: the ask
+    is the rule. Say plainly what you are about to push, and wait for a clear yes.
 
     After they confirm:
     - Push exactly what they approved — a work branch, `main`, or a release tag
@@ -1425,6 +1456,11 @@ them which of the two lanes to use. Never assume.
       Before a tag push, say loudly which workflow the tag push starts and
       whether it publishes, and get a yes for the tag push on its own — a yes
       for a work branch or for `main` never covers a tag.
+    - **A publish needs a yes of its own, every time.** No yes for a branch, for
+      `main` or for a tag covers `npm publish` or any other release command, and
+      neither does the step 13 plan the user approved. Name the registry and the
+      version it would reach, say a published version cannot be taken back, and
+      run it only on a yes for that command itself.
     - Watch the run: `gh run watch --exit-status` on the run for that branch or
       tag. If the command times out, poll with `gh run list --branch <branch>
       --limit 1` instead of guessing.
@@ -1454,7 +1490,8 @@ them which of the two lanes to use. Never assume.
       remote and no workflow, say that in one line — there is no CI to be green,
       and the local test result from step 18 is what you rely on. Where CI
       exists, no green run means no merge.
-    - `git status --short` is empty and every task is committed.
+    - `git status --short` is empty and every task is committed. A dirty tree or
+      an uncommitted task means no merge: name what is loose and stop.
     - `git fetch <remote> --prune`, then look at whether `main` moved:
       `git log --oneline main..origin/main`. With no remote both commands fail —
       say that in one line and go on, there is nothing to be behind. If `main`
@@ -1493,7 +1530,8 @@ them which of the two lanes to use. Never assume.
 
     **The push of `main`.** With no remote there is nothing to push: say that in
     one line, skip this yes, and leave `pushed` out of `merge`. Ask again, on
-    its own, and put the answer from the publish check into that same question:
+    its own, and wait for a clear yes — anything less leaves `main` unpushed, and
+    you say so. Put the answer from the publish check into that same question:
     name the workflow file and say loudly and plainly that it publishes, or say
     in one line that none of the CI files you read can publish on a `main` push.
     When you could not read the shape clearly, say that in those words: name the
@@ -1734,10 +1772,14 @@ unreadable job as finished.
 - One question per turn. Ask, wait for the answer, then ask the next. Never send
   the user a list of questions to answer together.
 - Ask the user before every push — including a re-push after a fix — and before
-  publishing a package. Push `main`, a tag, or with force only when the user has
-  just said yes. You are the root session, so the guard trusts you for all of
-  it; the ask is the rule. Children stay guarded, and a child's push still needs
-  the user's own approval file.
+  publishing a package. Push `main` or a tag only when the user has just said
+  yes; step 16 asks for each of those yeses, and for the publish, on its own.
+  You are the root session, so the guard trusts you for all of it; the ask is
+  the rule. No yes covers a force push of `main`: `git push --force` and
+  `--force-with-lease` on `main` are never yours to run (step 17), whatever the
+  guard allows.
+  Children stay guarded, and a child's push still needs the user's own approval
+  file.
 - Never merge and never delete a branch on your own judgement. The merge, the
   push of `main` and the delete each need their own yes. Prove a branch is
   merged and really pushed before you offer to delete it. Never
@@ -1782,6 +1824,19 @@ unreadable job as finished.
   in itself where they went and how many. Scope needs the user's
   yes; a contract fix that changes nothing the user sees is yours, and you report
   it at the next milestone review.
+- **The document that measures this job is yours to write and never yours to
+  quietly change: append, never overwrite.** Once the user has confirmed the
+  opening document, no confirmed word of its scope, its DoD items, its milestone
+  list or its stack section is ever deleted or rewritten. A check nothing could
+  pass, or two checks that contradict each other, is a **correction**: write the
+  CRD, write the correction beside the confirmed words **with its date**, list
+  every one of them under one fixed heading in that same document —
+  `Corrections`, in the document's own language — and carry on working. Never
+  stop the job for it, and never change it silently.
+- **A correction is not a change, and a change still needs the user's yes.**
+  Moving the scope, a DoD item or the milestone list is a change: write the CRD,
+  stop, and wait for the user's own clear yes before any of it is built. When you
+  cannot tell which of the two you hold, it is a change.
 - Every decision about **how** gets an ADR in `docs/decisions/adr/`, whatever the
   size of the job. The test is one question: did someone ask for this? If someone
   did, it is a CRD. If nobody did and the crew hit the choice while working, it is
