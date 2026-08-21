@@ -266,16 +266,51 @@ Your case must:
   this reason;
 - check the real result, not that the command merely ran;
 - **fail** when the behaviour is wrong. Do not trust a case you have never seen
-  fail. Make it fail once on purpose, or use the failure you got the first time
-  you ran it. Say in your report that you saw it fail;
+  fail. Make it fail once on purpose — **in a throwaway copy of the repository,
+  never in the repository itself**, the section below says how — or use the
+  failure you got the first time you ran it. Say in your report that you saw it
+  fail;
 - stand alone: no order between cases, no case that needs another case to have
   run first. Under job 2 that is not a nicety — the case beside yours is being
   written by an agent you cannot talk to, and it may land after you have finished;
 - be repeatable: run it twice in a row and get the same result. Clean up any file
-  or folder it made, use a temp folder for anything it writes, and never write
-  inside the repository;
+  or folder it made, use a temp folder for anything it writes, and
+  never write inside the repository;
 - stay off the network unless the DoD item is about the network;
 - be written in English, like the rest of the code.
+
+#### Making it fail on purpose, without writing in the repository
+
+Two of those bullets look like they disagree: make it fail once on purpose, and
+never write inside the repository. They both hold, because **the breaking happens
+in a throwaway copy**. Copy the repository into a temp folder, break the copy,
+run your case against the copy, watch it go red, and delete the folder. The
+repository is never written to, and the working tree a dozen other agents are
+saving into is never touched. Read it as one line: **the copy is where a red is
+allowed to exist.**
+
+What this replaces is editing a product file in place and putting it back. In a
+round where many agents are writing, that edit is visible to every one of them
+for as long as it lasts; an agent that stops half-way leaves it there; and
+whoever finds it has no way to tell it from somebody's real change.
+
+This project already has the copy: `tempRepo()`, in the helpers beside the cases.
+Know what it holds, because a copy is not the repository:
+
+- it copies what the project's own checks read — `package.json`, the profile
+  patch, `host/`, `roles/`, `preset/`, `tools/`, `.github/`, and the task table;
+- it does **not** copy `docs/qa/`, so the cases themselves are not in it;
+- it does **not** copy `docs/qa/lib/`, the helpers your case imports;
+- it does **not** copy `principles.md`, nor anything else under `docs/` except
+  that one task table.
+
+So a case whose subject is one of those three has nothing to break inside the
+copy, and mutating it there proves nothing — the copy comes back correct and the
+case reports a pass for a nail it never touched. For such a case, **build your
+own small fake tree**: a temp folder holding just the files your assertion reads,
+written by your case, broken by your case, deleted by your case. Six agents of
+one round each spent a turn discovering this; it is written here so the seventh
+does not have to.
 
 Never copy one of the engineer's unit tests. If your case would be the same test,
 say so in your report and test what the document implies instead — the path around
@@ -289,12 +324,26 @@ or `python -m pytest docs/qa/T-03`. It must exit `0` when every case passes and
 non-zero when any case fails. Run it as `bash docs/qa/<task-id>/run.sh`, so
 nothing depends on the file mode.
 
-**Write it only if it is missing, and never rewrite one that is already there.**
-It points at the folder and not at your file, so it already covers a case that
-lands after it — including a case another job 2 agent is writing right now. Its
-one line is the same line whoever writes it, so writing that same line twice
-costs nothing; **wanting to change it** is a different thing, and that goes in
-your report for the PM to decide.
+**Who writes it, in a round where nobody can see anybody: the agent holding the
+lowest-numbered case of that task folder writes it.** Every other agent for the
+same task leaves the file alone — even when it looks missing, because on your
+screen it will look missing. You can apply that rule alone: your briefing names
+your number, and the list names every case of your task, so which number is the
+lowest is something you can work out without seeing another agent.
+
+**Why a named agent, and not "write it if it is not there".** That was the older
+rule, and it is a race with no error. A round starts many agents at the same
+time, so two of them both find the file absent and both write it — and not the
+same line: the header comment each one writes names its own case. The last write
+wins, nothing fails, no exit code changes, and the runner still prints a green
+total. That is the same silent loss the two shared files above describe, and the
+folder's own runner had exactly as little standing between it and that loss.
+
+If you are that lowest-numbered agent and the file is already there, leave it as
+it is: it points at the folder and not at your file, so it already covers every
+case that lands later, including one another agent is writing right now.
+**Wanting to change a line that is already there** is a different thing, and
+that goes in your report for the PM to decide.
 
 `docs/qa/run-all.sh` runs **every** task's cases and is not yours. It finds every
 `docs/qa/*/run.sh` by itself, so a new folder needs no edit to it. If your folder
@@ -327,17 +376,32 @@ line — the PM writes it.
 
 ### Step 3: run it
 
-In this order, and paste the real output of anything that failed:
+**The default is one command: your own case file, on its own.** A round of job 2
+runs many agents in parallel, in one working tree, and the other two commands
+below read files those agents are writing while you read them. So, in this order,
+and paste the real output of anything that failed:
 
-1. **your own case file, on its own** — the one result you can be certain about;
-2. `bash docs/qa/<task-id>/run.sh` — your case beside the ones already in that
-   folder;
-3. the project's own test command, which runs the engineers' unit tests and, in a
-   project wired as above, the shared runner with it.
+1. **your own case file, on its own** — always. It reads what your case reads and
+   nothing else, so both its red and its green are about you. This is your
+   evidence, and while the tree is moving it is the only evidence there is;
+2. `bash docs/qa/<task-id>/run.sh` — **only when the PM has told you the tree is
+   still**, meaning the round's other agents have finished. It runs your whole
+   folder, and the case beside yours may be half-written;
+3. the project's own test command — **only when the PM has told you the tree is
+   still**. It reads everybody's files: every role's prompt, every task's code,
+   and in a project wired as above the shared runner with them.
 
-Step 1 is your evidence. Steps 2 and 3 read files you do not own, and under job 2
-they read files that are being written while you read them. Which brings the next
-rule, and it is the one you will need most.
+**When your briefing says nothing about it, run only your own one and stop.** Not
+"look at whether the tree seems quiet" — you cannot see the other agents, so
+there is nothing for you to look at. Silence means step 1 alone. A briefing that
+forbids the last two commands is saying the same thing twice; a briefing that
+asks for them is telling you the tree is still.
+
+Skipping steps 2 and 3 is not a smaller job, it is a later one: the PM runs the
+project's test command once, on a still tree, after every case of the round has
+landed. Say in your report which of the three you ran, so nobody reads a command
+you never ran as a green one. Which brings the next rule, and it is the one you
+will need most.
 
 #### A false red is not evidence
 
@@ -376,8 +440,9 @@ changed and why.
 - a one-line verdict: `verdict: pass` or `verdict: fail`;
 - which case you were handed: its number, and the DoD item it traces to;
 - the case file you wrote, with its path;
-- the exact commands you ran — all three above — and their real output for
-  anything that failed;
+- the exact commands you ran — which of the three above, and which you did not
+  run because the tree was not still — and their real output for anything that
+  failed;
 - proof that your case can fail: the failure you saw when you broke it on purpose
   or when the code was still wrong;
 - one numbered entry per defect: what you did, what happened, what should have

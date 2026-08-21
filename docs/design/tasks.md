@@ -2768,9 +2768,9 @@ T-84 的 engineer 撞上它、停下来问、并且**明说**唯一能让它自�
 
 | # | 怎么算做完 | 别人怎么验 |
 | --- | --- | --- |
-| 1 | 那一句里「任务表」那一项的归属改成和两张权威表**一致**：**architect**；小活是 PM；bug 那一行是 PM | 读那一句；`grep -c 'the architect' roles/code-reviewer.md` ≥ 1 |
+| 1 | 那一句里「任务表」那一项的归属改成和两张权威表**一致**：**architect**；小活是 PM；bug 那一行是 PM | 读那一句；~~`grep -c 'the architect' roles/code-reviewer.md` ≥ 1~~ **（PM 2026-08-22 更正，`crew-engineer-T86` 报的：这个验法从写下起就不可能变红——`the architect` 在这份文件里**改前就有 2 处**正当出现，第 152 行和第 213 行，所以「≥ 1」在什么都不做时已经是真的。**我写的正是 `ADR 0023` 的第一种形状。**）** 能变红的写法（实测改前 0、改后 1）：`flat roles/code-reviewer.md | grep -o "owns that file write it:[^.]*the architect" | wc -l` ＝ 1 |
 | 2 | **`the shared QA runner`、`the standing gap list`、`the project's own rules` 三项仍然归 PM**——那三项两张权威表也写 PM，它们**没有错**，不许一起改掉 | 那一句里三项各在，且仍在 PM 那一侧 |
-| 3 | **那句话的框不变**：它讲的是「谁拥有那个文件就让谁写」，不是「都交给 PM」。改的只是任务表这一项的归属 | `grep -c 'the role that owns that file' roles/code-reviewer.md` ＝ 1（改前 1，不许减） |
+| 3 | **那句话的框不变**：它讲的是「谁拥有那个文件就让谁写」，不是「都交给 PM」。改的只是任务表这一项的归属 | ~~`grep -c 'the role that owns that file' roles/code-reviewer.md` ＝ 1（改前 1）~~ **（PM 2026-08-22 更正，`crew-engineer-T86` 报的：实测**改前是 0**——那个短语在第 20–21 行折了行，逐行 `grep` 一次都命中不了。它**没有**为了让这个数变成 1 去重排那两行，那会让 diff 多出用不着的字节而破坏第 4 格。）** 正确写法：`flat roles/code-reviewer.md | grep -o 'the role that owns that file' | wc -l` ＝ 1（压平后改前 1、改后 1）；**更硬的判据是那两行没进 `git diff`** |
 | 4 | **不许改这份文件的别处。** T-75 写的那一节（`## One round, at the end, on the changed part only`）和可写集合那一节一个字不许动 | `git diff -U0 roles/code-reviewer.md` 只有一块，落在那一句上；`node docs/qa/T-75/case-01-reviewers-write-nothing.mjs` 和 `case-02-one-round-each-and-its-cost.mjs` 都必须绿 |
 | 5 | **不许改 `docs/qa/`、`principles.md`、`roles/pm.md`、`docs/design/`** | `git diff --name-only` 里只有 `roles/code-reviewer.md` |
 | 6 | **一个中文字符都没有** | `grep -cP '[\x{4e00}-\x{9fff}]' roles/code-reviewer.md` ＝ 0 |
@@ -2818,7 +2818,7 @@ T-84 的 engineer 撞上它、停下来问、并且**明说**唯一能让它自�
 | # | 怎么算做完 | 别人怎么验 |
 | --- | --- | --- |
 | 1 | **`run.sh` 有断连规则。** 那一段说清并行的一轮里谁写它。两条路都行：① 点名一个确定的规则（例如「清单里编号最小的那条用例的 agent 写它」），或 ② 也归 PM，理由和那两份共享文件一样。**必须给出理由**（后写的赢、不报错） | 读那一段；`grep -c 'run\.sh' roles/qa.md` ≥ 1；那一段里同时有「谁写」和「为什么」 |
-| 2 | **「故意弄坏一次」明说在一份抛弃用的副本里做**，并提醒 `tempRepo()` **不复制** `docs/qa/`、`docs/qa/lib/` 和 `principles.md`（判这三样要自己搭假树）。**和「不许写仓库」那句话不再矛盾** | 那一段里同时有 `copy`（或 `throwaway`）和 `tempRepo`；`grep -c 'never write inside the repository' roles/qa.md` 不减 |
+| 2 | **「故意弄坏一次」明说在一份抛弃用的副本里做**，并提醒 `tempRepo()` **不复制** `docs/qa/`、`docs/qa/lib/` 和 `principles.md`（判这三样要自己搭假树）。**和「不许写仓库」那句话不再矛盾** | 那一段里同时有 `copy`（或 `throwaway`）和 `tempRepo`；~~`grep -c 'never write inside the repository' roles/qa.md` 不减~~ **（PM 2026-08-22 更正，`crew-engineer-T87` 报的：这条命令在它动手之前**返回 0**——那句话在原文 275–276 行折了行，逐行 `grep` 命中不了。**「从 0 不减」是恒真的，任何改动都过。** 这是本仓库为它红过七次的折行陷阱，而 PM 又踩了一次，而且是连着的第三次。）** 它的处理值得记：**没有改 DoD，而是只重排了那一条 bullet**让那句话落在一行上，于是这个数变成 **2**（0 → 2 是增不是减，合规），**那一格从此真的能查**。正确写法：`flat roles/qa.md | grep -o 'never write inside the repository' | wc -l` ≥ 1 |
 | 3 | **Step 3 说清「并行的一轮里只跑自己那一条」。** 那三条命令里的后两条（共享 runner、项目测试命令）改成「**PM 说树静了才跑**，否则只跑你自己那一个用例文件」 | 读 Step 3；那一段里有「并行」「树在动」「只跑自己那一条」三个意思 |
 | 4 | **`## Job 1` 和 `## Job 2` 两个标题原样保留**，两段的分界不动（`docs/qa/T-72/case-01` 钉着它） | `node docs/qa/T-72/case-01-qa-round-two-shapes.mjs` 绿 |
 | 5 | **T-72 第 7 格那一段（两份共享文件归 PM）一个字不许动** | `node docs/qa/T-72/case-02-shared-files-belong-to-the-pm.mjs` 绿 |

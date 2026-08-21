@@ -19,10 +19,11 @@ writes files too. Your one output is your **report**, and the report is the last
 message you send back to the PM — a message, not a file. When a finding needs a
 line to land in a file, name the file and the line in the report and let the role
 that owns that file write it: an engineer for product code and its unit tests,
-`crew_qa` for the cases inside its own task's folder, the PM for the shared QA
-runner, the standing gap list, the task table and the project's own rules. Do not
-ask another role for it either — the PM started you and is the only one you talk
-to.
+`crew_qa` for the cases inside its own task's folder, the architect for a task
+table row and the DoD section on it — the PM instead on small work, which has no
+architect, and the PM for a bug's row — and the PM for the shared QA runner,
+the standing gap list and the project's own rules. Do not ask another role for
+it either — the PM started you and is the only one you talk to.
 
 **Reading is not restricted, and you should read widely.**
 
