@@ -364,6 +364,86 @@ assume.
    section and give the reason there. That row is the only thing that lets an
    engineer skip the test-first loop, and only for that task.
 
+   **Every task row carries a shape, and `solo` is the default.** A task can be
+   built in the **solo** shape — one engineer writes the failing unit test and
+   then the code that passes it, as above — or in the **paired shape**: one
+   engineer writes only the unit tests, a second engineer writes only the
+   product code, each inside a git worktree of its own, and neither can see the
+   other's half while it is being written. They never talk to each other: a
+   sibling agent is not a child, so the platform refuses the message even if a
+   role holds the tool. What that buys is **two independent readings of one
+   document** — where the two halves do not fit, the document allowed two
+   readings, and the crew learns it at the merge instead of in production. It is
+   independent verification, the kind safety-critical engineering uses, and it
+   is the opposite of two people at one keyboard talking until they agree: those
+   two are meant to converge, and these two are meant not to.
+
+   **Where the shape is written.** One bullet in that task's own section of
+   `docs/design/tasks.md`, directly after the milestone bullet and before the
+   list of files the task owns — that order is deliberate, because the shape
+   decides what the file list looks like. The field name is `**Shape**`, and it
+   takes one of two values:
+
+   - `- **Shape**: solo` — one engineer, test first, as above;
+   - `- **Shape**: pair — interface ADR: <path of that ADR>`.
+
+   The field name follows the job's language, like the rest of that file; the
+   two values stay `solo` and `pair` whatever the language.
+
+   A `pair` row names its **interface ADR** because that record is the only
+   thing the two halves align on before either of them starts: the architect
+   pins in it the import path, the exported name, the signature, the shape of
+   the return value and what happens on an error, and neither engineer may edit
+   it. A `pair` row also splits **the files it owns into two lists**, one per
+   half, and those two lists **may not overlap**. A `solo` row keeps one list.
+
+   **You bring a default and a list of exceptions, not one question per row.** A
+   job of fifty tasks is not fifty decisions, and protecting the user's
+   attention is half of what this crew is for. So recommend one shape for the
+   whole table — `solo` unless the job gives you a reason — and then name the
+   rows that should differ, each with the reason it is on that list.
+
+   **A recommendation for the paired shape rests on one of four reasons, and
+   there is no fifth:**
+
+   1. you cannot word that row's **DoD section** sharply, even after trying —
+      which is exactly where two readers drift apart;
+   2. that row sits on a module boundary contract;
+   3. getting it wrong costs money, permissions, or data;
+   4. an earlier task in that part of the code produced a defect.
+
+   A row that matches none of the four is `solo`, and you write nothing further
+   about it.
+
+   **One hard limit runs the other way, and it is not a fifth reason.** A task
+   whose unit tests and whose product code have to change the same file
+   may not use the pair shape, and none of the four reasons trades against that:
+   the two file lists of a paired task may not overlap, and one file cannot be
+   in both of them. Split the task until the two halves own different files, or
+   leave it `solo`.
+
+   **The paired shape exists only in a job that has an architect.** Before
+   either engineer writes a line, both have to land on the same five things —
+   the import path, the exported name, the signature, the shape of the return
+   value, what happens on an error — and they cannot see each other, so any one
+   of the five landing differently makes the merged run red for a reason nobody
+   learns anything from: a clash of names, not a disagreement. The architect
+   settles those five in the interface ADR, which is where a decision about
+   **how** belongs anyway. So on big work the architect proposes the shape of
+   every row when it writes the table (step 8, **Design**), and on small work —
+   where you write the table yourself and start no architect — there is no
+   paired shape at all, and every row is `solo`.
+
+   **The cost is an estimate, and you pass it on as one.** Reckon roughly 35% to
+   75% more effort on a paired task than on the same task done solo: the writing
+   is split in two, but the reading of the document is done twice, and on a
+   small task the reading is often the larger half. Add two worktrees to open,
+   whatever each of them needs before the project's own checks really run inside
+   it, one merge, and two clean-ups afterwards. Wall time can come out shorter,
+   because the two halves are written at the same time. None of those numbers is
+   a measurement: they are estimates with a reason behind them, and passing them
+   on as anything firmer would claim more than this crew can back.
+
 5. **Confirm.** Show the document to the user and ask them to confirm it,
    **including the Language and stack section**. Do not start any work before a
    clear yes. If they want changes, change it and ask again. A yes to the document
@@ -373,6 +453,18 @@ assume.
    to confirm it: the goals, the order, and what `M1` will show. The milestones
    decide when they get a say, so their opinion on that list matters more than
    any other part of the plan.
+
+   **A shape is stamped with its table, in one yes — never row by row.** Every
+   task row carries a shape (step 4, **Write the opening document**, says what
+   that field is and how you pick it), and a shape is confirmed as part of the
+   table it sits in, inside the same single yes that covers the rest of that
+   table. Show the default you recommend, the rows you want as exceptions, and
+   the reason for each of those rows; then ask once. Never make the shapes a
+   question of their own, and never walk the user down the rows: a job of fifty
+   tasks is not fifty decisions. On small work that table is already in front of
+   the user, because you wrote it in step 4. On big work the architect proposes
+   the shapes when it writes the table, so they are stamped together with that
+   table and not with the PRD you are confirming here.
 
 6. **Job folder.** Settle the job slug, then create
    `~/.dsh/crew/jobs/<job-slug>/state.json` (shape below). Keep it up to date
