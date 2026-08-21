@@ -198,14 +198,70 @@ Write these files, in the language the PM tells you:
    - **Who decided** — the PM, or the user. Here the decision is already made, so
      the chosen option takes the place of your recommendation.
 
+   **A paired task gets an interface ADR, and it is one of these files.** When
+   you mark a task `pair` (see **The shape of a task** below), write that task
+   one ADR of its own, in this same folder, one file per paired task, and name
+   the file on the task's shape line. It is the only document the two halves
+   share, so it pins **five** things and leaves none of them to an engineer:
+
+   - **the import path** — the exact path the unit tests import from;
+   - **the exported name** — spelled once, exactly as the code will export it;
+   - **the signature** — how many arguments, in what order, of what type, and
+     which of them are optional;
+   - **the shape of the return value** — the fields and their types, never
+     just "an object";
+   - **what happens on an error** — thrown or returned, one named error per
+     case, and what the caller can read off it.
+
+   Leave one of the five out and both halves decide it alone.
+
+   **Why it has to be pinned before either half starts.** The two engineers
+   never meet, and each of them works in its own git worktree, so each one
+   settles those five things by itself. Any single one of them landing
+   differently makes the merged run red — and that red is
+   **a clash of names, not a disagreement**. It teaches nobody anything, it
+   happens near enough to always, and it buries the one thing the paired shape
+   exists for: the place where two honest readings of the same DoD section
+   really differ.
+
+   **Only you change that ADR.** Copy that rule into the file. An engineer who
+   thinks a pin is wrong reports it to the PM and never edits it; the PM starts
+   a fresh architect to change it, and the half that already started against
+   the old version is run again. That is the boundary-contract rule above,
+   reused as it stands rather than reinvented here.
+
+   **An interface ADR is not a boundary contract.** A boundary contract in
+   `docs/design/api/` is written per pair of **modules** that talk to each
+   other, it belongs to those two modules, and it outlives every task built
+   against it; an interface ADR is written per **task**, and the two sides it
+   holds apart are not modules at all — they are the two halves of one task,
+   the unit tests and the product code, which land inside the same module. So a
+   paired task in a one-module design still needs its interface ADR, and a
+   paired task that also sits on a module boundary needs both files, each doing
+   its own job. Never put a task's interface into `docs/design/api/`, and never
+   let a boundary contract shrink into one task's ADR.
+
+   **Write its own risk into the file, in one line.** This ADR is a third
+   document that both halves read, so both halves can still misread it the same
+   way, and when they do the merged run is all green and nothing is reported.
+   The gain is not that the risk goes away. It is that a signature can be read
+   two ways far less easily than a paragraph of prose can, so what this file
+   adds to that risk is much smaller than the noise it takes away: the trade is
+   worth making, and the only thing that catches a shared misreading is still
+   QA, afterwards.
+
 4. **Task breakdown** — `docs/design/tasks.md`. This is the file engineers work
    from, so it decides whether the work goes well:
    - one row per task, id `T-01`, `T-02`, …;
    - **the milestone the task belongs to** (`M1`, `M2`, …), when the PRD has
      milestones;
    - one sentence of work per task;
+   - **the shape**, `solo` or `pair`, written straight after the milestone and
+     before the file list, because the shape decides what that list looks like
+     (see **The shape of a task** below);
    - **the exact files that task owns** — two tasks must never own the same
-     file, because engineers work at the same time;
+     file, because engineers work at the same time. On a `pair` task this is
+     two lists, one per half, and they may not overlap;
    - **the test file the task must write** — one of the files the task owns, so
      the test stays in the project's own test suite after the job ends. If a task
      truly cannot be checked by an automated test, say so in the row and give the
@@ -233,6 +289,69 @@ task needs more than about five files, split it.
 Engineers work test first: they write a failing test before the code. So before
 you write a task row, name the test you would expect for it. If you cannot name
 one, the task is not ready — split it or make it sharper.
+
+### The shape of a task: solo or paired
+
+Every task carries a **shape**, and you are the one who proposes it. In an
+English task table the field is written `**Shape**` and it takes one of two
+values:
+
+- `solo` — one engineer does both halves of the task: the unit tests first,
+  then the product code that makes them pass. This is the default, and most
+  tasks stay here.
+- `pair` — two engineers who never meet. One writes only the unit test files,
+  the other writes only the product code. A `pair` task also names its
+  interface ADR on the same line.
+
+**The position is fixed: straight after the milestone, before the file list.**
+That order is the dependency order — the shape decides what the file list
+looks like, so whoever reads the section, and whoever is handed one half of
+it, knows which kind of list to expect before reaching it:
+
+```
+## T-NN — <one sentence of work>
+
+- **Verdicts**: …
+- **Milestone**: M1
+- **Shape**: solo
+- **Files it owns**: …
+```
+
+On a paired task those lines read like this instead:
+
+```
+- **Shape**: pair — interface ADR: `docs/decisions/adr/NNNN-<short-name>.md`
+- **Files A owns**, the unit tests: …
+- **Files B owns**, the product code: …
+```
+
+**The two file lists of a paired task may not overlap.** Not one file on both
+sides. The two halves are kept apart by two real git worktrees, so a file
+claimed twice is a merge the PM has to settle by hand, in the exact place where
+the crew was supposed to be reading a signal instead.
+
+**A task cannot use the paired shape if its unit tests and its product code
+must sit in the same file.** That one is a hard limit, not a preference: the
+file list cannot be split in two, so the shape does not apply and the task is
+`solo`. Do not mix it up with the reasons you might *choose* `solo` for a task
+that could have been paired — the task is small, its DoD section is thin, its
+behaviour is hard to name. Those are judgement calls. This one is arithmetic.
+
+**The paired shape exists only in a job that has an architect** — which is to
+say, only where you exist. On small work the PM writes the task rows itself and
+starts no architect, so that road has no paired shape at all: there is nobody
+to pin the five things above, and without them a paired task's first merged run
+is red over names instead of over behaviour. The decision therefore sits in two
+places, and both were already in the flow. The PM decides at the start of the
+job whether the work needs an architect. You propose, task by task, which tasks
+are `pair`. You do not ask the user yourself: your proposal reaches them with
+the whole table at step 5, **Confirm**, and they stamp the shapes together with
+everything else in it.
+
+Mark a task `pair` only where the shape earns its cost — its DoD section is
+sharp enough that a second, independent reading of it is worth paying for, and
+its unit tests and its product code live in different files. Everything else is
+`solo`, and `solo` needs no reason given.
 
 ### Milestones
 
