@@ -1353,7 +1353,7 @@ PRD v3 定了一张四条的用词表（单元测试 / QA 用例 / 项目的测�
 
 ## T-53 — `roles/test-engineer.md` 写实：A 的行为规则
 
-- **Verdicts**：code: not run — 尚未开工 ｜ security: not run — 尚未开工 ｜ qa: not run — 尚未开工 ｜ doc: not run — 尚未开工
+- **Verdicts**：code: not run — 按 `CRD 0018`（用户 2026-08-21 决定），代码评审集中到最后一轮，并行、只看改动的部分 ｜ security: not run — 同上。**这个判断不是「没风险」**：T-51 的安全评审在同一类文件上抓到过一条 blocking（persona 有 shell 却缺依赖禁令），所以这一轮的三半禁令和「越界就停」出口是照那次的结果写的，但**本任务本身没有被安全评审看过** ｜ qa: not run — 按 `CRD 0020`（用户指向 `~/req` 第 3 项），QA 不再逐任务，集中在全部编码结束后一轮。本任务的完成判据是 `npm test` 绿：113 个 QA 用例 + `verify-mount.mjs` 79 条挂载检查，其中 T-51 的 `case-08/09/11/12/13/20` 和 T-52 的用例直接钉着这个文件 ｜ doc: not run — 按 `CRD 0018`，文档评审集中到最后一轮
 
 - **里程碑**：M2（阶段 2/4：persona 写实，原 M3）
 - **形状**：单人（solo）
@@ -1389,7 +1389,7 @@ PRD v3 定了一张四条的用词表（单元测试 / QA 用例 / 项目的测�
 
 ## T-54 — `roles/code-engineer.md` 写实：B 的行为规则
 
-- **Verdicts**：code: not run — 尚未开工 ｜ security: not run — 尚未开工 ｜ qa: not run — 尚未开工 ｜ doc: not run — 尚未开工
+- **Verdicts**：code: not run — 按 `CRD 0018`（用户 2026-08-21 决定），代码评审集中到最后一轮，并行、只看改动的部分 ｜ security: not run — 同上。**这个判断不是「没风险」**：T-51 的安全评审在同一类文件上抓到过一条 blocking（persona 有 shell 却缺依赖禁令），所以这一轮的三半禁令和「越界就停」出口是照那次的结果写的，但**本任务本身没有被安全评审看过** ｜ qa: not run — 按 `CRD 0020`（用户指向 `~/req` 第 3 项），QA 不再逐任务，集中在全部编码结束后一轮。本任务的完成判据是 `npm test` 绿：113 个 QA 用例 + `verify-mount.mjs` 79 条挂载检查，其中 T-51 的 `case-08/09/11/12/13/20` 和 T-52 的用例直接钉着这个文件 ｜ doc: not run — 按 `CRD 0018`，文档评审集中到最后一轮
 
 - **里程碑**：M2（阶段 2/4：persona 写实，原 M3）
 - **形状**：单人（solo）
@@ -1424,7 +1424,7 @@ PRD v3 定了一张四条的用词表（单元测试 / QA 用例 / 项目的测�
 
 ## T-55 — `roles/engineer.md` 开头加一句指路，行为一个字不改
 
-- **Verdicts**：code: not run — 尚未开工 ｜ security: not run — 尚未开工 ｜ qa: not run — 尚未开工 ｜ doc: not run — 尚未开工
+- **Verdicts**：code: not run — 按 `CRD 0018`（用户 2026-08-21 决定），代码评审集中到最后一轮，并行、只看改动的部分 ｜ security: not run — 同上。**这个判断不是「没风险」**：T-51 的安全评审在同一类文件上抓到过一条 blocking（persona 有 shell 却缺依赖禁令），所以这一轮的三半禁令和「越界就停」出口是照那次的结果写的，但**本任务本身没有被安全评审看过** ｜ qa: not run — 按 `CRD 0020`（用户指向 `~/req` 第 3 项），QA 不再逐任务，集中在全部编码结束后一轮。本任务的完成判据是 `npm test` 绿：113 个 QA 用例 + `verify-mount.mjs` 79 条挂载检查，其中 T-51 的 `case-08/09/11/12/13/20` 和 T-52 的用例直接钉着这个文件 ｜ doc: not run — 按 `CRD 0018`，文档评审集中到最后一轮
 
 - **里程碑**：M2（阶段 2/4：persona 写实，原 M3）
 - **形状**：单人（solo）
