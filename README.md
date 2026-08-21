@@ -11,7 +11,7 @@ starts an **architect** to design the work, **engineers** to write the code, and
 **reviewers** to judge both. The roles never talk to each other — they share work
 through files on disk, and the PM passes messages.
 
-> **Version 0.7.0.**
+> **Version 0.8.0.**
 >
 > - **"What done means" is a section of your own repository**, not a file that
 >   gets dropped.

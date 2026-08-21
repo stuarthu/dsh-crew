@@ -8,7 +8,7 @@ Every version bump rewrites `$DSH_HOME/.agent-presets/crew`. Files you edited
 there are kept as `<name>.bak` and named in the boot log, but your settings do
 **not** come back on their own. Copy them into the new file after an upgrade.
 
-## unreleased
+## 0.8.0 — 2026-08-21
 
 ### Changed
 
