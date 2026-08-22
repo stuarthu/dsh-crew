@@ -1,0 +1,41 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the tagged commit
+        uses: actions/checkout@v4
+
+      - name: Take the release notes out of CHANGELOG.md
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          if [ -f CHANGELOG.md ] && awk -v v="$version" '
+            $0 ~ "^## " v "[[:space:]]*$" { found = 1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md > notes.md && grep -q '[^[:space:]]' notes.md; then
+            echo "notes from CHANGELOG.md"
+          else
+            echo "## What's Changed" > notes.md
+            echo "" >> notes.md
+            git log --oneline --no-merges -30 | sed 's/^/* /' >> notes.md
+            echo "notes fallback to recent commits"
+          fi
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --notes-file notes.md
