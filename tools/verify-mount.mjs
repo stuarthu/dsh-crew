@@ -1922,6 +1922,44 @@ if (roles) {
   if (engineer?.config.toolFilter?.deny?.length !== 1) fail("roleDeny did not replace the shipped deny list");
   else ok("roleDeny replaces the shipped deny list");
 
+  // roleModels: a role pinned to its own model can carry its own reasoning
+  // effort (T-136). dsh drops the PM's effort whenever a child's provider or
+  // model differs from the PM's, unless the child's own options name one, so
+  // without this a pinned role always ran at that model's default effort. The
+  // effort goes out only beside a model: a role on the PM's model already
+  // inherits the PM's effort. The schema half is the part only this script can
+  // check, because qa/T-136 mounts against a stub.
+  {
+    const pinned = fakeContext();
+    roles.apply(pinned, {
+      roleModels: {
+        engineer: { provider: "some-provider", model: "some-model", reasoningEffort: "high" },
+        qa: { model: "some-model" },
+        architect: { reasoningEffort: "high" },
+      },
+    });
+    const configOf = (toolName) => pinned.mounts.find(mount => mount.config.toolName === toolName)?.config;
+    for (const [toolName, wanted, label] of [
+      ["crew_engineer", { provider: "some-provider", model: "some-model", reasoningEffort: "high" }, "a model with a reasoningEffort passes both on"],
+      ["crew_qa", { model: "some-model" }, "a model with no reasoningEffort passes no effort, as before"],
+      ["crew_architect", undefined, "a reasoningEffort with no model passes nothing, so that role follows the PM"],
+    ]) {
+      const got = configOf(toolName)?.agentOptions;
+      if (JSON.stringify(got) !== JSON.stringify(wanted)) fail(`roleModels: ${label} — ${toolName} got agentOptions ${JSON.stringify(got)}, expected ${JSON.stringify(wanted)}`);
+      else ok(`roleModels: ${label}`);
+    }
+    if (SubagentConfig === undefined) {
+      skip("roleModels: agentOptions.reasoningEffort not validated against tool-subagent's schema (dsh not installed here)");
+    } else {
+      try {
+        SubagentConfig(configOf("crew_engineer"));
+        ok("roleModels: tool-subagent's schema accepts agentOptions with a reasoningEffort");
+      } catch (error) {
+        fail(`roleModels: tool-subagent rejected crew_engineer's agentOptions — ${error.message}`);
+      }
+    }
+  }
+
   // CRD 0016: an EMPTY list must refuse to start, not be waved through. An empty
   // array is not nullish, so `??` never reached the shipped list, and
   // `[].length > 0` was false — which used to leave `toolFilter` off the config

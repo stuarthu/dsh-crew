@@ -38,7 +38,7 @@ dsh plugin --profile tui add dsh-crew     # 或 --profile web
 - 你 profile 的 `cordis.patch.yml` 里的 `dsh-crew-core` 和 `dsh-crew-git-guard` 行：
   角色目录、同时存活的代理数、评审轮数、作业目录和 git 保护。
 - `~/.dsh/.agent-presets/crew/agent.cordis.yml` 里的 `dsh-crew-roles` 行：
-  每个角色的工具和模型。
+  每个角色的工具、模型和推理强度。
 
 ## 许可
 

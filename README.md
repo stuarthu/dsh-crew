@@ -42,7 +42,7 @@ Everything is optional. Settings live in two places:
   `cordis.patch.yml`: roles folder, live-agent limit, review rounds, job folder,
   and the git guard.
 - The `dsh-crew-roles` row in `~/.dsh/.agent-presets/crew/agent.cordis.yml`:
-  per-role tools and models.
+  per-role tools, models and reasoning effort.
 
 ## License
 

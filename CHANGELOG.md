@@ -8,6 +8,21 @@ Every version bump rewrites `$DSH_HOME/.agent-presets/crew`. Files you edited
 there are kept as `<name>.bak` and named in the boot log, but your settings do
 **not** come back on their own. Copy them into the new file after an upgrade.
 
+## 0.11.0 — unreleased
+
+### Added
+
+- **A role pinned to its own model can now have its own reasoning effort.** Add
+  `reasoningEffort` next to `model` in that role's `roleModels` entry, in
+  `~/.dsh/.agent-presets/crew/agent.cordis.yml`. Before this there was nowhere
+  to put it. dsh does not pass the PM's reasoning effort on to a child that runs
+  on a different model, so a pinned role always ran at that model's default
+  effort, however high the PM's was, and nothing said so.
+  `reasoningEffort` counts only next to a `model`. A role with no `model` runs on
+  the PM's model and already gets the PM's effort, so a `reasoningEffort` there
+  is ignored. Leave the line out and nothing changes: every `roleModels` entry
+  you already have works exactly as before.
+
 ## 0.10.0 — 2026-08-23
 
 ### Added
