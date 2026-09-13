@@ -259,7 +259,14 @@
       #
       #   # Per-role provider and model. An empty value keeps the session's own
       #   # model, so fill in names your deployment really has.
-      #   roleModels: { engineer: { provider: '', model: '' } }
+      #   #
+      #   # `reasoningEffort` is optional and counts only next to a `model`. dsh
+      #   # does not pass the session's reasoning effort on to a role that runs
+      #   # on a different model, so without this line a pinned role runs at
+      #   # that model's default effort. A role with no `model` follows the
+      #   # session's model and its effort, and a `reasoningEffort` there is
+      #   # ignored.
+      #   roleModels: { engineer: { provider: '', model: '', reasoningEffort: '' } }
 
 # ── remaining model-facing rows ─────────────────────────────────────────────
 

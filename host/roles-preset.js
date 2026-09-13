@@ -106,7 +106,7 @@ export function apply(ctx, config) {
       persona: readRoleText(role.personaFile, rolesDir),
       ...Object.keys(filter).length > 0 ? { toolFilter: filter } : {},
       maxDepth: 1,
-      ...model?.model ? { agentOptions: { ...model.provider ? { provider: model.provider } : {}, model: model.model } } : {},
+      ...model?.model ? { agentOptions: { ...model.provider ? { provider: model.provider } : {}, model: model.model, ...model.reasoningEffort ? { reasoningEffort: model.reasoningEffort } : {} } } : {},
     });
   }
 }

@@ -20,18 +20,24 @@
 // understand it. That is DoD item 6 and it belongs to a doc reviewer.
 //
 // PINNING STYLE: FLATTENED (the entries are wrapped prose) and sliced to the
-// `### Changed` block of the TOP section only — an entry under 0.9.0 describes a
-// version that already shipped and must not be able to answer for this one.
+// `### Changed` block of the `0.10.0` section only, the release this entry
+// shipped in — an entry under any other version must not be able to answer for
+// this one. The section is found by its heading, not by being on top: the next
+// version's section goes on top of it, and that does not make this entry go
+// missing (T-136; ADR 0018, ADR 0028).
 
 import { check, done, flat, repoFile } from "../lib/qa.mjs";
 
 const text = repoFile("CHANGELOG.md");
 
-/** The top `## <version> — …` section, up to the next `## `. */
-function topSection(source) {
+/** The version this job's entry shipped in. */
+const VERSION = "0.10.0";
+
+/** The `## 0.10.0 — …` section, up to the next `## `. The space after the version is the boundary. */
+function shippedSection(source) {
   const lines = source.split("\n");
-  const first = lines.findIndex((line) => /^## /.test(line));
-  if (first === -1) throw new Error("CHANGELOG.md has no `## ` version section");
+  const first = lines.findIndex((line) => line.startsWith(`## ${VERSION} `));
+  if (first === -1) throw new Error(`CHANGELOG.md has no \`## ${VERSION} \` section`);
   const next = lines.findIndex((line, index) => index > first && /^## /.test(line));
   return { heading: lines[first], text: lines.slice(first, next === -1 ? lines.length : next).join("\n") };
 }
@@ -45,13 +51,13 @@ function subSection(section, name) {
   return lines.slice(first, next === -1 ? lines.length : next).join("\n");
 }
 
-const top = topSection(text);
-const changed = subSection(top.text, "Changed");
+const shipped = shippedSection(text);
+const changed = subSection(shipped.text, "Changed");
 
-console.log(`top section: ${top.heading}`);
+console.log(`section: ${shipped.heading}`);
 
 check(
-  "the top section has a `### Changed` block",
+  `the ${VERSION} section has a \`### Changed\` block`,
   changed !== null,
   "this job changed how the interview behaves; with no Changed block the entry has nowhere correct to live",
 );
@@ -62,11 +68,11 @@ const words = flat(changed);
 console.log(`### Changed: ${changed.length} characters over ${changed.split("\n").length} lines`);
 
 // `### Changed` must come after `### Added`, per the DoD.
-const added = subSection(top.text, "Added");
+const added = subSection(shipped.text, "Added");
 if (added !== null) {
   check(
     "`### Changed` sits after `### Added`",
-    top.text.indexOf("### Added") < top.text.indexOf("### Changed"),
+    shipped.text.indexOf("### Added") < shipped.text.indexOf("### Changed"),
     "the two blocks are in the wrong order for this file's shape",
   );
 }
