@@ -1044,13 +1044,21 @@ else {
 
 // The same preset, declared for dsh 0.2.x. That generation does not read
 // `$DSH_HOME/.agent-presets` at all — its registry "neither scans directories
-// nor accepts preset paths" — so the folder checked above is invisible there
-// and a `@deepseek-ai/dsh-agent-preset` row is the only way the Crew preset
-// exists at all. Its absence is therefore a missing feature, not a drift, and
-// the two declarations must satisfy the SAME rules: they are one crew, and a
-// user on either generation has to get it. The `disabled` guard is part of the
-// rule too: without it a dsh 0.1.x profile would be asked to load a package it
-// does not have.
+// nor accepts preset paths" — so the folder checked above is invisible there,
+// and this row is the only way the Crew preset exists at all. Its absence is
+// therefore a missing feature, not a drift, and the two declarations must
+// satisfy the SAME rules: they are one crew, and a user on either generation
+// has to get it.
+//
+// The guard is NOT a row-level `disabled:` any more, and that is load-bearing:
+// a row's `disabled` is evaluated against the LOADER context, which cannot see
+// the registry service, so the old expression came out true, the row was
+// DISABLED on every dsh, and dsh kept a declaration whose activation fails "on
+// the roster with its diagnostic" — a silently off preset, no error. The check
+// now lives in `host/crew-preset.js`, this row's own plugin, where `ctx.get()`
+// resolves against the row's declared injections. So the pins below are the
+// mirror image of the old ones: the row must be carried by that plugin, and
+// must NOT carry its own `disabled:`.
 {
   const patchText = readFileSync(join(packageRoot, patch ?? "cordis.patch.yml"), "utf8");
   const start = patchText.indexOf("- id: preset-crew");
@@ -1061,9 +1069,19 @@ else {
     // the last entry today, and slicing keeps every assertion below inside it.
     const next = patchText.indexOf("\n- insert:", start);
     const block = patchText.slice(start, next === -1 ? undefined : next);
-    if (!/name:\s*'@deepseek-ai\/dsh-agent-preset'/.test(block)) fail("the preset-crew row is not an '@deepseek-ai/dsh-agent-preset' row, so dsh 0.2.x cannot mount it as a preset");
+    if (!/name:\s*'dsh-crew\/host\/crew-preset\.js'/.test(block)) fail("the preset-crew row is not carried by 'dsh-crew/host/crew-preset.js', so its guard would be evaluated against the loader context, which cannot see the registry service — the row would be disabled on every dsh, and dsh 0.2.x has no other home for the Crew preset");
+    // The row's OWN keys sit at six spaces; a nested plugin row's sit deeper,
+    // and those `disabled:` lines (tool-bash, tool-pwsh) are legitimate. Only a
+    // sixth-space one is this row being switched off, which is the defect.
+    if (/^ {6}disabled:/m.test(block)) fail("the preset-crew row carries its own `disabled:` line — a row's `disabled` is evaluated against the loader context, where `agentPresets` does not resolve, so the expression is true and the row is silently off. Move the check into host/crew-preset.js and delete the line");
     if (!/^\s*id: crew\s*$/m.test(block)) fail("the preset-crew row does not carry `id: crew`, so it would save under a different preset identity than the sessions of dsh 0.1.x already use");
-    if (!/^\s*disabled:\s*!!js .*resolvedRoots/m.test(block)) fail("the preset-crew row has no `disabled` guard against the old registry, so a dsh 0.1.x profile would be asked to load @deepseek-ai/dsh-agent-preset, which that generation does not have");
+    // The guard, where it now lives. A missing check in the plugin is the same
+    // outage as a missing row: on dsh 0.1.x it would ask that generation to
+    // mount a declaration row it cannot read.
+    const presetPlugin = readFileSync(join(packageRoot, "host/crew-preset.js"), "utf8");
+    if (!presetPlugin.includes('ctx.get("agentPresets")')) fail("host/crew-preset.js does not read the `agentPresets` service, so nothing decides whether the declaration row may mount — both generations would try to use it");
+    if (!/registry\.resolvedRoots !== undefined/.test(presetPlugin)) fail("host/crew-preset.js does not skip the old folder-scanning registry, so dsh 0.1.x — which has no such thing as a declaration row — would be asked to mount one");
+    if (!/registry\.register/.test(presetPlugin)) fail("host/crew-preset.js never calls `registry.register`, so the declaration in cordis.patch.yml is read by nobody and dsh 0.2.x offers no Crew preset");
     if (!block.includes("dsh-crew/host/roles-preset.js")) fail("the crew preset declared for dsh 0.2.x does not load dsh-crew/host/roles-preset.js, so that generation would have no role tools");
     for (const escape of ["toolName: subagent", "dsh-tool-workflow", "dsh-tool-ralph", "provider: codex", "provider: claude-code"]) {
       if (new RegExp(`^\\s*[^#\\n]*${escape.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "m").test(block)) {

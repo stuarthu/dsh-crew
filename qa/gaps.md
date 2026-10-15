@@ -2372,3 +2372,12 @@ dsh 的机器，那是一件新作业，不是这一次兼容修复能顺手做�
 
 **状态**：未关闭。形状有检查守着（`tools/verify-mount.mjs`），行为没有；开关依赖的那个字段不是
 公开契约，所以它也守不住。
+
+**Update, 2026-10-15 (T-137) — the gap shrank, it did not close.** The check moved out of
+the YAML `!!js` and into `host/crew-preset.js`, so it is now evaluated where `agentPresets`
+actually resolves: the wrong-context half of this gap is closed, and `tools/verify-mount.mjs`
+now pins the guard inside the plugin — a missing `ctx.get("agentPresets")`, a missing
+`resolvedRoots` skip and a missing `registry.register` call each turn it red, and a row-level
+`disabled:` line is refused outright. **Still open: the private-field half.** A rename of
+`resolvedRoots` still picks the wrong branch silently, and no check here can see it. The
+behaviour is still unpinned, because no check runs a real dsh.

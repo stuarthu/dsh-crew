@@ -12,6 +12,27 @@ preset and its settings live there.
 
 ## 0.12.0 — unreleased
 
+### Fixed
+
+- **The Crew preset now appears in the preset picker on dsh 0.2.x, where until
+  now it was silently switched off.** The declaration row was carried by
+  `@deepseek-ai/dsh-agent-preset` and switched itself off with a `disabled:` line.
+  A row's `disabled` is evaluated against the **loader** context, which cannot see
+  the registry service — only a `!!js` expression inside a row's `config` sees that
+  plugin's own context. So the expression was true on every dsh, the row was
+  disabled on every dsh, and dsh kept a declaration whose activation fails "on the
+  roster with its diagnostic" rather than failing the profile. The symptom was a
+  missing preset and no error, on the one generation that has no other home for it:
+  0.2.x never reads `$DSH_HOME/.agent-presets`.
+  - **The row is now carried by `host/crew-preset.js`**, the package's own plugin,
+    and it carries no `disabled:` line at all. The check runs inside that plugin,
+    where `ctx.get('agentPresets')` resolves against the row's declared injections.
+  - **Nothing changes on dsh 0.1.x.** That generation never reads a declaration row;
+    the plugin does nothing there, and the folder install is the whole story — the
+    same shape as before, now actually reached.
+  - **The preset's own content did not move**: same `id: crew`, same `order`, same
+    name and description, same `plugins:` list with the same two deviations.
+
 ### Changed
 
 - **The job folder moved inside the repository.** It used to sit at

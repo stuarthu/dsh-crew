@@ -13,8 +13,9 @@
 #                       publishing, whoever asks for them
 #   preset-crew         the same `crew` agent preset declared for dsh 0.2.x,
 #                       which reads preset rows instead of a folder. The last
-#                       block in this file; its comment carries the guard that
-#                       keeps the two generations from meeting.
+#                       block in this file; the guard that keeps the two
+#                       generations from meeting lives in
+#                       dsh-crew/host/crew-preset.js, this row's own plugin.
 #
 # The role TOOLS are not here. They live in the `crew` agent preset - declared
 # at the end of this file for dsh 0.2.x, and written as
@@ -90,14 +91,25 @@
 # when dsh moves. A role filter has to be set in both lists until one
 # generation is dropped.
 #
-# THE GUARD. `disabled` below is what keeps the two from meeting. `agentPresets`
-# is the service name in BOTH registries, so the name alone proves nothing: the
-# old one exposes `resolvedRoots` (it scans roots) and the new one does not. The
-# expression therefore enables this row only when a registry is up AND it is not
-# the old one. On dsh 0.1.x the row is skipped and the folder install above is
-# the whole story; on a dsh neither branch recognises, the Crew preset is
-# MISSING rather than the profile failing to compose — the right way round,
-# because a row whose package does not exist cannot be mounted at all.
+# THE GUARD, and why it is NOT a `disabled:` line. A row's `disabled` is
+# evaluated against the LOADER context, which cannot see the registry service —
+# only a `!!js` expression inside a row's `config` is evaluated against that
+# plugin's own context. So a `disabled: !!js ctx.get('agentPresets') ...` line
+# here is evaluated where `agentPresets` does not resolve: the expression comes
+# out true, the row is DISABLED, and dsh keeps a declaration whose activation
+# fails "on the roster with its diagnostic" rather than failing the profile. That
+# is why the symptom was "Crew is missing from the preset picker" and not an
+# error — a silently off preset, on the one generation that has no other home for
+# it. The check therefore lives in `host/crew-preset.js`, mounted as this row's
+# own plugin, where `ctx.get('agentPresets')` resolves against the row's declared
+# injections.
+#
+# What that check still does: register the declaration only when a registry is
+# up AND it is not the old folder-scanning one. On dsh 0.1.x the plugin does
+# nothing and the folder install above is the whole story; on a dsh neither
+# branch recognises, the Crew preset is MISSING rather than the profile failing
+# to compose — the right way round, because a preset that cannot be mounted must
+# not make a profile un-composable.
 #
 # `plugins:` is dsh's own 0.2.x `standard` preset with TWO deviations, and only
 # these two:
@@ -117,8 +129,7 @@
 # `preset/crew/agent.cordis.yml` says of itself.
 - insert:
     - id: preset-crew
-      name: '@deepseek-ai/dsh-agent-preset'
-      disabled: !!js ctx.get('agentPresets') === undefined || ctx.get('agentPresets').resolvedRoots !== undefined
+      name: 'dsh-crew/host/crew-preset.js'
       config:
         id: crew
         order: 5
