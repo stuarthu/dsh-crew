@@ -10,7 +10,7 @@ settings do **not** come back on their own. Copy them into the new file after an
 upgrade. On dsh 0.2.x there is no such folder: see 0.11.0 below for where the
 preset and its settings live there.
 
-## 0.11.0 — unreleased
+## 0.11.0 — 2026-10-15
 
 ### Added
 
@@ -59,6 +59,25 @@ preset and its settings live there.
     and a row naming a module the package does not export cannot be resolved.
   - **`npm test` no longer runs `tools/verify-pm-write-guard.mjs`.** Nothing
     else in the suite, and no QA case, depended on it.
+
+### Fixed
+
+- **The git guard was not guarding your crew roles at all.** It decided who was
+  the PM by looking at the tool call's `exec.parent`, and in dsh that token marks
+  a **nested sub-call**, not a parent agent: it is set for the PM's own nested
+  calls and absent for every crew role. So every role read as the PM, and the one
+  branch of the guard that trusted the PM let a child push a protected branch,
+  push a tag, force push, delete a remote or publish a package straight through.
+  The guard now reads the agent's own session: a crew role's session names a
+  parent session, the PM's does not. Every child is guarded again, and the guard's
+  own check — which had the same mistake and reported every blocked case as a
+  pass — now sees children.
+  - **Nothing about the PM changes.** Its git and publishing commands still pass
+    straight through, and `trustRootAgent: false` still guards it exactly like a
+    child.
+  - **If you were relying on a role being able to push, that ability is gone.** It
+    was never the design: a child's push needs the one-shot approval file the
+    **user** creates, exactly as `SECURITY.md` describes it.
 
 ## 0.10.0 — 2026-08-23
 
