@@ -4,23 +4,23 @@ dsh-crew is a plugin for DeepSeek Harness (dsh). It turns a dsh session into a
 "crew": the session becomes a product manager (PM) that starts role agents
 (engineers, reviewers, QA, and the rest) as its direct children.
 
-This file describes the two guards the plugin adds, what each one blocks, and —
-just as honestly — what each one does not block. Neither guard is airtight, and
-this file says so plainly. If you find a hole, see
+This file describes the guard the plugin adds, what it blocks, and — just as
+honestly — what it does not block. It is not airtight, and this file says so
+plainly. If you find a hole, see
 [Reporting a security issue](#reporting-a-security-issue).
 
-## What the guards are
+## What the guard is
 
-Both guards are middleware on dsh's `tools/execute`, mounted by the plugin's
-host bundle (`cordis.patch.yml`). They exist because a rule written in prose is
+The guard is middleware on dsh's `tools/execute`, mounted by the plugin's host
+bundle (`cordis.patch.yml`). It exists because a rule written in prose is
 advice, while a `tools/execute` wrapper is the place a call is actually stopped.
-Both read the text of a tool call and match it against patterns. Both are
-described in their own source as "a strong seat belt, not a locked door", and
-both leave the real gate where it always is: dsh's own approval prompts, which
-you see in the GUI and answer yourself.
+It reads the text of a tool call and matches it against patterns. Its own source
+describes it as "a strong seat belt, not a locked door", and it leaves the real
+gate where it always is: dsh's own approval prompts, which you see in the GUI
+and answer yourself.
 
-Both guards are configurable from the profile's `cordis.patch.yml` and can be
-disabled entirely (`enabled: false`). They protect by default; they are not a
+The guard is configurable from the profile's `cordis.patch.yml` and can be
+disabled entirely (`enabled: false`). It protects by default; it is not a
 property of the machine.
 
 ## The git guard (`host/git-guard.js`)
@@ -89,93 +89,32 @@ Each of these is a real hole, not a caveat:
   shell assembles from pieces still gets through:
   `echo push-ok-flow | sed s/-flow// | xargs touch` is not stopped.
 
-## The PM write guard (`host/pm-write-guard.js`)
-
-The PM write guard stops the root agent — your own session, the PM — from using
-the `write` and `edit` tools on files that belong to crew roles. The PM had
-repeatedly edited files it was not allowed to edit; the guard makes that
-impossible instead of merely forbidden.
-
-### Who is guarded
-
-- Only the root agent is guarded. Every crew role carries a parent execution
-  token and passes straight through — a role writing its own task's files is
-  the normal flow and is never touched.
-- Only the `write` and `edit` tools are intercepted; everything else runs
-  unhindered.
-
-### What is whitelisted
-
-A path on the PM's whitelist passes straight through, no approval asked. The
-whitelist is hard-coded in the guard, and pinned by
-`tools/verify-pm-write-guard.mjs`; it is not read from the task table (`docs/tasks/`), so a change
-to the rules text cannot move the guard:
-
-- `docs/design/prd-*.md` — the opening document of a job
-- `docs/decisions/crd/*.md` — change request documents
-- `docs/decisions/adr/*.md` — decision records
-- `docs/tasks/` — the task table directory, any direct child
-- `qa/run-all.sh` and `qa/gaps.md` — the shared QA runner and the
-  standing gap list
-- `CLAUDE.md`, `principles.md` — the project rules and the principles
-- `roles/pm.md` — the PM's own rules file
-- `<jobsDir>/*/state.json` — job state files, outside the repository
-
-Everything else — product code under `host/` and `tools/`, the other roles'
-rule files, interface contracts under `docs/design/api/`, QA's cases under
-`qa/T-*/`, the READMEs, `package.json` — is refused and asked to you.
-
-### What happens when it refuses
-
-A protected write goes through dsh's own user-approval channel: you see an
-approval prompt in the GUI for *this one* write, and you approve or reject it.
-Every write is asked for separately. The prompt and the refusal name the real
-target (symlinks resolved), with the typed path in parentheses when the two
-differ.
-
-### Honest limits
-
-- **It reads the file-path text of `write` and `edit` calls, and only those
-  two tools.** A file written through a shell command (`echo x > file`) never
-  passes through this middleware — that lane is the git guard's territory and
-  the playbook's, not this guard's. It is a strong seat belt, not a locked
-  door.
-- **Paths are matched by the normalized segments of the realpath'd target.** A
-  symlink or `..` cannot smuggle a protected file past it — but the price is
-  that a path whose *final segment* is `CLAUDE.md`, `principles.md` or
-  `roles/pm.md`, and whose existing ancestors are not symlinks, is whitelisted
-  wherever it sits. That is a deliberate trade: the guard stops the PM stepping
-  on this repository's layout; it does not fence a hostile agent.
-- **A deployment that composes no approval service fails closed**: the write is
-  refused with a clear message instead of being allowed.
-
 ## The bottom line: not airtight
 
-- Both guards read text — command text, or file-path text — and intercept a
-  narrow lane (`bash`/`pwsh`, or `write`/`edit`). A determined agent with the
-  shell can do things neither guard sees: hide a push in a script file, write a
-  file with `echo`, assemble a file name from pieces. The guards were never
+- The guard reads command text and intercepts a narrow lane (`bash` and
+  `pwsh`). A determined agent with the shell can do things it does not see:
+  hide a push in a script file, or change the remote first. It was never
   designed to fence a hostile agent.
-- Neither guard replaces your own attention. dsh's approval prompts are the
-  real gate, and the crew's own rules (`roles/pm.md`) require your yes for
-  every push, tag, publish, merge and branch delete. The guards are one layer
-  of that system, not the whole of it.
-- The guards constrain only agents inside a dsh session that has dsh-crew
-  mounted. They say nothing about anything outside that session — other
-  software on the machine, or a human running git themselves.
+- It does not replace your own attention. dsh's approval prompts are the real
+  gate, and the crew's own rules (`roles/pm.md`) require your yes for every
+  push, tag, publish, merge and branch delete. The guard is one layer of that
+  system, not the whole of it.
+- It constrains only agents inside a dsh session that has dsh-crew mounted. It
+  says nothing about anything outside that session — other software on the
+  machine, or a human running git themselves.
 
 ## Reporting a security issue
 
-If you find a hole in either guard, or a way a role can exceed what its rules
+If you find a hole in the guard, or a way a role can exceed what its rules
 allow, report it:
 
 - **Where**: open an issue at <https://github.com/stuarthu/dsh-crew/issues>
   (the repository is public). If you prefer not to post publicly and the
   repository's private vulnerability reporting is enabled (Security tab →
   Report a vulnerability), use that instead.
-- **What to include**: the dsh-crew version (from `package.json`), which guard
-  is involved, the exact command or call, what you expected and what happened,
-  and whether it affects one session or any deployment.
+- **What to include**: the dsh-crew version (from `package.json`), the exact
+  command or call, what you expected and what happened, and whether it affects
+  one session or any deployment.
 - **What happens next**: the report is read by the repository maintainer, and
   a confirmed problem is fixed like any other change in this repository —
   through the repository's normal change flow, with its review rounds.

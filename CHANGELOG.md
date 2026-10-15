@@ -40,6 +40,26 @@ preset and its settings live there.
     second way to start an agent re-opens, the preset keeps its `crew` identity,
     and web fetch stays off.
 
+### Removed
+
+- **The PM write guard is gone: `host/pm-write-guard.js`, its row in
+  `cordis.patch.yml`, and its check `tools/verify-pm-write-guard.mjs`.** It
+  stopped the root session — the PM — from using `write` and `edit` on every
+  file that was not on a hard-coded whitelist, and asked you to approve each
+  such write, one at a time. That whitelist was **narrower than the write set
+  the PM's own rules give it**, so the guard kept asking about writes the rules
+  already allow — `README.md` and `CHANGELOG.md` among them. This removes the
+  enforcement, **not the rule**: `roles/pm.md` still says which files the PM may
+  write. It also reverses `docs/design/prd-2026-08-23-pm-write-guard.md`.
+  - **The git guard is untouched, and the plugin now ships one guard.** It is
+    still what blocks a crew role's push, tag push, force push, remote delete
+    and package publishing. `SECURITY.md` and `CLAUDE.md` describe that one.
+  - **If your own profile patch targets the row id `dsh-crew-pm-write-guard`,
+    delete that patch.** The plugin no longer ships the module that row loaded,
+    and a row naming a module the package does not export cannot be resolved.
+  - **`npm test` no longer runs `tools/verify-pm-write-guard.mjs`.** Nothing
+    else in the suite, and no QA case, depended on it.
+
 ## 0.10.0 — 2026-08-23
 
 ### Added

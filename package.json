@@ -55,13 +55,12 @@
     "node": ">=18"
   },
   "scripts": {
-    "test": "node tools/verify-guard.mjs && node tools/verify-pm-write-guard.mjs && node tools/verify-rule-guard-map.mjs && node tools/verify-jobs.mjs && node tools/verify-mount.mjs && node tools/verify-preset-install.mjs && bash qa/run-all.sh && node tools/verify-tasks.mjs"
+    "test": "node tools/verify-guard.mjs && node tools/verify-rule-guard-map.mjs && node tools/verify-jobs.mjs && node tools/verify-mount.mjs && node tools/verify-preset-install.mjs && bash qa/run-all.sh && node tools/verify-tasks.mjs"
   },
   "exports": {
     "./host/crew.js": "./host/crew.js",
     "./host/roles-preset.js": "./host/roles-preset.js",
     "./host/git-guard.js": "./host/git-guard.js",
-    "./host/pm-write-guard.js": "./host/pm-write-guard.js",
     "./package.json": "./package.json",
     "./host/jobs.js": "./host/jobs.js"
   },

@@ -1,4 +1,4 @@
-# dsh-crew bundle patch — mounts the three HOST-plane plugins.
+# dsh-crew bundle patch — mounts the two HOST-plane plugins.
 # Applied when this package is listed in a dsh profile's `dsh.profile.bundles`
 # (i.e. after `dsh plugin --profile tui add dsh-crew`).
 #
@@ -11,10 +11,6 @@
 #                       on dsh 0.1.x)
 #   dsh-crew-git-guard  blocks pushes, tag pushes, force pushes and package
 #                       publishing, whoever asks for them
-#   dsh-crew-pm-write-guard
-#                       blocks the PM (root) using write/edit on files that
-#                       belong to crew roles; the user approves any protected
-#                       write through dsh's own approval channel
 #   preset-crew         the same `crew` agent preset declared for dsh 0.2.x,
 #                       which reads preset rows instead of a folder. The last
 #                       block in this file; its comment carries the guard that
@@ -64,16 +60,6 @@
       #   # One-shot push approval file. YOU create it; the guard deletes it as
       #   # soon as one push uses it. Default: ~/.dsh/crew/push-ok
       #   approvalFile: '~/.dsh/crew/push-ok'
-
-    - id: dsh-crew-pm-write-guard
-      name: 'dsh-crew/host/pm-write-guard.js'
-      # config:
-      #   # Set false to turn the guard off completely (not recommended).
-      #   enabled: true
-      #
-      #   # Folder holding the job state files the PM may write. Default:
-      #   # ~/.dsh/crew/jobs
-      #   jobsDir: '~/.dsh/crew/jobs'
 
 # ── the `crew` agent preset, for dsh 0.2.x ───────────────────────────────────
 #

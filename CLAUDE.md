@@ -18,7 +18,6 @@ There is no build step and no bundler. The package ships plain ES modules (`"typ
 ```sh
 npm test                            # every check below, in order
 node tools/verify-guard.mjs         # git-guard rules, replayed against fake commands
-node tools/verify-pm-write-guard.mjs# the PM write guard, against fake write/edit paths
 node tools/verify-rule-guard-map.mjs# the rule→guard map does not lie
 node tools/verify-jobs.mjs          # the unfinished-job notice, using throwaway job folders
 node tools/verify-mount.mjs         # package shape, preset shape, role table, real mount
