@@ -1,6 +1,6 @@
 # dsh-crew
 
-> **Version 0.11.0.**
+> **Version 0.12.0.**
 
 dsh-crew is a plugin for DeepSeek Harness (dsh). It turns your dsh session into a
 product manager (PM) that runs a crew of role agents: architect, engineer, test

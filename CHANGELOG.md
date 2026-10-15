@@ -10,7 +10,7 @@ settings do **not** come back on their own. Copy them into the new file after an
 upgrade. On dsh 0.2.x there is no such folder: see 0.11.0 below for where the
 preset and its settings live there.
 
-## 0.12.0 — unreleased
+## 0.12.0 — 2026-10-15
 
 ### Fixed
 
