@@ -1042,6 +1042,40 @@ else {
   if (failures === before) ok("crew preset loads the roles, keeps subagent-control, and re-opens no other way to start an agent");
 }
 
+// The same preset, declared for dsh 0.2.x. That generation does not read
+// `$DSH_HOME/.agent-presets` at all — its registry "neither scans directories
+// nor accepts preset paths" — so the folder checked above is invisible there
+// and a `@deepseek-ai/dsh-agent-preset` row is the only way the Crew preset
+// exists at all. Its absence is therefore a missing feature, not a drift, and
+// the two declarations must satisfy the SAME rules: they are one crew, and a
+// user on either generation has to get it. The `disabled` guard is part of the
+// rule too: without it a dsh 0.1.x profile would be asked to load a package it
+// does not have.
+{
+  const patchText = readFileSync(join(packageRoot, patch ?? "cordis.patch.yml"), "utf8");
+  const start = patchText.indexOf("- id: preset-crew");
+  if (start === -1) fail("cordis.patch.yml declares no `preset-crew` row, so dsh 0.2.x — which reads preset rows and never the preset folder — would offer no Crew preset");
+  else {
+    const before = failures;
+    // To the next top-level `- insert:` (or the end of the file): this row is
+    // the last entry today, and slicing keeps every assertion below inside it.
+    const next = patchText.indexOf("\n- insert:", start);
+    const block = patchText.slice(start, next === -1 ? undefined : next);
+    if (!/name:\s*'@deepseek-ai\/dsh-agent-preset'/.test(block)) fail("the preset-crew row is not an '@deepseek-ai/dsh-agent-preset' row, so dsh 0.2.x cannot mount it as a preset");
+    if (!/^\s*id: crew\s*$/m.test(block)) fail("the preset-crew row does not carry `id: crew`, so it would save under a different preset identity than the sessions of dsh 0.1.x already use");
+    if (!/^\s*disabled:\s*!!js .*resolvedRoots/m.test(block)) fail("the preset-crew row has no `disabled` guard against the old registry, so a dsh 0.1.x profile would be asked to load @deepseek-ai/dsh-agent-preset, which that generation does not have");
+    if (!block.includes("dsh-crew/host/roles-preset.js")) fail("the crew preset declared for dsh 0.2.x does not load dsh-crew/host/roles-preset.js, so that generation would have no role tools");
+    for (const escape of ["toolName: subagent", "dsh-tool-workflow", "dsh-tool-ralph", "provider: codex", "provider: claude-code"]) {
+      if (new RegExp(`^\\s*[^#\\n]*${escape.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "m").test(block)) {
+        fail(`the crew preset declared for dsh 0.2.x still enables "${escape}" — a role could start its own agent through it`);
+      }
+    }
+    if (!block.includes("dsh-tool-subagent-control")) fail("the crew preset declared for dsh 0.2.x lacks the subagent-control tools, so the PM could not message its crew");
+    if (!/^\s*fetch: false\s*$/m.test(block)) fail("the crew preset declared for dsh 0.2.x does not pin `fetch: false`; role agents would gain web fetch, which is a widening of what they may reach and so a decision, not a detail");
+    if (failures === before) ok("the crew preset is also declared for dsh 0.2.x: roles row, subagent-control, no other way to start an agent, web fetch still off");
+  }
+}
+
 if (manifest.dsh?.desktop?.presets?.[0]?.path !== "./preset/crew") fail("package.json does not declare the crew preset under dsh.desktop.presets");
 // A local counter again, for the reason given above the preset block: with the
 // global one, an unrelated earlier failure makes the `ok` below vanish.

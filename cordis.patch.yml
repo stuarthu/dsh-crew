@@ -7,18 +7,25 @@
 #
 #   dsh-crew-core       the always-on PM prompt section, and the installer that
 #                       copies the shipped `crew` agent preset into
-#                       $DSH_HOME/.agent-presets
+#                       $DSH_HOME/.agent-presets (the only home of the preset
+#                       on dsh 0.1.x)
 #   dsh-crew-git-guard  blocks pushes, tag pushes, force pushes and package
 #                       publishing, whoever asks for them
 #   dsh-crew-pm-write-guard
 #                       blocks the PM (root) using write/edit on files that
 #                       belong to crew roles; the user approves any protected
 #                       write through dsh's own approval channel
+#   preset-crew         the same `crew` agent preset declared for dsh 0.2.x,
+#                       which reads preset rows instead of a folder. The last
+#                       block in this file; its comment carries the guard that
+#                       keeps the two generations from meeting.
 #
-# The role TOOLS are not here. They live in the `crew` agent preset
-# (preset/crew/agent.cordis.yml -> dsh-crew/host/roles-preset.js), because a
-# role's allow/deny list is checked against the preset's tool set when a child
-# starts. Configure the roles in that file; configure the PM here.
+# The role TOOLS are not here. They live in the `crew` agent preset - declared
+# at the end of this file for dsh 0.2.x, and written as
+# preset/crew/agent.cordis.yml for dsh 0.1.x - because a role's allow/deny list
+# is checked against the preset's tool set when a child starts. A role filter
+# has to be set in BOTH lists until one generation is dropped; configure the PM
+# here.
 - insert:
     - id: dsh-crew-core
       name: 'dsh-crew/host/crew.js'
@@ -67,3 +74,203 @@
       #   # Folder holding the job state files the PM may write. Default:
       #   # ~/.dsh/crew/jobs
       #   jobsDir: '~/.dsh/crew/jobs'
+
+# ── the `crew` agent preset, for dsh 0.2.x ───────────────────────────────────
+#
+# On dsh <= 0.1.x the `crew` preset is a DIRECTORY: `preset/crew/`, which
+# `dsh-crew-core` above copies into `$DSH_HOME/.agent-presets/crew`, where that
+# generation's `@deepseek-ai/dsh-agent-presets` registry finds it. That folder
+# is the only home of the preset there, and this block does not touch it.
+#
+# dsh 0.2.x deleted that registry, and the folder with it. Its replacement says
+# so in its own words: "the registry neither scans directories nor accepts
+# preset paths". A preset is now a declarative row of
+# `@deepseek-ai/dsh-agent-preset`, and a plugin ships one by inserting that row
+# from its bundle patch — which is this file, applied when this package is in a
+# profile's `dsh.profile.bundles`.
+#
+# So the same preset is written twice in this repository, in the two shapes the
+# two generations read: `preset/crew/agent.cordis.yml` for 0.1.x, and the
+# `plugins:` list below for 0.2.x. Neither can be derived from the other. The
+# persona row takes `text` in 0.1.x and `prefix`/`suffix` in 0.2.x, and the
+# package names drift between dsh releases — which is why the plugin's preset
+# list has always been a copy of dsh's own `standard` list, re-copied by hand
+# when dsh moves. A role filter has to be set in both lists until one
+# generation is dropped.
+#
+# THE GUARD. `disabled` below is what keeps the two from meeting. `agentPresets`
+# is the service name in BOTH registries, so the name alone proves nothing: the
+# old one exposes `resolvedRoots` (it scans roots) and the new one does not. The
+# expression therefore enables this row only when a registry is up AND it is not
+# the old one. On dsh 0.1.x the row is skipped and the folder install above is
+# the whole story; on a dsh neither branch recognises, the Crew preset is
+# MISSING rather than the profile failing to compose — the right way round,
+# because a row whose package does not exist cannot be mounted at all.
+#
+# `plugins:` is dsh's own 0.2.x `standard` preset with TWO deviations, and only
+# these two:
+#
+#   1. The delegation group offers the crew roles instead of every way to start
+#      an agent — no `subagent`, no `subagent_fork`, no codex or claude-code
+#      product, no `workflow`, no `ralph`. That is design rule 1, the flat crew:
+#      only the PM starts agents, and a role that could start its own would put
+#      that grandchild out of the PM's reach forever.
+#   2. `tool-web` keeps `fetch: false`, which is what the 0.1.x list has always
+#      set. Handing role agents web FETCH is a widening of what they may reach,
+#      so it is not something to change silently inside a compatibility fix.
+#      Whoever wants it flips this one line.
+#
+# When dsh updates its own `standard` preset this list does not follow by
+# itself: re-copy it and redo those two deviations, exactly as
+# `preset/crew/agent.cordis.yml` says of itself.
+- insert:
+    - id: preset-crew
+      name: '@deepseek-ai/dsh-agent-preset'
+      disabled: !!js ctx.get('agentPresets') === undefined || ctx.get('agentPresets').resolvedRoots !== undefined
+      config:
+        id: crew
+        order: 5
+        name: Crew
+        description: >-
+          The standard coding agent plus the dsh-crew roles: a product manager
+          that talks to you, and researcher, architect, engineer, QA, code
+          reviewer, security reviewer and doc reviewer agents it starts. The
+          only way to start an agent here is a crew role.
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              suffix: Your working directory is {{cwd}}.
+              prefix: You are a coding agent powered by the {{model}} model.
+
+          - id: agent-instructions
+            name: '@deepseek-ai/dsh-agent-instructions'
+            config:
+              maxBytes: 65536
+
+          - id: tool-bash
+            name: '@deepseek-ai/dsh-tool-bash'
+            disabled: !!js process.platform === 'win32'
+
+          - id: tool-pwsh
+            name: '@deepseek-ai/dsh-tool-pwsh'
+            disabled: !!js process.platform !== 'win32'
+
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+
+          - id: tool-fs-search
+            name: '@deepseek-ai/dsh-tool-fs-search'
+            config:
+              sampleOverCapGlobResults: false
+
+          - id: tool-jobs
+            name: '@deepseek-ai/dsh-tool-jobs'
+
+          - id: skill-filesystem
+            name: '@deepseek-ai/dsh-skill-filesystem'
+
+          - id: tool-skill
+            name: '@deepseek-ai/dsh-tool-skill'
+
+          - id: command-goal
+            name: '@deepseek-ai/dsh-command-goal'
+
+          - id: tool-goal
+            name: '@deepseek-ai/dsh-tool-goal'
+
+          - id: planning
+            name: cordis:group
+            group: true
+            isolate:
+              planMode: true
+            config:
+              - id: plan-mode
+                name: '@deepseek-ai/dsh-plan-mode'
+                config:
+                  section: |
+                    You are in plan mode. Stay in plan mode until exit_plan_mode succeeds or the user switches the session mode. Imperative language to implement changes means plan the implementation, not execute it. A user's conversational agreement — including an answer confirming something you asked — approves nothing and does not end plan mode; fold the confirmed decision into the plan and submit it through exit_plan_mode.
+
+                    Explore first. Use non-mutating reads, searches, static analysis, and checks to ground the plan in the actual repository. Do not edit or write files, change configuration, run formatters or code generation that rewrites tracked files, commit, or otherwise carry out the plan. Prefer existing functions and patterns over new machinery.
+
+                    The tool catalog stays the same across modes for request-cache stability. These plan-mode rules override any later tool description or guidance that suggests using mutation tools; those tools remain listed to keep the tool catalog unchanged. Do not use todo_write to track this planning phase: it tracks implementation after an approved plan, while the plan itself belongs in exit_plan_mode.
+
+                    Resolve discoverable facts by inspection. Use ask_user_question only for user-owned choices or material ambiguity that inspection cannot answer. Do not ask the user where code lives or how current behavior works when you can find out.
+
+                    Make the plan decision-complete: state the goal and success criteria; group implementation changes by subsystem; identify public API, schema, and data-flow changes; cover edge cases, failure modes, tests, acceptance criteria, and explicit assumptions. Keep it concise enough to review but detailed enough that another engineer can implement it without making design decisions.
+
+                    When ready, call exit_plan_mode with the complete plan markdown, starting with a # title. Make exit_plan_mode the only and final tool call in that assistant response: it presents the plan for approval, and implementation begins only in a later step after approval. Do not paste the final plan as a plain reply or ask "should I proceed?" through prose or ask_user_question. If review rejects it, incorporate the feedback and present again. If the review channel is unavailable or aborted, stay in plan mode and ask the user to switch modes manually; do not proceed with implementation.
+
+          - id: compaction
+            name: cordis:group
+            group: true
+            isolate:
+              compaction: true
+              toolResultPruner: true
+            config:
+              - id: compaction-basic
+                name: '@deepseek-ai/dsh-compaction-basic'
+
+              - id: command-compact
+                name: '@deepseek-ai/dsh-command-compact'
+
+              - id: tool-result-pruner
+                name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
+                config:
+                  thresholdChars: 8192
+                  headChars: 4096
+                  tailChars: 1024
+
+          - id: delegation
+            name: cordis:group
+            group: true
+            isolate:
+              workflowEngine: true
+            config:
+              - id: tool-subagent-control
+                name: '@deepseek-ai/dsh-tool-subagent-control'
+
+              - id: tool-subagent-list-agents
+                name: '@deepseek-ai/dsh-tool-subagent-control/list-agents'
+
+              # The crew roles, and the ONLY way to start an agent in this
+              # preset. (deviation 1 above: the generic `subagent`,
+              # `subagent_fork`, codex, claude-code, `workflow` and `ralph` rows
+              # of the shipped list are deliberately absent here.)
+              #
+              # This is the same row as in `preset/crew/agent.cordis.yml`, for
+              # the other dsh generation, and the option names are the ones
+              # documented in full there: `rolesDir`, `roleAllow`, `roleDeny`,
+              # `roleModels`. A role filter has to be set in both files.
+              - id: dsh-crew-roles
+                name: 'dsh-crew/host/roles-preset.js'
+                # config:
+                #   rolesDir: '~/.dsh/crew/roles'
+                #   roleAllow: { code_reviewer: ['read', 'glob', 'grep'] }
+                #   roleDeny: { engineer: ['crew_researcher', 'crew_architect', 'crew_engineer', 'crew_test_engineer', 'crew_code_engineer', 'crew_qa', 'crew_code_reviewer', 'crew_security_reviewer', 'crew_doc_reviewer'] }
+                #   roleModels: { engineer: { provider: '', model: '' } }
+
+          - id: tool-ask-user
+            name: '@deepseek-ai/dsh-tool-ask-user'
+
+          - id: tool-todo
+            name: '@deepseek-ai/dsh-tool-todo'
+            config:
+              allowParallelInProgress: true
+
+          # (deviation 2 above: `fetch` is false here, where the shipped
+          # `standard` list has true. The `web` service and its search provider
+          # stay in the host composition; only the model-facing tool is
+          # per-preset.)
+          - id: tool-web
+            name: '@deepseek-ai/dsh-tool-web'
+            config:
+              fetch: false
+              searchTimeoutMs: 60000
+
+          - id: present
+            name: '@deepseek-ai/dsh-tool-present'
+
+          - id: tool-plugin-manager
+            name: '@deepseek-ai/dsh-plugin-manager/tools'
+            disabled: true
