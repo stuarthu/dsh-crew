@@ -345,7 +345,9 @@ export async function mountGuard(config = {}) {
   /** @returns the string reason when blocked, or undefined when allowed. */
   const send = async (command, { root = false, workdir = cleanRepo } = {}) => {
     const exec = { name: "bash", arguments: { command, workdir } };
-    if (!root) exec.parent = {};
+    // A crew role is identified by its SESSION's parent, not `exec.parent`
+    // (that token marks a nested sub-call — see host/git-guard.js).
+    if (!root) exec.agent = { session: { header: { parentSession: "qa-parent-session" } } };
     const result = await handler(exec, () => ALLOWED);
     return result === ALLOWED ? undefined : result.error.message;
   };

@@ -30,7 +30,8 @@ publish a package.
 
 ### Who is guarded
 
-- Every crew role — any child agent with a parent execution token — is fully
+- Every crew role — any child agent whose session names a parent session
+  (`session.header.parentSession`) — is fully
   guarded.
 - The root agent — your own session, the PM — is trusted by default
   (`trustRootAgent: true`) and passes straight through. Setting

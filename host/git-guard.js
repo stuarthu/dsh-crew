@@ -263,10 +263,9 @@ export function apply(ctx, config) {
   // startup, not every later `bash` call with an unrelated message.
   const approvalName = approvalNamePattern(approvalFile);
 
-  // The root agent (your own session, the PM) has no parent execution token;
-  // every crew role does. When true (the default), its git and publishing
-  // commands pass straight through. Set false to guard the PM exactly like
-  // every child.
+  // The root agent (your own session, the PM) has no parent SESSION; every crew
+  // role does. When true (the default), its git and publishing commands pass
+  // straight through. Set false to guard the PM exactly like every child.
   const trustRootAgent = config?.trustRootAgent !== false;
 
   ctx.on("tools/execute", async (exec, next) => {
@@ -276,8 +275,10 @@ export function apply(ctx, config) {
 
     const tokens = tokensOf(command);
 
-    // The root agent is your own session; every crew role carries a parent.
-    const isRootAgent = exec.parent === undefined;
+    // The root agent is your own session; every crew role's session names a
+    // parent session. NOT `exec.parent`: in dsh that token marks a NESTED
+    // sub-call (Code Mode), so reading it here treated every role as the PM.
+    const isRootAgent = exec.agent?.session?.header?.parentSession === undefined;
 
     // Only your own session is told how to create the approval file. A child is
     // told to ask you, with no command it could copy.

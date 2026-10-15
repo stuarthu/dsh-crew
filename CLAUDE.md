@@ -313,7 +313,8 @@ covers one — if they want it, the PM hands them the command and they run it th
 and the playbook are two different limits, and the tighter one is the playbook. One rule holds for
 **every** agent, root
 included: a command that names the approval file is always refused, because only the user's own
-hand may create it. Every **child** (a crew role, which carries a parent execution token) is also
+hand may create it. Every **child** (a crew role, whose session names a parent session —
+`session.header.parentSession`, never the `exec.parent` nested-call token) is also
 refused: pushes of protected branches, bare pushes with no branch, tag pushes, force pushes,
 remote deletes, package publishing, releases, and any push into a repo whose CI publishes on a
 branch push. A child's other push needs the one-shot approval file that the **user** creates; the

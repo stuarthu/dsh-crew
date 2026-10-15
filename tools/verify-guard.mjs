@@ -26,16 +26,21 @@ const ALLOWED = Symbol("allowed");
 const cleanRepo = join(workdir, "clean-repo");
 mkdirSync(cleanRepo, { recursive: true });
 
-/** Run one command through the guard as a CREW ROLE (a child, with a parent). */
+/** Run one command through the guard as a CREW ROLE (a delegated child session). */
 async function run(command, args = {}) {
   const result = await handler(
-    { name: "bash", arguments: { command, workdir: cleanRepo, ...args }, parent: {} },
+    {
+      name: "bash",
+      arguments: { command, workdir: cleanRepo, ...args },
+      // A crew role is identified by its SESSION's parent, not `exec.parent`.
+      agent: { session: { header: { parentSession: "parent-session" } } },
+    },
     () => ALLOWED,
   );
   return result === ALLOWED ? ALLOWED : result.error.message;
 }
 
-/** Run one command through the guard as the ROOT agent (the PM, no parent). */
+/** Run one command through the guard as the ROOT agent (the PM, no parent session). */
 async function runRoot(command, args = {}) {
   const result = await handler(
     { name: "bash", arguments: { command, workdir: cleanRepo, ...args } },
@@ -340,14 +345,14 @@ try {
   let defaultHandler;
   guard.apply({ on: (event, fn) => { if (event === "tools/execute") defaultHandler = fn; } }, {});
   const defaultResult = await defaultHandler(
-    { name: "bash", arguments: { command: "cat docs/pre-push-ok", workdir: cleanRepo }, parent: {} },
+    { name: "bash", arguments: { command: "cat docs/pre-push-ok", workdir: cleanRepo }, agent: { session: { header: { parentSession: "parent-session" } } } },
     () => ALLOWED,
   );
   if (defaultResult !== ALLOWED) { failures += 1; console.error(`FAIL  the default approval file blocked a longer name: ${defaultResult.error.message}`); }
   else console.log("ok    allowed  cat docs/pre-push-ok (default approval file, nothing on disk touched)");
 
   const defaultNamed = await defaultHandler(
-    { name: "bash", arguments: { command: "touch push-ok", workdir: cleanRepo }, parent: {} },
+    { name: "bash", arguments: { command: "touch push-ok", workdir: cleanRepo }, agent: { session: { header: { parentSession: "parent-session" } } } },
     () => ALLOWED,
   );
   if (defaultNamed === ALLOWED) { failures += 1; console.error("FAIL  the default approval file was not protected by its bare name"); }
