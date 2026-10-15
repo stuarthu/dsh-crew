@@ -16,16 +16,23 @@
 // What it does NOT prove: that a user reads the qualifier, or that a PM honours
 // it on a real request.
 //
-// PINNING STYLE: FLATTENED, sliced to the `### Changed` block of the top section.
-// The limit must be in the same block as the promise: a caveat under a different
-// heading is a caveat nobody reaches.
+// PINNING STYLE: FLATTENED, sliced to the `### Changed` block of the 0.10.0
+// section — the release whose notes carry the entry. The limit must be in the
+// same block as the promise: a caveat under a different heading is a caveat
+// nobody reaches.
+//
+// This case read "the top section" until 0.11.0 added one of its own: every new
+// release reddened it, which is the moment-pin defect `qa/gaps.md` item 22 records
+// for the ordering checks and item 18 records as a class. Naming the release the
+// entry shipped in keeps every assertion and stops the case breaking on the next
+// version.
 
 import { check, done, flat, repoFile } from "../lib/qa.mjs";
 
-function topSection(source) {
+function sectionOfVersion(source, version) {
   const lines = source.split("\n");
-  const first = lines.findIndex((line) => /^## /.test(line));
-  if (first === -1) throw new Error("CHANGELOG.md has no `## ` version section");
+  const first = lines.findIndex((line) => line.startsWith(`## ${version} `));
+  if (first === -1) throw new Error(`CHANGELOG.md has no "## ${version} " section`);
   const next = lines.findIndex((line, index) => index > first && /^## /.test(line));
   return lines.slice(first, next === -1 ? lines.length : next).join("\n");
 }
@@ -38,10 +45,10 @@ function subSection(section, name) {
   return lines.slice(first, next === -1 ? lines.length : next).join("\n");
 }
 
-const changed = subSection(topSection(repoFile("CHANGELOG.md")), "Changed");
+const changed = subSection(sectionOfVersion(repoFile("CHANGELOG.md"), "0.10.0"), "Changed");
 
 check(
-  "the top section has a `### Changed` block to look in",
+  "the 0.10.0 section has a `### Changed` block to look in",
   changed !== null,
   "without it there is nothing to check and the promise has no home either",
 );

@@ -20,18 +20,27 @@
 // understand it. That is DoD item 6 and it belongs to a doc reviewer.
 //
 // PINNING STYLE: FLATTENED (the entries are wrapped prose) and sliced to the
-// `### Changed` block of the TOP section only — an entry under 0.9.0 describes a
-// version that already shipped and must not be able to answer for this one.
+// `### Changed` block of the 0.10.0 section — the release whose notes carry the
+// entry this case is about.
+//
+// WHY THE VERSION AND NOT "THE TOP SECTION". It used to read the top section,
+// which made it red for every later release: adding a new `## ` heading is exactly
+// what a release does, and that new top section has no `### Changed` block at all.
+// That is a MOMENT pin ("this work is the newest"), not a rule — the defect
+// `qa/gaps.md` item 22 records for the ordering checks and item 18 records as a
+// class. The DoD asked that the notes of the release which shipped this behaviour
+// still say these things, so this case names that release. Every assertion it had,
+// it keeps: edit 0.10.0's entry and this still goes red.
 
 import { check, done, flat, repoFile } from "../lib/qa.mjs";
 
 const text = repoFile("CHANGELOG.md");
 
-/** The top `## <version> — …` section, up to the next `## `. */
-function topSection(source) {
+/** The `## <version> …` section for one version, up to the next `## `. */
+function sectionOfVersion(source, version) {
   const lines = source.split("\n");
-  const first = lines.findIndex((line) => /^## /.test(line));
-  if (first === -1) throw new Error("CHANGELOG.md has no `## ` version section");
+  const first = lines.findIndex((line) => line.startsWith(`## ${version} `));
+  if (first === -1) throw new Error(`CHANGELOG.md has no "## ${version} " section`);
   const next = lines.findIndex((line, index) => index > first && /^## /.test(line));
   return { heading: lines[first], text: lines.slice(first, next === -1 ? lines.length : next).join("\n") };
 }
@@ -45,13 +54,13 @@ function subSection(section, name) {
   return lines.slice(first, next === -1 ? lines.length : next).join("\n");
 }
 
-const top = topSection(text);
+const top = sectionOfVersion(text, "0.10.0");
 const changed = subSection(top.text, "Changed");
 
-console.log(`top section: ${top.heading}`);
+console.log(`section: ${top.heading}`);
 
 check(
-  "the top section has a `### Changed` block",
+  "the 0.10.0 section has a `### Changed` block",
   changed !== null,
   "this job changed how the interview behaves; with no Changed block the entry has nowhere correct to live",
 );
