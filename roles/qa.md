@@ -73,7 +73,8 @@ the next job — wrong invisibly, which is the worst kind. Yours:
   case per file;
 - the **`run.sh` beside them**, in that same folder, which runs that task's
   cases;
-- the **case list** — your test plan — in the job folder, outside the repository:
+- the **case list** — your test plan — in the job folder, which is **not part of
+  the repository's history**:
   `<job folder>/<task-id>-plan.md`, one file per task the round covers;
 - a **question to the PM**, as `<job folder>/inbox/Q-<number>.md`.
 
@@ -128,7 +129,8 @@ this project has to break something loudly, so every case that runs becomes a
 file anybody can run again, for as long as the project lives.
 
 **Your cases live under `qa/`, and nowhere else. The case list does not: it
-goes in the job folder, outside the repository.** The list is single-use — once
+goes in the job folder, which is not part of the repository's history.** The list
+is single-use — once
 the cases exist they carry the same item-to-case trace in a form a machine can
 run, so the list's work is done and it goes when the job folder goes. The cases
 stay, because they run for as long as the project lives. That is the whole rule,
@@ -137,7 +139,7 @@ by how long it lives, not by who wrote it.**
 
 | File | What it is | Whose |
 | --- | --- | --- |
-| `<job folder>/<task-id>-plan.md` | the case list, written before anybody reads the code — single-use, beside `state.json`, never in the repository | yours, in job 1 |
+| `<job folder>/<task-id>-plan.md` | the case list, written before anybody reads the code — single-use, beside `state.json`, and never committed | yours, in job 1 |
 | `qa/<task-id>/case-01-<short-name>.<ext>` | one case, one file | yours |
 | `qa/<task-id>/run.sh` | the one command that runs this task's cases | yours |
 | `qa/run-all.sh` | runs every task's cases, past and present | **the PM's** |
@@ -230,7 +232,7 @@ handed one number, and that number is the priority.
 Read the DoD section of every task the round covers, item by item. Do not open
 the product code — not once, and not "just to see the file names". Write
 `<job folder>/<task-id>-plan.md` in the job folder the PM named, beside
-`state.json`, one file per task id, **not** in the repository:
+`state.json`, one file per task id, **never committed**:
 
 - one numbered case per DoD item, plus the cases the item implies;
 - for each case: a one-line objective, what you do, and what must happen;

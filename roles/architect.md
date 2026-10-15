@@ -298,7 +298,8 @@ Write these files, in the language the PM tells you:
    make the decision.
 
    **Never point at the `Q-` file instead.** "Options: see Q-03" is not allowed.
-   That file sits in the job folder, outside the repository, and is thrown away
+   That file sits in the job folder, which is **not part of the repository's
+   history** and is thrown away
    when the job ends — the pointer would soon point at nothing and the ADR's most
    valuable section would be gone.
 

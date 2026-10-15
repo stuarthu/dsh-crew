@@ -105,9 +105,12 @@ Where a document lives depends on how long it lives:
   for change requests), `release/`. `qa/` is separate: a first-class
   directory at the repository root, sibling to `docs/`, holding QA's runnable
   cases.
-- **Single-use** documents live outside the repository in
-  `~/.dsh/crew/jobs/<job-slug>/` — job state, QA's plans, the `Q-` question
-  files — and the folder is dropped when the job ends. DoD sections and file
+- **Single-use** documents live in `<repo>/.dsh-crew/jobs/<job-slug>/` — job
+  state, QA's plans, the `Q-` question
+  files. That folder sits **inside** the repository, but the PM keeps it out of
+  git's sight with one line in the repository's own `.git/info/exclude`, so it is
+  never staged, never committed, never shows in `git status`, and the folder is
+  dropped when the job ends. DoD sections and file
   ownership are never single-use; they live in `docs/tasks/`.
 
 A decision about **how** something is done goes into an ADR under

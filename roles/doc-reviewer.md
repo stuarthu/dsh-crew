@@ -184,7 +184,8 @@ and language-file halves of item 10 need the README files.
 
    - **It quotes, it never points.** An ADR that says "options: see Q-03", or
      names that file instead of holding its text, is a **blocking** finding. The
-     `Q-` file lives in the job folder, outside the repository, and is thrown away
+     `Q-` file lives in the job folder, which is **not part of the repository's
+     history** and is thrown away
      with the job — so the pointer will soon point at nothing, and the ADR's most
      valuable section is gone.
    - **The options are the engineer's own words.** They are copied from the `Q-`

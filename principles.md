@@ -413,7 +413,7 @@ list of names, and then a new task needs no edit and there is nothing to race ov
 **QA's test plan is not one of those files.** The plan is single-use: it exists to
 turn the task's DoD items into cases, and once the cases are written the cases carry
 the same information in a runnable form. So the plan is written to
-`<job folder>/<task-id>-plan.md`, outside the repository, and it goes when the job
+`<job folder>/<task-id>-plan.md`, in the job folder, which is never committed, and it goes when the job
 folder goes (principle 19). One part of it is durable and must not go with it:
 **"what I could not test here, and why"**. That moves to `qa/gaps.md`, a
 standing list about this product's testability, grouped by the thing that cannot
@@ -619,7 +619,7 @@ and a warning that always fires teaches the user to say yes without reading it.
 
 **Why the slug inside those commands has a fixed shape (ours).** The job slug is
 not only a label. It is pasted into a file path
-(`~/.dsh/crew/jobs/<job-slug>/state.json`) and into almost every git command of
+(`<repo>/.dsh-crew/jobs/<job-slug>/state.json`) and into almost every git command of
 step 7 **Branch** and step 17 **Merge and clean up**. A slug holding `..` writes
 outside the jobs folder. A slug holding
 a space or a `;` turns one command into two. And the session that runs those
@@ -844,13 +844,27 @@ outlive the job?**
   the crew must keep, here in `principles.md`. **Every DoD
   section rides in one of those two `docs/design/` files** — that is principle 20,
   and it is the correction this principle needed most.
-- **Single-use, in the job folder** (`~/.dsh/crew/jobs/<job-slug>/`, outside the
-  repository): **`state.json`**, which is progress and nothing else; **QA's test
+- **Single-use, in the job folder** (`<repo>/.dsh-crew/jobs/<job-slug>/`, one
+  folder per job, at the root of **the repository this session works in**): **`state.json`**,
+  which is progress and nothing else; **QA's test
   plans** (`<task-id>-plan.md`), because the cases carry the same information in a
   runnable form as soon as they are written; the **`Q-` files** in `inbox/`; and the
-  **output of a test run**, which was never on disk and now may not be. A **DoD**
+  **output of a test run**, which was never on disk and still may not be — it goes
+  to stdout and never becomes a file, in the repository or anywhere else. A **DoD**
   used to head this list, and taking it off cost 75 acceptance checks (principle
   20).
+  The folder moved **inside** the repository on a user's request, and what makes it
+  single-use did not move with the location: the PM writes one line into the
+  repository's own `info/exclude`, so the folder never shows in `git status`, is
+  never staged, is never committed, and is dropped whole when the job ends. `info/exclude`
+  and not the project's `.gitignore` because the line says where **this crew** puts
+  progress, not what the project builds — a committed line would be a line added to
+  a file the user owns — and because it is shared by every worktree, so a paired
+  task's two trees see the same rule. The path is **relative** in the code
+  (`DEFAULT_JOBS_DIR = ".dsh-crew/jobs"`, resolved against the session's own folder)
+  so one default serves every repository and two repositories can never share a
+  jobs folder; the PM names the resolved **absolute** path to every child, because
+  a fresh worktree does not carry the folder.
 - **Neither the size of the job nor who was in the room decides anything.** An
   ADR is written for a one-file bug fix as readily as for a milestone, and small
   work — which has no architect — has the PM write it.
@@ -887,8 +901,10 @@ goes. Had small work's CRD folder been taken over by design decisions, two
 completely different kinds of file would be lying in one folder.
 
 **Why the record outlives the negotiation.** `state.json` is job progress wearing
-a document's clothes: it lives outside the repository so the user's `git status`
-stays clean, and it holds nothing a later reader needs. That reading was extended
+a document's clothes. It now sits **inside** the repository, at `.dsh-crew/jobs`,
+and what keeps a user's `git status` clean is not its location but the one ignore
+line the PM writes into `.git/info/exclude`; it is never staged, never committed,
+and it holds nothing a later reader needs. That reading was extended
 to the DoD, and that was the mistake — principle 20 records what it cost, and the
 DoD is now a section of a file that stays. The reasoning itself still holds, and
 it is the more important half: what gets *written inside* a single-use document
@@ -912,14 +928,16 @@ the step, because the folder is gone afterwards either way. The doc reviewer's l
 pass (step 15, **Last doc review**) and the PM's final summary are where that shows
 up. It has already been paid once: see principle 20.
 
-**Lives in** `roles/pm.md` (step 4 **Write the opening document**, step 10c **QA**,
+**Lives in** `roles/pm.md` (step 4 **Write the opening document**, step 6 **Job folder**, step 10c **QA**,
 step 11 **Commit**, step 18 **Finish**, and the hard rules),
 `roles/qa.md` (the plan's home, and its step 6 **Feed the standing testability
 list**),
 `roles/engineer.md`,
 `roles/architect.md`, `roles/doc-reviewer.md`, `qa/gaps.md`,
+`host/jobs.js` (the default job folder and the notice that reads it),
 [`0006-split-by-lifetime`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0006-split-by-lifetime.md) (the change request that settled
-it) and [`0010-dod-is-a-section`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0010-dod-is-a-section.md) (the one that took the DoD
+it), [`0030-job-folder-moves-inside-the-repo`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0030-job-folder-moves-inside-the-repo.md) (the one that moved the
+folder inside, and kept it single-use) and [`0010-dod-is-a-section`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0010-dod-is-a-section.md) (the one that took the DoD
 off the single-use list).
 
 ---
@@ -958,7 +976,7 @@ repeating a row that all three share.
 | small, bug | Step 4, **Write the task table** | PM, because small work has no architect | `docs/tasks/`: one row per task with an id, one sentence of work, the exact files it owns, the test file it must write, and its **DoD section** | `docs/tasks/` | Yes |
 | bug | **A bug becomes a task row** — before any engineer starts | PM, never the engineer that will do the fix | one row: **what was reported** (who reported it, the command, the input, what happened, what was expected) and its **DoD section** (the failing case that must exist and pass, and the behaviour that must change) | `docs/tasks/` | Yes |
 | team | Step 5, **Confirm** | PM asks, user answers | the user's yes on the document, on the stack, and — big work — on the milestone list on its own | no file; the confirmed document is the record | No, and the document carries it |
-| team | Step 6, **Job folder** | PM | `state.json`: tasks, milestones, document versions, the CRD list, the merge result | `~/.dsh/crew/jobs/<job-slug>/state.json` | **No, on purpose.** It is progress, not a record, and it stays out of the user's `git status` |
+| team | Step 6, **Job folder** | PM | `state.json`: tasks, milestones, document versions, the CRD list, the merge result | `<repo>/.dsh-crew/jobs/<job-slug>/state.json` — inside the repository, ignored through `info/exclude` | **No, on purpose.** It is progress, not a record: never staged, never committed, and the folder is dropped when the job ends. Being inside the repository buys the per-job path and the restart notice, not a record |
 | team | Step 7, **Branch** | PM | the work branch `crew/<job-slug>` | git | The branch is deleted in step 17, **Merge and clean up**. Its commits stay on `main`, so the work survives |
 | big | Step 8, **Design** | `crew_architect` | the design, `docs/design/hld-<date>-<job-slug>.md`; `docs/tasks/` with a **DoD section on every row**; one contract per boundary; an ADR per open choice, with every option and why it lost | `docs/design/`, `docs/design/api/<caller>-<callee>.md`, `docs/decisions/adr/` | Yes |
 | big | Step 8, **Doc review before any code** — one round, like every other review | `crew_doc_reviewer` | findings, each blocking or optional — including "this row has no DoD section" | its report to the PM; the fix lands in the document | The report, no. The corrected documents, yes |
@@ -2060,6 +2078,7 @@ One thing the Scrum Guide gives that holds here unchanged: an item that does not
 | Two independent worktrees, for real isolation | **Rejected, then adopted — [`CRD 0013`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0013-two-worktrees-per-task.md) corrected this row, and it is the one row here that no longer holds.** It was rejected as a *platform feature*: the crew has no notion of a worktree anywhere in `host/`, and a role only has tool-level allow and deny lists, so building one would be platform work. That part still stands. The conclusion was wrong: the PM needs no platform feature, because the PM is the only role that touches git anyway, so plain `git worktree add` gives two real directories today. It is now how the paired shape works (principle 21), and it closed the one hole the shape had been shipped with. |
 | Requiring the code engineer to declare in its report "I did not read the unit test files" | Still unverifiable — it only turns a vague overstep into a definite lie, which is not an improvement in evidence. Overtaken as well: with two worktrees the unit test file is not in that engineer's tree while it writes, so there is nothing left to declare. |
 | Giving the two sides of a paired task different models through `roleModels` | The evidence says the gain is small: crossing an agent boundary does not remove perfectly correlated failure (principle 21's third source). And it backfires. Two sides of unequal strength produce a stream of **false disagreements**, the PM spends its attention judging noise, and the signal the shape exists to produce is buried under it. |
+| Committing `state.json`, so the job's progress survives as a record | It would make the move inside the repository buy something. Rejected: principle 20 says the job folder is **not** a record, and `state.json` is rewritten after every step — committing it puts a file that changes on every step into every diff, in front of every reviewer and every reader, and a progress file a reader cannot tell from an agreed one. What the user asked for was the **location**, not the history, so the folder stays ignored through `info/exclude` and is dropped when the job ends. [`CRD 0030`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/crd/0030-job-folder-moves-inside-the-repo.md) and [`ADR 0030`](https://github.com/stuarthu/dsh-crew/blob/main/docs/decisions/adr/0030-job-folder-inside-the-repo-and-ignored.md). |
 
 ---
 

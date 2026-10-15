@@ -6,11 +6,19 @@
 // registers as a dynamic prompt context — so an unfinished job is put in front
 // of the PM instead of waiting to be remembered.
 //
+// The job folder sits INSIDE the repository, at `.dsh-crew/jobs` under the folder
+// the session runs in. It is still single-use: the PM keeps it out of git's sight
+// through the repository's own `info/exclude`, it is never staged, never committed
+// and never read by a reviewer, and the whole folder is dropped when the job ends.
+// A relative default is what makes it per-repository — resolved against the
+// session's own folder, so a job listed here belongs to the repository this
+// session works in, and two repositories never share a jobs folder.
+//
 // Empty text contributes nothing to the prompt, so a machine with no unfinished
 // job pays nothing for this.
 
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 import { expandHome } from "./roles.js";
 
@@ -23,8 +31,13 @@ const OPEN_MILESTONES = new Set(["todo", "running", "review"]);
 /** How many jobs the notice names before it says how many it left out. */
 const MAX_LISTED = 5;
 
-/** Default job folder; keep in step with the path named in roles/pm.md. */
-export const DEFAULT_JOBS_DIR = "~/.dsh/crew/jobs";
+/**
+ * Default job folder, relative to the folder the session runs in — that is the
+ * repository, which is why one default serves every repository. A user who wants
+ * it elsewhere names an absolute path in `jobsDir`, and `~` is still honoured.
+ * Keep in step with the path named in roles/pm.md step 6, **Job folder**.
+ */
+export const DEFAULT_JOBS_DIR = ".dsh-crew/jobs";
 
 /**
  * Read one job's `state.json` into the few facts the notice needs.
@@ -73,7 +86,8 @@ function readJob(dir) {
  * @returns the notice text, or an empty string when there is nothing to say
  */
 export function jobsNotice(jobsDir = DEFAULT_JOBS_DIR) {
-  const root = expandHome(jobsDir);
+  // Relative to the session's folder, so the default lands inside the repository.
+  const root = resolve(expandHome(jobsDir));
   if (!existsSync(root)) return "";
 
   let entries;
@@ -115,7 +129,7 @@ export function jobsNotice(jobsDir = DEFAULT_JOBS_DIR) {
 
   lines.push(
     "",
-    "If one of these is in the folder this session is working in, tell the user about it BEFORE anything else, and ask one question: carry on, or start clean. A job waiting for a milestone review is waiting for the user: ask that review question again before anything else moves. Never carry on without asking, and never start clean without asking. Use `list_agents` to see which crew children can still be woken. Ignore jobs that belong to another folder.",
+    "If one of these is in the folder this session is working in, tell the user about it BEFORE anything else, and ask one question: carry on, or start clean. A job waiting for a milestone review is waiting for the user: ask that review question again before anything else moves. Never carry on without asking, and never start clean without asking. Use `list_agents` to see which crew children can still be woken. The job folder sits inside the repository, so every job named here belongs to the repository this session works in — none of them is another repository's work to ignore.",
   );
   return lines.join("\n");
 }

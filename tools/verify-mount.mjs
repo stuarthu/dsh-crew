@@ -1621,7 +1621,7 @@ function applyCapturingLogs(config, options) {
     // dropped with the job, and took every check inside it along — 75 of them in
     // one hour, which is the evidence that forced the CRD. The pin is the bare
     // file name, so it catches every path it could be written as.
-    else if (section.text.includes("dod.md")) fail(`PM section names a file called \`dod.md\` (at index ${section.text.indexOf("dod.md")}) — CRD 0010 forbids that file name anywhere, whichever path it is written as (~/.dsh/crew/jobs/<job-slug>/dod.md, docs/design/dod.md, docs/crew/dod.md). \`DoD\` is a section of the job's own PRD (docs/design/prd-<date>-<job-slug>.md) or of a task row in docs/tasks/, never a file: a file in the job folder is dropped with the job, and this crew lost 75 acceptance checks that way in one hour. Take the path out of roles/pm.md`);
+    else if (section.text.includes("dod.md")) fail(`PM section names a file called \`dod.md\` (at index ${section.text.indexOf("dod.md")}) — CRD 0010 forbids that file name anywhere, whichever path it is written as (<repo>/.dsh-crew/jobs/<job-slug>/dod.md, docs/design/dod.md, docs/crew/dod.md). \`DoD\` is a section of the job's own PRD (docs/design/prd-<date>-<job-slug>.md) or of a task row in docs/tasks/, never a file: a file in the job folder is dropped with the job, and this crew lost 75 acceptance checks that way in one hour. Take the path out of roles/pm.md`);
     // The flat numbered acceptance-check list. A check is now an item in the DoD
     // section of the task or the milestone it belongs to, so a CRD records "4
     // items added to T-05's DoD" and never "acceptance checks 18-21" — a number

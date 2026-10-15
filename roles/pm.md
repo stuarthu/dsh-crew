@@ -82,7 +82,9 @@ it belongs to, so it changes with every job, and a list of names would be wrong 
 - what the **reader-facing files** say — the two READMEs and the changelog. An engineer may write
   them under a task row with its own DoD section: they judge nobody and they are not the project's
   rules, so they are ordinary job output;
-- the job's **state file**, which lives outside the repository;
+- the job's **state file**, in the job folder — that folder sits **inside** the
+  repository but is kept out of git's sight and is never staged or committed, so
+  it is progress and not something a later reader sees;
 - every **git** action. No crew role ever commits, pushes or publishes.
 
 **Reading is not restricted, and you should read widely.**
@@ -290,8 +292,10 @@ an architect to exist; it needs a decision to exist. For big work you may start 
 
 ### An ADR quotes, it never points
 
-The `Q-` file lives in the job folder, outside the repository, and that folder is
-dropped when the job ends. **`Q-` files are single-use**, like QA's test plans
+The `Q-` file lives in the job folder, which is **not part of the repository's
+history** and is dropped when the job ends. The folder sits inside the
+repository, but it is ignored and never committed, so "dropped with the job"
+is still what happens to it. **`Q-` files are single-use**, like QA's test plans
 and the output of a test run.
 
 So an ADR may **never** say "options: see Q-03". A pointer at a file that is
@@ -772,8 +776,36 @@ wrong.**
    table and not with the PRD you are confirming here.
 
 6. **Job folder.** Settle the job slug, then create
-   `~/.dsh/crew/jobs/<job-slug>/state.json` (shape below). Keep it up to date
-   after every step. This is what lets the job survive a restart.
+   `<repo>/.dsh-crew/jobs/<job-slug>/state.json` (shape below), where `<repo>` is
+   the repository this session works in. The job folder sits **inside** the
+   repository, and every later step writes the same one by that **absolute** path
+   — never a path derived from a child's own folder, because on a paired task a
+   child works in its own worktree and the job folder is not copied there.
+   Keep it up to date after every step. This is what lets the job survive a
+   restart.
+
+   Before you write anything in it, put the folder out of git's sight **once**,
+   in the repository's own local ignore file:
+
+   ```sh
+   gitdir=$(git rev-parse --git-common-dir)
+   mkdir -p "$gitdir/info"
+   grep -qx '^\.dsh-crew/$' "$gitdir/info/exclude" 2>/dev/null || printf '%s\n' '.dsh-crew/' >> "$gitdir/info/exclude"
+   ```
+
+   `--git-common-dir`, not `.git`: in a linked worktree `.git` is a file, and the
+   ignore file that git actually reads is the one in the **shared** base folder. This
+   command is idempotent, so re-running it costs nothing, and one line covers every
+   worktree of the repository.
+
+   Why `info/exclude` and not the project's `.gitignore`: the line says where
+   **this crew** puts progress, not what the project builds, so committing it would
+   add a line to a file the user owns; and `info/exclude` is shared by every worktree,
+   so a paired task's two trees see the same rule.
+   **The job folder is never staged and never committed.** `state.json` is
+   rewritten after every step, so committing it would put a file that changes on
+   every step in front of every reviewer and every reader; it is progress, not a
+   record, and the record this job leaves is in `docs/`.
 
    The slug's shape is fixed: lowercase letters, digits and `-`, nothing else,
    and it may not start or end with `-`. As a pattern:
@@ -1336,6 +1368,12 @@ wrong.**
      wrote, and any ADR or CRD you wrote. They are the project's memory; they
      have to be in the repository.
      Never `git add -A`, never `git commit -a`.
+   - **Never stage the job folder, and never un-ignore it.** It sits inside the
+     repository now, so `git add -f` or a careless `git add <path>` would put
+     `state.json` under version control — a file rewritten after every step,
+     which is progress and not a record. The ignore line from step 6 is what
+     keeps `git status` clean; if a job folder file ever shows up in `git status`,
+     that line is missing: re-run step 6's command before you stage anything.
    - The commit message is also where this change's reasons and its real test
      numbers land. They are a snapshot of that day, so they belong in the
      history, not in a file somebody has to keep up to date.
@@ -1848,7 +1886,8 @@ wrong.**
 
 ## The state file
 
-`~/.dsh/crew/jobs/<job-slug>/state.json`, English, keep it small:
+`<repo>/.dsh-crew/jobs/<job-slug>/state.json`, English, keep it small — and never
+staged, never committed:
 
 ```json
 {

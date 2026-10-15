@@ -98,6 +98,23 @@ const many = jobsNotice(root);
 if (!/and \d+ more, not listed here/.test(many)) fail("with more than five jobs the notice must say how many it left out");
 else ok("more than five jobs -> says how many were not listed");
 
+// 9. The default is relative on purpose: it lands inside the repository the
+// session runs in, so one default serves every repository and two repositories
+// never share a jobs folder. Prove it by standing in a throwaway folder.
+{
+  const repo = join(root, "in-repo");
+  mkdirSync(join(repo, ".dsh-crew", "jobs", "moving-job"), { recursive: true });
+  writeFileSync(join(repo, ".dsh-crew", "jobs", "moving-job", "state.json"), JSON.stringify({ job: "moving-job", repo, tasks: [{ id: "T-01", state: "todo" }] }));
+  const was = process.cwd();
+  process.chdir(repo);
+  const here = process.cwd();
+  const found = jobsNotice();
+  process.chdir(was);
+  if (!found.includes("moving-job")) fail("the default job folder must be read relative to the session's own folder, so a job inside the repository is found with no config at all");
+  else if (!found.includes(join(here, ".dsh-crew", "jobs"))) fail("the notice must name the resolved path, not the relative default");
+  else ok("default job folder -> resolved inside the session's folder, and the notice names the absolute path");
+}
+
 rmSync(root, { recursive: true, force: true });
 
 console.log(failures === 0 ? "\nall job-notice checks passed" : `\n${failures} job-notice check(s) failed`);

@@ -40,10 +40,16 @@
       #   # is never touched, whatever this says.
       #   installPreset: true
       #
-      #   # Where the PM keeps one folder per job. An unfinished job here is put
-      #   # in front of the PM at the start of every session, so a crash can be
-      #   # picked up; set resumeNotice false to stop that.
-      #   jobsDir: '~/.dsh/crew/jobs'
+      #   # Where the PM keeps one folder per job. The default is RELATIVE to the
+      #   # folder the session runs in, which is the repository — so the job folder
+      #   # sits inside the repository at `.dsh-crew/jobs`, and one default serves
+      #   # every repository. It is still single-use: the PM keeps it out of `git
+      #   # status` through the repository's own `info/exclude`, never stages it,
+      #   # never commits it, and drops the whole folder when the job ends. Name an
+      #   # absolute path (or one starting with `~/`) to put it elsewhere.
+      #   # An unfinished job here is put in front of the PM at the start of every
+      #   # session, so a crash can be picked up; set resumeNotice false to stop that.
+      #   jobsDir: '.dsh-crew/jobs'
       #   resumeNotice: true
 
     - id: dsh-crew-git-guard

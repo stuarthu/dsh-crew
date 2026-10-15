@@ -332,12 +332,17 @@ Note that this repository's own `.github/workflows/publish.yml` is tag-triggered
 **A document's home is decided by how long it lives, not by who wrote it or how big the job was**
 (`principles.md` 19).
 
-**Single-use — outside the repository**, in `~/.dsh/crew/jobs/<job-slug>/`, so a user's
-`git status` stays clean and the whole folder can be dropped when the job ends:
+**Single-use — inside the repository, and ignored by git**, in `<repo>/.dsh-crew/jobs/<job-slug>/`,
+one folder per job at the root of the repository the session works in. The PM writes
+one line into the repository's own `.git/info/exclude` before it writes anything there,
+so a user's `git status` stays clean, the folder is never staged, never committed and
+the whole folder can be dropped when the job ends (`info/exclude`, not the project's
+`.gitignore`, because that line is about where this crew puts progress, not what the
+project builds, and it is shared by every worktree):
 
 | File | What it is |
 | --- | --- |
-| `state.json` | job progress: tasks, milestones, versions, the merge result |
+| `state.json` | job progress: tasks, milestones, versions, the merge result — never staged, never committed |
 | `<task-id>-plan.md` | QA's test plan, written before it reads the code; the cases replace it |
 | `inbox/Q-<number>.md` | a role's question to the PM, and the ways an engineer found for a fix |
 | — | the output of a test run: it goes to stdout and is never written to a file |
@@ -345,7 +350,9 @@ Note that this repository's own `.github/workflows/publish.yml` is tag-triggered
 There is **no `dod.md`** in that table, and there is none anywhere else either. `DoD` is the name of
 a section, never of a file (`principles.md` 20, `docs/decisions/crd/0010-dod-is-a-section.md`). A
 file of its own is a file that gets dropped: this crew lost 75 of its own acceptance checks that way
-in one hour, and recovered 48 of them.
+in one hour, and recovered 48 of them. **The test-run output is not a file at all**, in the
+repository or outside it — it goes to stdout, and a check file that sits in a droppable
+folder takes every check inside it along.
 
 **Durable — inside the repository**, under `docs/`, and every folder name says **what the thing
 is**, never who made it:
@@ -421,8 +428,8 @@ reasons:
   so they do not live under `docs/`**: a `case-*.mjs` file is runnable code with an exit
   code, and putting runnable code in the documentation tree hides it from the people who
   would run it. `qa/` is a first-class directory at the repository root, sibling to
-  `docs/`, `host/`, `tools/` and `roles/`. Its plan is the one thing it writes outside
-  the repository, in the job folder. If a runner cannot see that folder, QA asks
+  `docs/`, `host/`, `tools/` and `roles/`. Its plan is the one thing it writes in the job folder, which is never committed.
+If a runner cannot see that folder, QA asks
   the PM and the PM edits the config — that keeps "one task owns its files" true. The PM **adds
   that line**; "the cases are not runnable" is a blocking finding for the user, not an ending the PM
   may settle for. Here the line is `bash qa/run-all.sh` inside `scripts.test`.

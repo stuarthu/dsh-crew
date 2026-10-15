@@ -2,3 +2,4 @@ node_modules/
 *.log
 release-notes.md
 .agent-teams/
+.dsh-crew/

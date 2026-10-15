@@ -10,6 +10,35 @@ settings do **not** come back on their own. Copy them into the new file after an
 upgrade. On dsh 0.2.x there is no such folder: see 0.11.0 below for where the
 preset and its settings live there.
 
+## 0.12.0 — unreleased
+
+### Changed
+
+- **The job folder moved inside the repository.** It used to sit at
+  `~/.dsh/crew/jobs/<job-slug>/`, one folder per job, far from the project. It is
+  now at `<repository>/.dsh-crew/jobs/<job-slug>/`, at the root of the repository
+  this session works in — the same place the job's documents are, so one `ls`
+  shows the job you are in, and a job's progress can no longer be mistaken for
+  another repository's.
+  **Nothing about the job changed shape:** the folder is still single-use. The PM
+  writes one line into the repository's own `.git/info/exclude` before it writes
+  anything into it, so `git status` stays clean, the folder is never staged and
+  never committed, and it is dropped whole when the job ends. `info/exclude` and
+  not the project's `.gitignore`, because that line is about where this crew puts
+  progress rather than what the project builds, and because it is shared by every
+  worktree — so a paired task's two trees see the same rule.
+  - **Nothing is committed that was not committed before.** `state.json` is
+    rewritten after every step; committing it would put a file that changes on
+    every step in front of every reviewer and every reader. It stays progress,
+    and the record this job leaves is still the one in `docs/`.
+  - **The default is now relative**, `.dsh-crew/jobs`, resolved against the folder
+    the session runs in. Set `jobsDir` in the `dsh-crew-core` row to an absolute
+    path (or one starting with `~/`) to put the job folder somewhere else, exactly
+    as before.
+  - **The unfinished-job notice is unchanged in behaviour.** A job left in the
+    folder is still put in front of the PM at the start of every session, and it
+    now names the resolved absolute path rather than a `~` one.
+
 ## 0.11.0 — 2026-10-15
 
 ### Added
