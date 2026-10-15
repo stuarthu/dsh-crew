@@ -123,6 +123,7 @@ split is load-bearing:
 | --- | --- | --- | --- |
 | PM prompt + preset installer + job notice | `host/crew.js` | `cordis.patch.yml` (profile) | Needs no tools, so the PM behaves like a PM on any preset |
 | Git guard | `host/git-guard.js` | `cordis.patch.yml` (profile) | Must wrap `tools/execute` for **every** agent, including the PM |
+| Crew preset declaration, and the guard that picks the generation | `host/crew-preset.js` | the `preset-crew` row of `cordis.patch.yml` (0.2.x only) | The choice cannot live in the YAML: a row's `disabled` is evaluated against the **loader** context, which cannot see the registry service, so it comes out true on every dsh and the preset is silently off. Inside the row's own plugin `ctx.get()` resolves |
 | Role tools (`crew_engineer`, …) | `host/roles-preset.js` | `preset/crew/agent.cordis.yml` (0.1.x), the `preset-crew` row of `cordis.patch.yml` (0.2.x) | A role's allow/deny names are checked against the **preset's** tool set when a child starts. Named anywhere else, a spawn can fail on a name that deployment does not have |
 | `crew_test_engineer` — a paired task's unit tests | its `ROLES` row in `host/roles.js`, mounted by `host/roles-preset.js` | `preset/crew/agent.cordis.yml` (0.1.x), the `preset-crew` row of `cordis.patch.yml` (0.2.x) | The paired shape needs **two** tools, not one, so the PM can start each half on its own and give each its own brief |
 | `crew_code_engineer` — a paired task's product code | its `ROLES` row in `host/roles.js`, mounted by `host/roles-preset.js` | `preset/crew/agent.cordis.yml` (0.1.x), the `preset-crew` row of `cordis.patch.yml` (0.2.x) | The other half. Same reason: two halves the PM starts separately, and each one's persona is what makes it different |
@@ -137,7 +138,8 @@ built from. Only their instructions are unusual — the plumbing is not.
 with the package version (`.installed-by-dsh-crew`). A `crew` folder without that stamp is somebody
 else's and is never touched. That folder is the home of the preset on **dsh 0.1.x only** — dsh 0.2.x
 never reads it, which is why the same preset is also declared as the `preset-crew` row of
-`cordis.patch.yml`, behind the `!!js` guard whose reason that file's comment carries.
+`cordis.patch.yml`, carried by `host/crew-preset.js` — that plugin, not a `disabled:` line in
+the YAML, is what picks the generation, and the reason is in that file's comment.
 
 A **version bump deletes and rewrites that folder**, and users are told by the README to configure
 `roleAllow` / `roleDeny` / `roleModels` inside it. So the installer reads every file that differs

@@ -59,6 +59,7 @@
   },
   "exports": {
     "./host/crew.js": "./host/crew.js",
+    "./host/crew-preset.js": "./host/crew-preset.js",
     "./host/roles-preset.js": "./host/roles-preset.js",
     "./host/git-guard.js": "./host/git-guard.js",
     "./package.json": "./package.json",
