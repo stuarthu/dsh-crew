@@ -13,8 +13,9 @@ this file in place.
 
 `dsh-crew` is a **plugin for DeepSeek Harness (dsh)**, not an application.
 Nothing here runs on its own. dsh loads the modules in `host/` and the agent
-preset in `preset/crew/`, and the result is a "crew": your dsh session becomes a
-product manager (PM) that starts role agents as its direct children.
+preset — `preset/crew/` on dsh 0.1.x, the `preset-crew` row of
+`cordis.patch.yml` on dsh 0.2.x — and the result is a "crew": your dsh session
+becomes a product manager (PM) that starts role agents as its direct children.
 
 Be honest about what the main asset is: the **Markdown role prompts** in
 `roles/` — ten files that define how each role behaves — plus the `host/` code

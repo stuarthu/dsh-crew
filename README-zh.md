@@ -1,6 +1,6 @@
 # dsh-crew
 
-> **版本 0.9.0。**
+> **版本 0.10.0。**
 
 dsh-crew 是 DeepSeek Harness（dsh）的一个插件。它把你的 dsh 会话变成一个产品经理
 （PM），由 PM 调度一组角色代理：架构师、工程师、测试工程师、代码工程师、QA、
@@ -37,8 +37,11 @@ dsh plugin --profile tui add dsh-crew     # 或 --profile web
 
 - 你 profile 的 `cordis.patch.yml` 里的 `dsh-crew-core` 和 `dsh-crew-git-guard` 行：
   角色目录、同时存活的代理数、评审轮数、作业目录和 git 保护。
-- `~/.dsh/.agent-presets/crew/agent.cordis.yml` 里的 `dsh-crew-roles` 行：
-  每个角色的工具和模型。
+- `dsh-crew-roles` 行：每个角色的工具和模型。它在哪个文件里取决于你的 dsh。
+  dsh 0.1.x 上是插件装好的那份预设：`~/.dsh/.agent-presets/crew/agent.cordis.yml`。
+  dsh 0.2.x 不再读那个目录，而是读 `preset-crew` 行——就在插件自己的
+  `cordis.patch.yml` 里；你 profile 的 `cordis.patch.yml` 可以用这个行 id 覆盖它。
+  角色过滤要写进你的 dsh 真正会读的那个文件。
 
 ## 许可
 

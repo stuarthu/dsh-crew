@@ -2341,3 +2341,34 @@ T-114（README Quick start 中英对）给两份 README 加 `## Quick start` / `
 
 **状态**：未关闭。与第 18、60 条同族：字节级全比是「此刻必须如此」的 moment pin，任何合法改动
 都会让它假红，所以它被收窄到 `version` 字段；收窄的代价就是整文件完好性不再有人守。
+
+## 63. `preset-crew` 那一行到底挂不挂得上，没有任何用例能判——而它的开关读的是 dsh 的私有字段
+
+**谁报的**：这次改动的作者（单代理，无 crew 流程），2026-10-15。
+
+**缺口**：`cordis.patch.yml` 里那条 `preset-crew` 是 dsh 0.2.x 上让 Crew 预设**存在**的唯一
+东西——0.2.x 不读 `$DSH_HOME/.agent-presets`——但没有任何检查能证明它真的能挂载：
+
+- 仓库里没有 dsh 0.2.x 的核心，dsh 本身也不在这个仓库里跑（第 5 条）。所以
+  `tools/verify-mount.mjs` 只能查这一行的**形状**：角色行在、`subagent-control` 在、没有第二种
+  起代理的方式、`id: crew`、有 guard、`fetch: false`。查不到它在真 dsh 上激活。
+- 反方向同样没有用例：`disabled` 那个 `!!js` 表达式在 0.1.x 上是不是真的把这一行关掉，
+  只能靠一台 0.1.x 的机器实测。
+
+**这个开关本身依赖一个私有字段。** 表达式读的是 `ctx.get('agentPresets').resolvedRoots`：旧注册表
+（`@deepseek-ai/dsh-agent-presets`，那个会扫目录的）有它，0.2.x 的
+`@deepseek-ai/dsh-agent-preset-registry` 没有。`resolvedRoots` 不是 dsh 的公开契约，这个仓库也不装
+dsh，所以 dsh 哪次改掉这个字段名，没有任何检查会红——那个 `!!js` 会算成「服务不是旧的」
+（`undefined !== undefined` 为假）→ 这一行在 0.1.x 上被**启用** → 那个版本被要求加载一个它没有的包。
+这是 `CLAUDE.md` 那句「dsh 的私有细节会悄悄腐烂」的又一实例，只是这次不是行号，是字段名。
+
+**为什么没有当场补一条用例**：真正的验证要一台真 dsh，两个大版本各一台；本仓库的用例全在临时
+目录里跑（第 4、5 条）。形状检查写得出来、也已经写了。把「真的挂得上」也塞进 CI 需要一台装了
+dsh 的机器，那是一件新作业，不是这一次兼容修复能顺手做完的。
+
+**该怎么办**：要让这条开关不靠私有字段，就得换一个不依赖 dsh 内部结构的判据——例如由
+`host/crew.js` 在启动时看运行中的 dsh，再把 declaration 写进 profile，而不是在 YAML 里用 `!!js`
+猜。在那之前，谁改那条 `!!js`，要自己确认新表达式在两种注册表下各取什么值。
+
+**状态**：未关闭。形状有检查守着（`tools/verify-mount.mjs`），行为没有；开关依赖的那个字段不是
+公开契约，所以它也守不住。

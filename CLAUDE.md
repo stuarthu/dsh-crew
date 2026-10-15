@@ -5,7 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this repository is
 
 `dsh-crew` is a **plugin for DeepSeek Harness (dsh)**, not an application. Nothing here runs on its
-own. dsh loads the modules in `host/` and the agent preset in `preset/crew/`, and the result is a
+own. dsh loads the modules in `host/` and the agent preset — `preset/crew/` on dsh 0.1.x, the
+`preset-crew` row of `cordis.patch.yml` on dsh 0.2.x, because the two generations read a preset in
+two different shapes — and the result is a
 "crew": your dsh session becomes a product manager (PM) that starts role agents (architect, engineer,
 the two engineers of a paired task, reviewers, QA, researcher) as its direct children.
 
@@ -122,9 +124,9 @@ split is load-bearing:
 | --- | --- | --- | --- |
 | PM prompt + preset installer + job notice | `host/crew.js` | `cordis.patch.yml` (profile) | Needs no tools, so the PM behaves like a PM on any preset |
 | Git guard | `host/git-guard.js` | `cordis.patch.yml` (profile) | Must wrap `tools/execute` for **every** agent, including the PM |
-| Role tools (`crew_engineer`, …) | `host/roles-preset.js` | `preset/crew/agent.cordis.yml` | A role's allow/deny names are checked against the **preset's** tool set when a child starts. Named anywhere else, a spawn can fail on a name that deployment does not have |
-| `crew_test_engineer` — a paired task's unit tests | its `ROLES` row in `host/roles.js`, mounted by `host/roles-preset.js` | `preset/crew/agent.cordis.yml` | The paired shape needs **two** tools, not one, so the PM can start each half on its own and give each its own brief |
-| `crew_code_engineer` — a paired task's product code | its `ROLES` row in `host/roles.js`, mounted by `host/roles-preset.js` | `preset/crew/agent.cordis.yml` | The other half. Same reason: two halves the PM starts separately, and each one's persona is what makes it different |
+| Role tools (`crew_engineer`, …) | `host/roles-preset.js` | `preset/crew/agent.cordis.yml` (0.1.x), the `preset-crew` row of `cordis.patch.yml` (0.2.x) | A role's allow/deny names are checked against the **preset's** tool set when a child starts. Named anywhere else, a spawn can fail on a name that deployment does not have |
+| `crew_test_engineer` — a paired task's unit tests | its `ROLES` row in `host/roles.js`, mounted by `host/roles-preset.js` | `preset/crew/agent.cordis.yml` (0.1.x), the `preset-crew` row of `cordis.patch.yml` (0.2.x) | The paired shape needs **two** tools, not one, so the PM can start each half on its own and give each its own brief |
+| `crew_code_engineer` — a paired task's product code | its `ROLES` row in `host/roles.js`, mounted by `host/roles-preset.js` | `preset/crew/agent.cordis.yml` (0.1.x), the `preset-crew` row of `cordis.patch.yml` (0.2.x) | The other half. Same reason: two halves the PM starts separately, and each one's persona is what makes it different |
 | Role table + persona loading | `host/roles.js` | both of the above | Single source of truth, shared by the two planes |
 
 The two paired roles take **the same road as every other role**, and nothing was added to the
@@ -134,12 +136,14 @@ built from. Only their instructions are unusual — the plumbing is not.
 
 `host/crew.js` also copies `preset/crew/` into `$DSH_HOME/.agent-presets/crew` at startup, stamped
 with the package version (`.installed-by-dsh-crew`). A `crew` folder without that stamp is somebody
-else's and is never touched.
+else's and is never touched. That folder is the home of the preset on **dsh 0.1.x only** — dsh 0.2.x
+never reads it, which is why the same preset is also declared as the `preset-crew` row of
+`cordis.patch.yml`, behind the `!!js` guard whose reason that file's comment carries.
 
 A **version bump deletes and rewrites that folder**, and users are told by the README to configure
 `roleAllow` / `roleDeny` / `roleModels` inside it. So the installer reads every file that differs
 from the shipped copy before deleting, writes it back as `<name>.bak`, and names it in the boot log.
-Never make that folder the only home for a setting a user has to keep.
+Never make that folder — or the `preset-crew` row — the only home for a setting a user has to keep.
 
 ## Design rules a change must not break
 
@@ -225,7 +229,8 @@ because a live test showed the weaker version failing.
 3. Write `roles/<name>.md`. It must be real instructions (the check rejects anything under 500
    characters) and must say the role talks only to the PM.
 4. If the role's allow list names a tool not yet in `PROVIDERS` in `tools/verify-mount.mjs`, add it,
-   and make sure `preset/crew/agent.cordis.yml` really loads that provider package.
+   and make sure both preset declarations — `preset/crew/agent.cordis.yml` (0.1.x) and the
+   `preset-crew` row of `cordis.patch.yml` (0.2.x) — really load that provider package.
 5. Add the role to the **three explicit lists** in `tools/verify-mount.mjs`. Each of them is a
    hand-written list of names, so a role missing from one has nothing at all watching that half of
    it, and nothing reminds you — that price is named out loud in the closing section of
@@ -290,8 +295,11 @@ repository is worked in:
 ## Users override, the package does not change
 
 A user's own `~/.dsh/crew/roles/<file>.md` replaces a shipped persona by file name (`rolesDir`).
-Tool filters and per-role models are overridden in the `dsh-crew-roles` row of
-`~/.dsh/.agent-presets/crew/agent.cordis.yml` (`roleAllow`, `roleDeny`, `roleModels`). The PM's
+Tool filters and per-role models are overridden in the `dsh-crew-roles` row (`roleAllow`,
+`roleDeny`, `roleModels`). Which file holds that row depends on the dsh generation, so a user has to
+edit the one their dsh reads: `~/.dsh/.agent-presets/crew/agent.cordis.yml` on 0.1.x, and the
+`preset-crew` row of this package's `cordis.patch.yml` on 0.2.x — where a profile patch keyed by the
+row id `preset-crew` is the way to change it without editing the package. The PM's
 limits, jobs folder and the git guard are configured in the profile's `cordis.patch.yml`. When you
 add a setting, add it as a commented example in the config file it belongs to — that is how these
 options are documented.

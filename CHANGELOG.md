@@ -4,9 +4,41 @@ What changed in each released version of `dsh-crew`, newest first. The top
 section is marked `unreleased`: it is the next version, written as the work
 lands, and it has no date until the release goes out.
 
-Every version bump rewrites `$DSH_HOME/.agent-presets/crew`. Files you edited
-there are kept as `<name>.bak` and named in the boot log, but your settings do
-**not** come back on their own. Copy them into the new file after an upgrade.
+On dsh 0.1.x every version bump rewrites `$DSH_HOME/.agent-presets/crew`. Files
+you edited there are kept as `<name>.bak` and named in the boot log, but your
+settings do **not** come back on their own. Copy them into the new file after an
+upgrade. On dsh 0.2.x there is no such folder: see 0.11.0 below for where the
+preset and its settings live there.
+
+## 0.11.0 — unreleased
+
+### Added
+
+- **The Crew preset now exists on dsh 0.2.x, where until now it was silently
+  missing.** dsh 0.2.x replaced the `@deepseek-ai/dsh-agent-presets` registry
+  with `@deepseek-ai/dsh-agent-preset`, and the old registry's home —
+  `$DSH_HOME/.agent-presets` — is not read at all any more. In its own words:
+  the new registry "neither scans directories nor accepts preset paths". A preset
+  is now a declarative row in a profile's composition, and a plugin ships one by
+  inserting that row from its bundle patch.
+  dsh-crew only ever wrote the folder, so on 0.2.x the plugin loaded, the PM
+  prompt and the guards worked, and **Crew** never appeared in the preset picker.
+  The plugin's bundle patch now declares the preset too, and the picker offers it
+  again.
+  - **Nothing changes on dsh 0.1.x.** The folder install stays exactly as it was,
+    and the new row disables itself wherever the old registry is the one loaded,
+    so a 0.1.x profile is never asked for a package it does not have.
+  - **The preset is written twice on purpose.** The plugin list differs between
+    the two dsh generations — the persona row alone takes `text` in 0.1.x and
+    `prefix`/`suffix` in 0.2.x — so neither declaration can be derived from the
+    other. A role filter (`roleAllow`, `roleDeny`, `roleModels`) therefore has to
+    be set in the file **your** dsh reads: the preset copy under
+    `$DSH_HOME/.agent-presets/crew` on 0.1.x, and the `preset-crew` row in the
+    plugin's `cordis.patch.yml` on 0.2.x. Both are commented to say so.
+  - `tools/verify-mount.mjs` holds the new declaration to the same rules as the
+    old one: the crew roles are mounted, the subagent-control tools are there, no
+    second way to start an agent re-opens, the preset keeps its `crew` identity,
+    and web fetch stays off.
 
 ## 0.10.0 — 2026-08-23
 
